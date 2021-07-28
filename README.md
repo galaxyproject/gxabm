@@ -36,7 +36,7 @@ Run a workflow.  Currently this is hard coded to simply run the `RNA Workflow Te
 ## Runtime Configuration
 
 A future version of the `workflow.py` script will load runtime configuration from
-YAML configuration files.
+YAML configuration files. See [#1](../../issue/1)
 
 ## Obtaining Results
 
