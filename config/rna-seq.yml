@@ -1,4 +1,4 @@
-workflow: a0c65b6b8c63f1d2
+workflow: 3606d3101a772650
 inputs:
   - name: Reference FASTA
     id: '3947ba9ca107312f'
@@ -6,5 +6,5 @@ inputs:
     id: '048a970701a6dc44'
   - name: FASTA Dataset
     id: 'ca5081d2c8f1088a'
-output: RNA seq test results
+history: RNA seq test results
 
