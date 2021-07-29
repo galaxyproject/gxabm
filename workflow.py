@@ -28,7 +28,7 @@ GALAXY_SERVER = 'https://benchmarking.usegvl.org/initial/galaxy/'
 # on the command line.
 API_KEY = None
 
-def workflows():
+def workflows(argv):
 	"""
 	List all the workflows available on the server.
 
@@ -39,7 +39,7 @@ def workflows():
 	parser = argparse.ArgumentParser(description='Run Galaxy workflows')
 	parser.add_argument('-s', '--server', required=False, help='the Galaxy server URL.')
 	parser.add_argument('-a', '--api-key', required=False, help='your Galaxy API key')
-	args = parser.parse_args(sys.argv[2:])
+	args = parser.parse_args(argv[2:])
 	if args.server is not None:
 		GALAXY_SERVER = args.server
 	if args.api_key is not None:
@@ -213,10 +213,10 @@ if __name__ == '__main__':
 		sys.exit(1)
 
 	if sys.argv[1] == 'workflows':
-		workflows()
+		workflows(sys.argv)
 	elif sys.argv[1] == 'run':
-		rna_seq()
+		rna_seq(sys.argv[2:])
 	elif sys.argv[1] == 'histories':
-		histories()
+		histories(sys.argv)
 	else:
 		print(f"Unknown command {sys.argv[1]}")

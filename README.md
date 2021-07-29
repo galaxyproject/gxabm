@@ -35,11 +35,24 @@ Run a workflow.  Currently this is hard coded to simply run the `RNA Workflow Te
 
 ## Runtime Configuration
 
-A future version of the `workflow.py` script will load runtime configuration from
-YAML configuration files. See [#1](../../issues/1)
+In progress. See [#1](../../issues/1)
 
 ## Obtaining Results
 
-In the future the results of a workflow invocation will be scraped from the server and
+TBD. 
+
+Scrape the results of a workflow invocation will be scraped from the server and
 output in a format suitable for importing into a spreadsheet or database.
+
+### Contributing
+
+Fork this repository and then create a working branch for yourself base off the `dev` branch. All pull requests should target  `dev` and not the `master` branch.
+
+```bash
+git clone https://github.com/ksuderman/bioblend-scripts.git
+cd bioblend-scripts
+git checkout -b my-branch
+```
+
+If you decide to work on one of the [issues](bioblend-scripts/issues) be sure to assign yourself to that issue to let others know the issue is taken.
 
