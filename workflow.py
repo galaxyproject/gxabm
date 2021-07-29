@@ -3,17 +3,12 @@
 """
 This script is loosely based on https://github.com/galaxyproject/bioblend/blob/main/docs/examples/run_imported_workflow.py
 
-TO-DO
-1. Allow the user to specify an output history.
-2. Maybe allow the user to specify a URL to data that should be uploaded to
-   the server to be used as input to the workflow.
-3. Don't assume the name of the input parameter is 'input'
-
-usage: workflows.py [-h] [-s SERVER] [-a API_KEY] -w WORKFLOW -d DATASET
+usage: workflows.py [-h] [-s SERVER] [-a API_KEY] [-w WORKFLOW] [-d DATASET]
 """
 
 import bioblend.galaxy
 import argparse
+import yaml
 import json
 import sys
 import os
@@ -28,26 +23,16 @@ GALAXY_SERVER = 'https://benchmarking.usegvl.org/initial/galaxy/'
 # on the command line.
 API_KEY = None
 
-def workflows(argv):
+# The directory where the workflow invocation data will be saved.
+INVOCATIONS_DIR = 'invocations'
+
+def workflows():
 	"""
 	List all the workflows available on the server.
 
 	:return:
 	"""
 	global API_KEY, GALAXY_SERVER
-
-	parser = argparse.ArgumentParser(description='Run Galaxy workflows')
-	parser.add_argument('-s', '--server', required=False, help='the Galaxy server URL.')
-	parser.add_argument('-a', '--api-key', required=False, help='your Galaxy API key')
-	args = parser.parse_args(argv[2:])
-	if args.server is not None:
-		GALAXY_SERVER = args.server
-	if args.api_key is not None:
-		API_KEY = args.api_key
-
-	if API_KEY is None:
-		print("ERROR: You have not specified a Galaxy API key")
-		sys.exit(1)
 
 	gi = bioblend.galaxy.GalaxyInstance(url=GALAXY_SERVER, key=API_KEY)
 	print(f"Connected to {GALAXY_SERVER}")
@@ -63,49 +48,57 @@ def workflows(argv):
 		print()
 
 
-def run():
+def run(args):
 	global API_KEY, GALAXY_SERVER
-	parser = argparse.ArgumentParser(description='Run Galaxy workflows')
-	parser.add_argument('-s', '--server', required=False, help='the Galaxy server URL.')
-	parser.add_argument('-a', '--api-key', required=False, help='your Galaxy API key')
-	parser.add_argument('-p', '--profile', help='the profile to use to run the workflow')
 
-	args = parser.parse_args()
-	if args.server is not None:
-		GALAXY_SERVER = args.server
-	if args.api_key is not None:
-		API_KEY = args.api_key
-
-	if API_KEY is None:
-		print("ERROR: You have not specified a Galaxy API key")
+	if args.workflow is None:
+		print('ERROR: No workflow configuration was specified')
 		sys.exit(1)
+
+	if not os.path.isfile(args.workflow):
+		print(f'ERROR: Could not find {args.workflow}')
+		sys.exit(1)
+
+	if os.path.exists(INVOCATIONS_DIR):
+		if not os.path.isdir(INVOCATIONS_DIR):
+			print('ERROR: Can not save invocation status, directory name in use.')
+			sys.exit(1)
+	else:
+		os.mkdir(INVOCATIONS_DIR)
+
+	with open(args.workflow, 'r') as stream:
+		try:
+			config = yaml.safe_load(stream)
+		except yaml.YAMLError as exc:
+			print(exc)
 
 	gi = bioblend.galaxy.GalaxyInstance(url=GALAXY_SERVER, key=API_KEY)
 	print(f"Connected to {GALAXY_SERVER}")
-	histories=gi.histories.get_histories()
-	if histories is None or len(histories) == 0:
-		print("ERROR: history not found!")
-		return
-	if len(histories) > 1:
-		print("WARNING: found more than one history with that name; using the first one found")
-	history = histories[0]['id']
 
-	wf_info = gi.workflows.get_workflows(name=args.workflow)
-	if wf_info is None or len(wf_info) == 0:
-		print("ERROR: no workflow with that name found.")
-		return
-	if len(wf_info) > 1:
-		print("WARNING: found more than one workflow with that name; using the first one found.")
-	workflow = wf_info[0]['id']
-	datasets = gi.histories.show_history(history, contents=True, details='none')
-	for dataset in datasets:
-		inputs = {0: {'id':dataset['id'], 'src':'hda'}}
-		result = gi.workflows.invoke_workflow(workflow, inputs=inputs)
-		pprint(result)
-		print()
+	workflow = config['workflow']
+	inputs = {}
+	for spec in config['inputs']:
+		input = gi.workflows.get_workflow_inputs(workflow, spec['name'])
+		if input is None or len(input) == 0:
+			print('ERROR: Invalid input specification')
+			sys.exit(1)
+		inputs[input[0]] = { 'id': spec['id'], 'src': 'hda'}
+
+	if 'history' in config:
+		print(f"Saving output to a history named {config['history']}")
+		invocation = gi.workflows.invoke_workflow(workflow, inputs=inputs, history_name=config['history'])
+	else:
+		invocation = gi.workflows.invoke_workflow(workflow, inputs=inputs)
+
+	pprint(invocation)
+
+	output_path = os.path.join(INVOCATIONS_DIR, invocation['id'] + '.json')
+	with open(output_path, 'w') as f:
+		json.dump(invocation, f, indent=4)
+		print(f"Wrote {output_path}")
 
 
-def rna_seq(argv):
+def rna_seq():
 	"""
 	048a970701a6dc44 - gencode.v38.annotation.gtf.gz (ok)
 	ca5081d2c8f1088a - SRR14916263 (fastq-dump) uncompressed (ok)
@@ -125,18 +118,18 @@ def rna_seq(argv):
 	WORKFLOW_ID = 'eea1d48bdaa84118'
 
 	global API_KEY, GALAXY_SERVER
-	parser = argparse.ArgumentParser(description='Run Galaxy workflows')
-	parser.add_argument('-s', '--server', required=False, help='the Galaxy server URL.')
-	parser.add_argument('-a', '--api-key', required=False, help='your Galaxy API key')
-	args = parser.parse_args(argv)
-	if args.server is not None:
-		GALAXY_SERVER = args.server
-	if args.api_key is not None:
-		API_KEY = args.api_key
-
-	if API_KEY is None:
-		print("ERROR: You have not specified a Galaxy API key")
-		sys.exit(1)
+	# parser = argparse.ArgumentParser(description='Run Galaxy workflows')
+	# parser.add_argument('-s', '--server', required=False, help='the Galaxy server URL.')
+	# parser.add_argument('-a', '--api-key', required=False, help='your Galaxy API key')
+	# args = parser.parse_args(argv)
+	# if args.server is not None:
+	# 	GALAXY_SERVER = args.server
+	# if args.api_key is not None:
+	# 	API_KEY = args.api_key
+	#
+	# if API_KEY is None:
+	# 	print("ERROR: You have not specified a Galaxy API key")
+	# 	sys.exit(1)
 
 	gi = bioblend.galaxy.GalaxyInstance(url=GALAXY_SERVER, key=API_KEY)
 
@@ -153,31 +146,14 @@ def rna_seq(argv):
 	pprint(result)
 
 
-def histories(argv):
-	print('histories')
+def histories():
 	global API_KEY, GALAXY_SERVER
-	parser = argparse.ArgumentParser(description='Run Galaxy workflows')
-	parser.add_argument('-s', '--server', required=False, help='the Galaxy server URL.')
-	parser.add_argument('-a', '--api-key', required=False, help='your Galaxy API key')
-	# parser.add_argument('-w', '--workflow',help='the name of the workflow to run')
-	parser.add_argument('-H', '--history', help='the history (dataset) to be run through the workflow')
-
-	args = parser.parse_args(argv[2:])
-	if args.server is not None:
-		GALAXY_SERVER = args.server
-	if args.api_key is not None:
-		API_KEY = args.api_key
-
-	if API_KEY is None:
-		print("ERROR: You have not specified a Galaxy API key")
-		sys.exit(1)
-
 	gi = bioblend.galaxy.GalaxyInstance(url=GALAXY_SERVER, key=API_KEY)
 	print(f"Connected to {GALAXY_SERVER}")
-	if args.history is None:
-		history_list = gi.histories.get_published_histories()
-	else:
+	if 'history' in args:
 		history_list = gi.histories.get_histories(name=args.history)
+	else:
+		history_list = gi.histories.get_published_histories()
 
 	if history_list is None or len(history_list) == 0:
 		print("ERROR: history not found!")
@@ -192,6 +168,16 @@ def histories(argv):
 				print(f"\t{dataset['id']} - {dataset['name']} ({state})")
 		print()
 
+def status():
+	global API_KEY, GALAXY_SERVER
+	gi = bioblend.galaxy.GalaxyInstance(url=GALAXY_SERVER, key=API_KEY)
+	print(f"Connected to {GALAXY_SERVER}")
+	invocations = gi.invocations.get_invocations()
+	print('ID\tWorkflow\tHistory\tState')
+	for invocation in invocations:
+		print(f"{invocation['id']}\t{invocation['workflow_id']}\t{invocation['history_id']}\t{invocation['state']}")
+
+
 
 if __name__ == '__main__':
 	# Get defaults from the environment if available
@@ -201,20 +187,39 @@ if __name__ == '__main__':
 
 	value = os.environ.get('API_KEY')
 	if value is not None:
-		print(f"API KEY is {value}")
 		API_KEY = value
 
+	parser = argparse.ArgumentParser(description='Run Galaxy workflows')
+	parser.add_argument('-s', '--server', required=False, help='the Galaxy server URL.')
+	parser.add_argument('-a', '--api-key', required=False, help='your Galaxy API key')
+	parser.add_argument('-w', '--workflow',help='the name of the workflow configuration to run')
+	parser.add_argument('-H', '--history', help='the history ID to view')
+	parser.add_argument('command', help='the command to be executed')
 
-	if len(sys.argv) < 2 or sys.argv[1] == 'help':
-		print("There is no help available at this time.")
-		print("Please refer to the README.md in the GitHub repository")
+	args = parser.parse_args()
+	if args.server is not None:
+		GALAXY_SERVER = args.server
+	if args.api_key is not None:
+		API_KEY = args.api_key
+
+	if API_KEY is None:
+		print("ERROR: You have not specified a Galaxy API key")
+		sys.exit(1)
+	if GALAXY_SERVER is None:
+		print('ERROR: You have not specified the Galaxy URL')
 		sys.exit(1)
 
-	if sys.argv[1] == 'workflows':
-		workflows(sys.argv)
-	elif sys.argv[1] == 'run':
-		rna_seq(sys.argv[2:])
-	elif sys.argv[1] == 'histories':
-		histories(sys.argv)
+	if args.command in ['wf', 'flows', 'workflows']:
+		workflows()
+	elif args.command == 'run':
+		run(args)
+	elif args.command in ['h', 'hist','histories']:
+		histories()
+	elif args.command in ['st', 'status']:
+		status()
+	elif args.command == 'rna':
+		rna_seq()
 	else:
-		print(f"Unknown command {sys.argv[1]}")
+		print(f"Unknown command {args.command}")
+
+	sys.exit(0)
