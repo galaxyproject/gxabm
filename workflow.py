@@ -168,12 +168,12 @@ def histories():
 				print(f"\t{dataset['id']} - {dataset['name']} ({state})")
 		print()
 
-def status():
+def status(args):
 	global API_KEY, GALAXY_SERVER
 	gi = bioblend.galaxy.GalaxyInstance(url=GALAXY_SERVER, key=API_KEY)
 	print(f"Connected to {GALAXY_SERVER}")
 	invocations = gi.invocations.get_invocations()
-	print('ID\tWorkflow\tHistory\tState')
+	print('ID\t\t\tWORKFLOW\t\tHISTORY\t\t\tSTATE')
 	for invocation in invocations:
 		print(f"{invocation['id']}\t{invocation['workflow_id']}\t{invocation['history_id']}\t{invocation['state']}")
 
@@ -216,7 +216,7 @@ if __name__ == '__main__':
 	elif args.command in ['h', 'hist','histories']:
 		histories()
 	elif args.command in ['st', 'status']:
-		status()
+		status(args)
 	elif args.command == 'rna':
 		rna_seq()
 	else:
