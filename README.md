@@ -22,7 +22,26 @@ chmod +x workflow.py
 ./workflow.py help
 ```
 
+## Credentials
+
+To use these scripts you will need an [API key](https://training.galaxyproject.org/training-material/faqs/galaxy/preferences_admin_api_key.html) for the Galaxy server. While the Galaxy URL and API key can be specified on the command line, it is easier to define them as environment variables, preferably in a file you can `source` to make them available.
+
+```
+export GALAXY_SERVER=https://benchmarking.usegvl.org/initial/galaxy/
+export API_KEY=<your api key>
+```
+
+## Usage
+
+```
+python3 workflow.py <COMMAND> [options]
+```
+
+
+
 ## Commands
+
+***This is a work in progress***
 
 **histories**<br/>
 Prints all public histories from all users on the server.  Don't do this on Main or EU!
