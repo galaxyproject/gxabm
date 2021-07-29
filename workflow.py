@@ -68,8 +68,7 @@ def run():
 	parser = argparse.ArgumentParser(description='Run Galaxy workflows')
 	parser.add_argument('-s', '--server', required=False, help='the Galaxy server URL.')
 	parser.add_argument('-a', '--api-key', required=False, help='your Galaxy API key')
-	parser.add_argument('-w', '--workflow', required=True, help='the name of the workflow to run')
-	parser.add_argument('-H', '--history', required=True, help='the history (dataset) to be run through the workflow')
+	parser.add_argument('-p', '--profile', help='the profile to use to run the workflow')
 
 	args = parser.parse_args()
 	if args.server is not None:
@@ -195,7 +194,6 @@ def histories(argv):
 
 
 if __name__ == '__main__':
-
 	# Get defaults from the environment if available
 	value = os.environ.get('GALAXY_SERVER')
 	if value is not None:
