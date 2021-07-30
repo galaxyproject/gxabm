@@ -5,13 +5,14 @@ Python Bioblend scripts for automating tasks in Galaxy
 
 The only Python requirement (so far) is the Bioblend library.
 
-Create a Python virtual environment and install the bioblend library:
+Create a Python virtual environment and install the *bioblend* and *pyyaml* libraries:
 
 ```
 python3 -m venv .venv
 source .venv/bin/activate
 pip install --upgrade pip
 pip install bioblend
+pip install pyyaml
 ```
 
 **NOTE:** On Linux and MacOS system you can set the executable bit on the `workflow.py`
@@ -22,46 +23,76 @@ chmod +x workflow.py
 ./workflow.py help
 ```
 
-## Credentials
+### OPTIONS
+-k|--key GALAXY_API_KEY<br/>
+  Specify the Galaxy API for the remote server
+  
+-s|--server URL<br/>
+  The URL for the remote Galaxy server
 
-To use these scripts you will need an [API key](https://training.galaxyproject.org/training-material/faqs/galaxy/preferences_admin_api_key.html) for the Galaxy server. While the Galaxy URL and API key can be specified on the command line, it is easier to define them as environment variables, preferably in a file you can `source` to make them available.
-
-```
-export GALAXY_SERVER=https://benchmarking.usegvl.org/initial/galaxy/
-export API_KEY=<your api key>
-```
-
-## Usage
+Both the Galaxy API key and Galaxy server URL can be specified in environment variables.
 
 ```
-python3 workflow.py <COMMAND> [options]
+    -k|--key GALAXY_API_KEY
+        Specify the Galaxy API for the remote server
+    -s|--server
+        The URL for the remote Galaxy server
+```
+### COMMANDS
+```
+    wf|workflows
+        List all public workflows and their inputs
+    hist|histories
+        List all public histories and their datasets
+    st|status <invocation_id>
+        If the invocation_id is specified then the invocation report for that workflow
+        invocation is returned.  Otherwise lists all the workflow invocations on
+        the server
+    run <configuration.yml>
+        Run the workflow specified in the configuration.yml file.
+    version
+        Print the version number and exit
+    help|-h|--help
+        Prints this help screen
 ```
 
+When a workflow is run with the `run` command the invocation details will be saved to a JSON file with the invocation ID as the file name with a *.json* extension.  Use the invocation ID with the `st` (`status`) command to get detailed information about that invocation.
 
+### EXAMPLES
 
-## Commands
-
-***This is a work in progress***
-
-**histories**<br/>
-Prints all public histories from all users on the server.  Don't do this on Main or EU!
-
-**workflows**<br/>
-Prints all published workflows and their expected inputs.
-
-**run**<br/>
-Run a workflow.  Currently this is hard coded to simply run the `RNA Workflow Test`.
+    ./workflow.py run configs/paired-dna.yml
+    ./workflow.py st da4e6f496166d13f
 
 ## Runtime Configuration
 
-In progress. See [#1](../../issues/1)
+The runtime parameters for a benchmarking run are specified in a YAML file.  This file can be stored anywhere, but several examples are included in the `config` directory. The configuration YAML must include:
+
+- **workflow_id**
+  The ID of the workflow to run.
+- **inputs**
+  A list of dictionaries that specify:
+  1. **name** the name of the input as specifed in the the workflow editor.
+  2. **dataset_id**: the ID of the dataset to be used as input.  This dataset can be located in any publicy accessible history.
+- **output_history_name**
+  A new history with this name will be created and all processed datasets will be stored into this history.
+
+#### Example
+
+```
+workflow_id: b94314cb9cb46380
+inputs:
+  - name: FASTQ Dataset
+    dataset_id: e49d4a2f705b9571
+output_history_name: Example Paired DNA Test
+```
+
+
 
 ## Obtaining Results
 
 TBD. 
 
-Scrape the results of a workflow invocation will be scraped from the server and
-output in a format suitable for importing into a spreadsheet or database.
+Scrape the results of a workflow invocation and output in a format suitable for importing into a spreadsheet or database. See issue [#3](../../issues/3). 
 
 ### Contributing
 
