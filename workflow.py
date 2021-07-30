@@ -15,7 +15,7 @@ import os
 
 from pprint import pprint
 
-VERSION='1.0.0'
+VERSION='1.0.1-beta'
 
 BOLD = '\033[1m'
 CLEAR = '\033[0m'
