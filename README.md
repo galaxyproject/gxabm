@@ -30,9 +30,10 @@ Run workflows on remote Galaxy instances.
 ./workflow.py [-k KEY] [-s SERVER] [COMMAND...]
 
 ### OPTIONS
--k|--key GALAXY_API_KEY
+-k|--key GALAXY_API_KEY<br/>
   Specify the Galaxy API for the remote server
--s|--server URL
+  
+-s|--server URL<br/>
   The URL for the remote Galaxy server
 
 Both the Galaxy API key and Galaxy server URL can be specified in environment variables.
