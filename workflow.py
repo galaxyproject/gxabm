@@ -15,7 +15,7 @@ import os
 
 from pprint import pprint
 
-VERSION='1.0.1-beta'
+VERSION='1.0.0'
 
 BOLD = '\033[1m'
 CLEAR = '\033[0m'
@@ -221,6 +221,8 @@ def help():
 {bold("EXAMPLES")}
     ./workflow.py run configs/paired-dna.yml
     ./workflow.py st da4e6f496166d13f
+
+Please see https://github.com/ksuderman/bioblend-scripts#readme for full documentation.
 
 """)
 
