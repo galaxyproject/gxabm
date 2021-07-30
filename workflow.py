@@ -2,6 +2,9 @@
 
 """
 This script is loosely based on https://github.com/galaxyproject/bioblend/blob/main/docs/examples/run_imported_workflow.py
+
+Copyright 2021 The Galaxy Project. All rights reserved.
+
 """
 
 import bioblend.galaxy
