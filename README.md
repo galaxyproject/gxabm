@@ -24,16 +24,23 @@ chmod +x workflow.py
 ```
 
 ### SYNOPSIS
-    Run workflows on remote Galaxy instances.
+Run workflows on remote Galaxy instances.
 
 ### USAGE
 ./workflow.py [-k KEY] [-s SERVER] [COMMAND...]
 
 ### OPTIONS
 -k|--key GALAXY_API_KEY
-    Specify the Galaxy API for the remote server
--s|--server
-    The URL for the remote Galaxy server
+  Specify the Galaxy API for the remote server
+-s|--server URL
+  The URL for the remote Galaxy server
+
+Both the Galaxy API key and Galaxy server URL can be specified in environment variables.
+
+```
+export GALAXY_API_KEY=<your Galaxy api key>
+export GALAXY_SERVER=https://benchmarking.usegvl.org/initial/galaxy
+```
 
 ### COMMANDS
 wf|workflows

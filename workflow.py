@@ -40,81 +40,82 @@ API_KEY = None
 # The directory where the workflow invocation data will be saved.
 INVOCATIONS_DIR = 'invocations'
 
+
 def workflows():
-	"""
+    """
 	List all the workflows available on the server.
 
 	:return:
 	"""
-	global API_KEY, GALAXY_SERVER
+    global API_KEY, GALAXY_SERVER
 
-	gi = bioblend.galaxy.GalaxyInstance(url=GALAXY_SERVER, key=API_KEY)
-	print(f"Connected to {GALAXY_SERVER}")
-	wflows = gi.workflows.get_workflows(published=True) #name='imported: Benchmarking RNA-seq Cloud Costs')
-	print(f"Found {len(wflows)} workflows")
-	for wf in wflows:
-		print(f"Name: {wf['name']}")
-		print(f"ID: {wf['id']}")
-		wf_info = gi.workflows.show_workflow(wf['id'])
-		inputs = wf_info['inputs']
-		for index in range(len(inputs)):
-			print(f"Input {index}: {inputs[str(index)]['label']}")
-		print()
+    gi = bioblend.galaxy.GalaxyInstance(url=GALAXY_SERVER, key=API_KEY)
+    print(f"Connected to {GALAXY_SERVER}")
+    wflows = gi.workflows.get_workflows(published=True)  # name='imported: Benchmarking RNA-seq Cloud Costs')
+    print(f"Found {len(wflows)} workflows")
+    for wf in wflows:
+        print(f"Name: {wf['name']}")
+        print(f"ID: {wf['id']}")
+        wf_info = gi.workflows.show_workflow(wf['id'])
+        inputs = wf_info['inputs']
+        for index in range(len(inputs)):
+            print(f"Input {index}: {inputs[str(index)]['label']}")
+        print()
 
 
 def run(args):
-	global API_KEY, GALAXY_SERVER
+    global API_KEY, GALAXY_SERVER
 
-	if len(args) == 0:
-		print('ERROR: No workflow configuration was specified')
-		sys.exit(1)
+    if len(args) == 0:
+        print('ERROR: No workflow configuration was specified')
+        sys.exit(1)
 
-	name = args[0]
-	if not os.path.isfile(name):
-		print(f'ERROR: Could not find {name}')
-		sys.exit(1)
+    name = args[0]
+    if not os.path.isfile(name):
+        print(f'ERROR: Could not find {name}')
+        sys.exit(1)
 
-	if os.path.exists(INVOCATIONS_DIR):
-		if not os.path.isdir(INVOCATIONS_DIR):
-			print('ERROR: Can not save invocation status, directory name in use.')
-			sys.exit(1)
-	else:
-		os.mkdir(INVOCATIONS_DIR)
+    if os.path.exists(INVOCATIONS_DIR):
+        if not os.path.isdir(INVOCATIONS_DIR):
+            print('ERROR: Can not save invocation status, directory name in use.')
+            sys.exit(1)
+    else:
+        os.mkdir(INVOCATIONS_DIR)
 
-	with open(name, 'r') as stream:
-		try:
-			config = yaml.safe_load(stream)
-		except yaml.YAMLError as exc:
-			print(exc)
+    with open(name, 'r') as stream:
+        try:
+            config = yaml.safe_load(stream)
+        except yaml.YAMLError as exc:
+            print(exc)
 
-	gi = bioblend.galaxy.GalaxyInstance(url=GALAXY_SERVER, key=API_KEY)
-	print(f"Connected to {GALAXY_SERVER}")
+    gi = bioblend.galaxy.GalaxyInstance(url=GALAXY_SERVER, key=API_KEY)
+    print(f"Connected to {GALAXY_SERVER}")
 
-	workflow = config['workflow']
-	inputs = {}
-	for spec in config['inputs']:
-		input = gi.workflows.get_workflow_inputs(workflow, spec['name'])
-		if input is None or len(input) == 0:
-			print('ERROR: Invalid input specification')
-			sys.exit(1)
-		inputs[input[0]] = { 'id': spec['id'], 'src': 'hda'}
+    workflow = config['workflow']
+    inputs = {}
+    for spec in config['inputs']:
+        input = gi.workflows.get_workflow_inputs(workflow, spec['name'])
+        if input is None or len(input) == 0:
+            print('ERROR: Invalid input specification')
+            sys.exit(1)
+        inputs[input[0]] = {'id': spec['id'], 'src': 'hda'}
 
-	if 'history' in config:
-		print(f"Saving output to a history named {config['history']}")
-		invocation = gi.workflows.invoke_workflow(workflow, inputs=inputs, history_name=config['history'])
-	else:
-		invocation = gi.workflows.invoke_workflow(workflow, inputs=inputs)
+    if 'history' in config:
+        print(f"Saving output to a history named {config['history']}")
+        invocation = gi.workflows.invoke_workflow(workflow, inputs=inputs, history_name=config['history'])
+    else:
+        invocation = gi.workflows.invoke_workflow(workflow, inputs=inputs)
 
-	pprint(invocation)
+    pprint(invocation)
 
-	output_path = os.path.join(INVOCATIONS_DIR, invocation['id'] + '.json')
-	with open(output_path, 'w') as f:
-		json.dump(invocation, f, indent=4)
-		print(f"Wrote {output_path}")
+    output_path = os.path.join(INVOCATIONS_DIR, invocation['id'] + '.json')
+    with open(output_path, 'w') as f:
+        json.dump(invocation, f, indent=4)
+        print(f"Wrote {output_path}")
 
 
 def rna_seq():
-	"""
+    """
 	048a970701a6dc44 - gencode.v38.annotation.gtf.gz (ok)
 	ca5081d2c8f1088a - SRR14916263 (fastq-dump) uncompressed (ok)
 	d65ad3947f73925d - SRR14916263 (fastq-dump) (ok)
@@ -125,188 +126,216 @@ def rna_seq():
 	Input 1: GTF
 	Input 2: FASTA Dataset
 	"""
-	print('rna_seq')
-	GTF = '048a970701a6dc44'
-	FASTA_DATA = 'ca5081d2c8f1088a'
-	FASTA_REF = '3947ba9ca107312f'
+    print('rna_seq')
+    GTF = '048a970701a6dc44'
+    FASTA_DATA = 'ca5081d2c8f1088a'
+    FASTA_REF = '3947ba9ca107312f'
 
-	WORKFLOW_ID = 'eea1d48bdaa84118'
+    WORKFLOW_ID = 'eea1d48bdaa84118'
 
-	global API_KEY, GALAXY_SERVER
-	# parser = argparse.ArgumentParser(description='Run Galaxy workflows')
-	# parser.add_argument('-s', '--server', required=False, help='the Galaxy server URL.')
-	# parser.add_argument('-a', '--api-key', required=False, help='your Galaxy API key')
-	# args = parser.parse_args(argv)
-	# if args.server is not None:
-	# 	GALAXY_SERVER = args.server
-	# if args.api_key is not None:
-	# 	API_KEY = args.api_key
-	#
-	# if API_KEY is None:
-	# 	print("ERROR: You have not specified a Galaxy API key")
-	# 	sys.exit(1)
+    global API_KEY, GALAXY_SERVER
+    # parser = argparse.ArgumentParser(description='Run Galaxy workflows')
+    # parser.add_argument('-s', '--server', required=False, help='the Galaxy server URL.')
+    # parser.add_argument('-a', '--api-key', required=False, help='your Galaxy API key')
+    # args = parser.parse_args(argv)
+    # if args.server is not None:
+    # 	GALAXY_SERVER = args.server
+    # if args.api_key is not None:
+    # 	API_KEY = args.api_key
+    #
+    # if API_KEY is None:
+    # 	print("ERROR: You have not specified a Galaxy API key")
+    # 	sys.exit(1)
 
-	gi = bioblend.galaxy.GalaxyInstance(url=GALAXY_SERVER, key=API_KEY)
+    gi = bioblend.galaxy.GalaxyInstance(url=GALAXY_SERVER, key=API_KEY)
 
-	fasta_ref = gi.workflows.get_workflow_inputs(WORKFLOW_ID, 'Reference FASTA')[0]
-	fasta_data = gi.workflows.get_workflow_inputs(WORKFLOW_ID, 'FASTA Dataset')[0]
-	gtf = gi.workflows.get_workflow_inputs(WORKFLOW_ID, 'GTF')[0]
+    fasta_ref = gi.workflows.get_workflow_inputs(WORKFLOW_ID, 'Reference FASTA')[0]
+    fasta_data = gi.workflows.get_workflow_inputs(WORKFLOW_ID, 'FASTA Dataset')[0]
+    gtf = gi.workflows.get_workflow_inputs(WORKFLOW_ID, 'GTF')[0]
 
-	inputs = {
-		fasta_data: { 'id': FASTA_DATA, 'src': 'hda' },
-		fasta_ref: { 'id': FASTA_REF, 'src': 'hda' },
-		gtf: { 'id': GTF, 'src': 'hda' }
-	}
-	result = gi.workflows.invoke_workflow(WORKFLOW_ID, inputs=inputs)
-	pprint(result)
+    inputs = {
+        fasta_data: {'id': FASTA_DATA, 'src': 'hda'},
+        fasta_ref: {'id': FASTA_REF, 'src': 'hda'},
+        gtf: {'id': GTF, 'src': 'hda'}
+    }
+    result = gi.workflows.invoke_workflow(WORKFLOW_ID, inputs=inputs)
+    pprint(result)
 
 
 def histories(args):
-	global API_KEY, GALAXY_SERVER
-	gi = bioblend.galaxy.GalaxyInstance(url=GALAXY_SERVER, key=API_KEY)
-	print(f"Connected to {GALAXY_SERVER}")
-	if len(args) > 0:
-		history_list = gi.histories.get_histories(name=args[0])
-	else:
-		history_list = gi.histories.get_published_histories()
+    global API_KEY, GALAXY_SERVER
+    gi = bioblend.galaxy.GalaxyInstance(url=GALAXY_SERVER, key=API_KEY)
+    print(f"Connected to {GALAXY_SERVER}")
+    if len(args) > 0:
+        history_list = gi.histories.get_histories(name=args[0])
+    else:
+        history_list = gi.histories.get_published_histories()
 
-	if history_list is None or len(history_list) == 0:
-		print("ERROR: history not found!")
-		return
+    if history_list is None or len(history_list) == 0:
+        print("ERROR: history not found!")
+        return
 
-	for history in history_list:
-		# print(f"ID: {history['id']} Name: {history['name']}")
-		print(f"{history['id']} - {history['name']}")
-		for dataset in gi.histories.show_history(history['id'], contents=True, details='none'):
-			if not dataset['deleted']:
-				state = dataset['state'] if 'state' in dataset else 'Unknown'
-				print(f"\t{dataset['id']} - {dataset['name']} ({state})")
-		print()
+    for history in history_list:
+        # print(f"ID: {history['id']} Name: {history['name']}")
+        print(f"{history['id']} - {history['name']}")
+        for dataset in gi.histories.show_history(history['id'], contents=True, details='none'):
+            if not dataset['deleted']:
+                state = dataset['state'] if 'state' in dataset else 'Unknown'
+                print(f"\t{dataset['id']} - {dataset['name']} ({state})")
+        print()
+
 
 def status(args):
-	global API_KEY, GALAXY_SERVER
-	gi = bioblend.galaxy.GalaxyInstance(url=GALAXY_SERVER, key=API_KEY)
-	print(f"Connected to {GALAXY_SERVER}")
-	invocations = gi.invocations.get_invocations()
-	print('ID\tWorkflow\tHistory\tState')
-	for invocation in invocations:
-		print(f"{invocation['id']}\t{invocation['workflow_id']}\t{invocation['history_id']}\t{invocation['state']}")
+    global API_KEY, GALAXY_SERVER
+    gi = bioblend.galaxy.GalaxyInstance(url=GALAXY_SERVER, key=API_KEY)
+    print(f"Connected to {GALAXY_SERVER}")
+    # invocations = gi.invocations.get_invocations()
+    if len(args) == 0:
+        invocations = gi.invocations.get_invocations()
+        print('ID\t\t\tWORKFLOW\t\tHISTORY\t\t\tSTATE')
+        for invocation in invocations:
+            print(f"{invocation['id']}\t{invocation['workflow_id']}\t{invocation['history_id']}\t{invocation['state']}")
+    elif args[0] == 'jobs':
+        if len(args) != 2:
+            print(f"{bold('ERROR:')} no invocation ID provided.")
+            print(f"{bold('USAGE:')} ./workflow.py status job <invocation id>")
+            return
+        else:
+            report = gi.invocations.get_invocation_step_jobs_summary(args[1])
+            pprint(report)
+    elif args[0] == 'summary':
+        if len(args) != 2:
+            print(f"{bold('ERROR:')} no invocation ID provided.")
+            print(f"{bold('USAGE:')} ./workflow.py status summary <invocation id>")
+            return
+        else:
+            report = gi.invocations.get_invocation_summary(args[1])
+            pprint(report)
+    else:
+        report = gi.invocations.get_invocation_report(args[0])
+        pprint(report)
+
+
+def bold(text):
+    return f"{BOLD}{text}{CLEAR}"
 
 
 def help():
-	print(f"""
-{BOLD}SYNOPSIS{CLEAR}
+    print(f"""
+{bold("SYNOPSIS")}
     Run workflows on remote Galaxy instances.
 
-{BOLD}USAGE{CLEAR}
+{bold("USAGE")}
     ./workflow.py [-k KEY] [-s SERVER] [COMMAND...]
-	
-{BOLD}OPTIONS{CLEAR}
-    {BOLD}-k{CLEAR}|{BOLD}--key{CLEAR} GALAXY_API_KEY
+
+{bold("OPTIONS")}
+    {bold("-k")}|{bold("--key")} GALAXY_API_KEY
         Specify the Galaxy API for the remote server
-    {BOLD}-s{CLEAR}|{BOLD}--server{CLEAR}
+    {bold("-s")}|{bold("--server")}
         The URL for the remote Galaxy server
-		
-{BOLD}COMMANDS{CLEAR}
-    {BOLD}wf{CLEAR}|{BOLD}workflows{CLEAR}
+
+{bold("COMMANDS")}
+    {bold("wf")}|{bold("workflows")}
         List all public workflows and their inputs
-    {BOLD}hist{CLEAR}|{BOLD}histories{CLEAR}
+    {bold("hist")}|{bold("histories")}
         List all public histories and their datasets
-    {BOLD}st{CLEAR}|{BOLD}status{CLEAR} <invocation_id>
-        If the {BOLD}invocation_id{CLEAR} is specified then the invocation report for that workflow
+    {bold("st")}|{bold("status")} <invocation_id>
+        If the {bold("invocation_id")} is specified then the invocation report for that workflow
         invocation is returned.  Otherwise lists all the workflow invocations on 
         the server
-    {BOLD}run{CLEAR} <configuration.yml>
-        Run the workflow specified in the {BOLD}configuration.yml{CLEAR} file.
-    {BOLD}help{CLEAR}|{BOLD}-h{CLEAR}|{BOLD}--help{CLEAR}
+    {bold("run")} <configuration.yml>
+        Run the workflow specified in the {bold("configuration.yml")} file.
+    {bold("help")}|{bold("-h")}|{bold("--help")}
         Prints this help screen
-        
-{BOLD}EXAMPLES{CLEAR}
+
+{bold("EXAMPLES")}
     ./workflow.py run configs/paired-dna.yml
     ./workflow.py st da4e6f496166d13f
-    
+
 """)
 
+
 def main():
-	global API_KEY, GALAXY_SERVER
-	value = os.environ.get('GALAXY_SERVER')
-	if value is not None:
-		GALAXY_SERVER = value
+    global API_KEY, GALAXY_SERVER
+    value = os.environ.get('GALAXY_SERVER')
+    if value is not None:
+        GALAXY_SERVER = value
 
-	value = os.environ.get('API_KEY')
-	if value is not None:
-		API_KEY = value
+    value = os.environ.get('API_KEY')
+    if value is not None:
+        API_KEY = value
 
-	commands = list()
-	index = 1
-	while index < len(sys.argv):
-		arg = sys.argv[index]
-		index += 1
-		if arg in ['-k', '--key']:
-			API_KEY = sys.argv[index]
-			index += 1
-		elif arg in ['-s', '--server']:
-			GALAXY_SERVER = sys.argv[index]
-			index += 1
-		else:
-			commands.append(arg)
+    commands = list()
+    index = 1
+    while index < len(sys.argv):
+        arg = sys.argv[index]
+        index += 1
+        if arg in ['-k', '--key']:
+            API_KEY = sys.argv[index]
+            index += 1
+        elif arg in ['-s', '--server']:
+            GALAXY_SERVER = sys.argv[index]
+            index += 1
+        else:
+            commands.append(arg)
 
-	if len(commands) == 0:
-		help()
-		sys.exit(0)
-	command = commands.pop(0)
-	if command in ['-h', '--help', 'help']:
-		help()
-	elif command in ['hist', 'histories']:
-		histories(commands)
-	elif command in ['wf', 'workflows']:
-		workflows()
-	elif command == 'run':
-		run(commands)
-	elif command in ['st', 'status']:
-		status(command)
-	else:
-		print(f"\n{BOLD}ERROR:{CLEAR} Unknown command {BOLD}{command}{CLEAR}")
-		help()
+    if len(commands) == 0:
+        help()
+        sys.exit(0)
+    command = commands.pop(0)
+    if command in ['-h', '--help', 'help']:
+        help()
+    elif command in ['hist', 'histories']:
+        histories(commands)
+    elif command in ['wf', 'workflows']:
+        workflows()
+    elif command == 'run':
+        run(commands)
+    elif command in ['st', 'status']:
+        status(commands)
+    else:
+        print(f'\n{bold("ERROR:")} Unknown command {bold("{command}")}')
+        help()
+
 
 if __name__ == '__main__':
-	main()
+    main()
 
 
 def ignored():
-	# Get defaults from the environment if available
+    # Get defaults from the environment if available
 
-	parser = argparse.ArgumentParser(description='Run Galaxy workflows')
-	parser.add_argument('-s', '--server', required=False, help='the Galaxy server URL.')
-	parser.add_argument('-a', '--api-key', required=False, help='your Galaxy API key')
-	parser.add_argument('-w', '--workflow',help='the name of the workflow configuration to run')
-	parser.add_argument('-H', '--history', help='the history ID to view')
-	parser.add_argument('command', help='the command to be executed')
+    parser = argparse.ArgumentParser(description='Run Galaxy workflows')
+    parser.add_argument('-s', '--server', required=False, help='the Galaxy server URL.')
+    parser.add_argument('-a', '--api-key', required=False, help='your Galaxy API key')
+    parser.add_argument('-w', '--workflow', help='the name of the workflow configuration to run')
+    parser.add_argument('-H', '--history', help='the history ID to view')
+    parser.add_argument('command', help='the command to be executed')
 
-	args = parser.parse_args()
-	if args.server is not None:
-		GALAXY_SERVER = args.server
-	if args.api_key is not None:
-		API_KEY = args.api_key
+    args = parser.parse_args()
+    if args.server is not None:
+        GALAXY_SERVER = args.server
+    if args.api_key is not None:
+        API_KEY = args.api_key
 
-	if API_KEY is None:
-		print("ERROR: You have not specified a Galaxy API key")
-		sys.exit(1)
-	if GALAXY_SERVER is None:
-		print('ERROR: You have not specified the Galaxy URL')
-		sys.exit(1)
+    if API_KEY is None:
+        print("ERROR: You have not specified a Galaxy API key")
+        sys.exit(1)
+    if GALAXY_SERVER is None:
+        print('ERROR: You have not specified the Galaxy URL')
+        sys.exit(1)
 
-	if args.command in ['wf', 'flows', 'workflows']:
-		workflows()
-	elif args.command == 'run':
-		run(args)
-	elif args.command in ['h', 'hist','histories']:
-		histories()
-	elif args.command in ['st', 'status']:
-		status()
-	elif args.command == 'rna':
-		rna_seq()
-	else:
-		print(f"Unknown command {args.command}")
+    if args.command in ['wf', 'flows', 'workflows']:
+        workflows()
+    elif args.command == 'run':
+        run(args)
+    elif args.command in ['h', 'hist', 'histories']:
+        histories()
+    elif args.command in ['st', 'status']:
+        status(args)
+    elif args.command == 'rna':
+        rna_seq()
+    else:
+        print(f"Unknown command {args.command}")
 
-	sys.exit(0)
+    sys.exit(0)
