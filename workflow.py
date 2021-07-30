@@ -2,12 +2,9 @@
 
 """
 This script is loosely based on https://github.com/galaxyproject/bioblend/blob/main/docs/examples/run_imported_workflow.py
-
-usage: workflows.py [-h] [-s SERVER] [-a API_KEY] [-w WORKFLOW] [-d DATASET]
 """
 
 import bioblend.galaxy
-import argparse
 import yaml
 import json
 import sys
@@ -15,16 +12,7 @@ import os
 
 from pprint import pprint
 
-# class ansi:
-#     HEADER = '\033[95m'
-#     OKBLUE = '\033[94m'
-#     OKCYAN = '\033[96m'
-#     OKGREEN = '\033[92m'
-#     WARNING = '\033[93m'
-#     FAIL = '\033[91m'
-#     RESET = '\033[0m'
-#     BOLD = '\033[1m'
-#     UNDERLINE = '\033[4m'
+VERSION='1.0.0-RC1'
 
 BOLD = '\033[1m'
 CLEAR = '\033[0m'
@@ -44,8 +32,6 @@ INVOCATIONS_DIR = 'invocations'
 def workflows():
     """
 	List all the workflows available on the server.
-
-	:return:
 	"""
     global API_KEY, GALAXY_SERVER
 
@@ -64,6 +50,13 @@ def workflows():
 
 
 def run(args):
+    """
+    Run a workflow using the configuration specified in the args
+
+    :param args: a list containing the config file as the first (and only) element
+    :type list:
+    :return:
+    """
     global API_KEY, GALAXY_SERVER
 
     if len(args) == 0:
@@ -114,55 +107,14 @@ def run(args):
         print(f"Wrote {output_path}")
 
 
-def rna_seq():
-    """
-	048a970701a6dc44 - gencode.v38.annotation.gtf.gz (ok)
-	ca5081d2c8f1088a - SRR14916263 (fastq-dump) uncompressed (ok)
-	d65ad3947f73925d - SRR14916263 (fastq-dump) (ok)
-	3947ba9ca107312f - gencode.v38.transcripts.fa.gz (ok)
-
-	ID: eea1d48bdaa84118
-	Input 0: Reference FASTA
-	Input 1: GTF
-	Input 2: FASTA Dataset
-	"""
-    print('rna_seq')
-    GTF = '048a970701a6dc44'
-    FASTA_DATA = 'ca5081d2c8f1088a'
-    FASTA_REF = '3947ba9ca107312f'
-
-    WORKFLOW_ID = 'eea1d48bdaa84118'
-
-    global API_KEY, GALAXY_SERVER
-    # parser = argparse.ArgumentParser(description='Run Galaxy workflows')
-    # parser.add_argument('-s', '--server', required=False, help='the Galaxy server URL.')
-    # parser.add_argument('-a', '--api-key', required=False, help='your Galaxy API key')
-    # args = parser.parse_args(argv)
-    # if args.server is not None:
-    # 	GALAXY_SERVER = args.server
-    # if args.api_key is not None:
-    # 	API_KEY = args.api_key
-    #
-    # if API_KEY is None:
-    # 	print("ERROR: You have not specified a Galaxy API key")
-    # 	sys.exit(1)
-
-    gi = bioblend.galaxy.GalaxyInstance(url=GALAXY_SERVER, key=API_KEY)
-
-    fasta_ref = gi.workflows.get_workflow_inputs(WORKFLOW_ID, 'Reference FASTA')[0]
-    fasta_data = gi.workflows.get_workflow_inputs(WORKFLOW_ID, 'FASTA Dataset')[0]
-    gtf = gi.workflows.get_workflow_inputs(WORKFLOW_ID, 'GTF')[0]
-
-    inputs = {
-        fasta_data: {'id': FASTA_DATA, 'src': 'hda'},
-        fasta_ref: {'id': FASTA_REF, 'src': 'hda'},
-        gtf: {'id': GTF, 'src': 'hda'}
-    }
-    result = gi.workflows.invoke_workflow(WORKFLOW_ID, inputs=inputs)
-    pprint(result)
-
-
 def histories(args):
+    """
+    List all the public histories available on the Galaxy server.
+
+    :param args:
+    :type list:
+    :return:
+    """
     global API_KEY, GALAXY_SERVER
     gi = bioblend.galaxy.GalaxyInstance(url=GALAXY_SERVER, key=API_KEY)
     print(f"Connected to {GALAXY_SERVER}")
@@ -186,6 +138,12 @@ def histories(args):
 
 
 def status(args):
+    """
+    Display that status of workflow invocations.
+
+    :param args:
+    :return:
+    """
     global API_KEY, GALAXY_SERVER
     gi = bioblend.galaxy.GalaxyInstance(url=GALAXY_SERVER, key=API_KEY)
     print(f"Connected to {GALAXY_SERVER}")
@@ -217,6 +175,13 @@ def status(args):
 
 
 def bold(text):
+    """
+    Wraps the text in ANSI control sequences to generate bold text in the terminal.
+
+    :param text: the text to be made bold
+    :type str:
+    :return: the original string wrapped in ANSI control sequences
+    """
     return f"{BOLD}{text}{CLEAR}"
 
 
@@ -245,6 +210,8 @@ def help():
         the server
     {bold("run")} <configuration.yml>
         Run the workflow specified in the {bold("configuration.yml")} file.
+    {bold('version')}
+        Print the version number and exit
     {bold("help")}|{bold("-h")}|{bold("--help")}
         Prints this help screen
 
@@ -293,6 +260,9 @@ def main():
         run(commands)
     elif command in ['st', 'status']:
         status(commands)
+    elif command in ['-v', '--version', 'version']:
+        print(f"    Galaxy Workflow Runner v{VERSION}")
+        print(f"    Copyright 2021 The Galaxy Project. All Rights Reserved.")
     else:
         print(f'\n{bold("ERROR:")} Unknown command {bold("{command}")}')
         help()
@@ -301,41 +271,53 @@ def main():
 if __name__ == '__main__':
     main()
 
+# Dead code kept for reference only below this point
 
-def ignored():
-    # Get defaults from the environment if available
+def rna_seq():
+    """
+	048a970701a6dc44 - gencode.v38.annotation.gtf.gz (ok)
+	ca5081d2c8f1088a - SRR14916263 (fastq-dump) uncompressed (ok)
+	d65ad3947f73925d - SRR14916263 (fastq-dump) (ok)
+	3947ba9ca107312f - gencode.v38.transcripts.fa.gz (ok)
 
-    parser = argparse.ArgumentParser(description='Run Galaxy workflows')
-    parser.add_argument('-s', '--server', required=False, help='the Galaxy server URL.')
-    parser.add_argument('-a', '--api-key', required=False, help='your Galaxy API key')
-    parser.add_argument('-w', '--workflow', help='the name of the workflow configuration to run')
-    parser.add_argument('-H', '--history', help='the history ID to view')
-    parser.add_argument('command', help='the command to be executed')
+	ID: eea1d48bdaa84118
+	Input 0: Reference FASTA
+	Input 1: GTF
+	Input 2: FASTA Dataset
+	"""
+    print('rna_seq')
+    GTF = '048a970701a6dc44'
+    FASTA_DATA = 'ca5081d2c8f1088a'
+    FASTA_REF = '3947ba9ca107312f'
 
-    args = parser.parse_args()
-    if args.server is not None:
-        GALAXY_SERVER = args.server
-    if args.api_key is not None:
-        API_KEY = args.api_key
+    WORKFLOW_ID = 'eea1d48bdaa84118'
 
-    if API_KEY is None:
-        print("ERROR: You have not specified a Galaxy API key")
-        sys.exit(1)
-    if GALAXY_SERVER is None:
-        print('ERROR: You have not specified the Galaxy URL')
-        sys.exit(1)
+    global API_KEY, GALAXY_SERVER
+    # parser = argparse.ArgumentParser(description='Run Galaxy workflows')
+    # parser.add_argument('-s', '--server', required=False, help='the Galaxy server URL.')
+    # parser.add_argument('-a', '--api-key', required=False, help='your Galaxy API key')
+    # args = parser.parse_args(argv)
+    # if args.server is not None:
+    # 	GALAXY_SERVER = args.server
+    # if args.api_key is not None:
+    # 	API_KEY = args.api_key
+    #
+    # if API_KEY is None:
+    # 	print("ERROR: You have not specified a Galaxy API key")
+    # 	sys.exit(1)
 
-    if args.command in ['wf', 'flows', 'workflows']:
-        workflows()
-    elif args.command == 'run':
-        run(args)
-    elif args.command in ['h', 'hist', 'histories']:
-        histories()
-    elif args.command in ['st', 'status']:
-        status(args)
-    elif args.command == 'rna':
-        rna_seq()
-    else:
-        print(f"Unknown command {args.command}")
+    gi = bioblend.galaxy.GalaxyInstance(url=GALAXY_SERVER, key=API_KEY)
 
-    sys.exit(0)
+    fasta_ref = gi.workflows.get_workflow_inputs(WORKFLOW_ID, 'Reference FASTA')[0]
+    fasta_data = gi.workflows.get_workflow_inputs(WORKFLOW_ID, 'FASTA Dataset')[0]
+    gtf = gi.workflows.get_workflow_inputs(WORKFLOW_ID, 'GTF')[0]
+
+    inputs = {
+        fasta_data: {'id': FASTA_DATA, 'src': 'hda'},
+        fasta_ref: {'id': FASTA_REF, 'src': 'hda'},
+        gtf: {'id': GTF, 'src': 'hda'}
+    }
+    result = gi.workflows.invoke_workflow(WORKFLOW_ID, inputs=inputs)
+    pprint(result)
+
+
