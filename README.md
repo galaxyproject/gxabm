@@ -24,6 +24,14 @@ chmod +x workflow.py
 ```
 
 ### OPTIONS
+-k|--key GALAXY_API_KEY<br/>
+  Specify the Galaxy API for the remote server
+  
+-s|--server URL<br/>
+  The URL for the remote Galaxy server
+
+Both the Galaxy API key and Galaxy server URL can be specified in environment variables.
+
 ```
     -k|--key GALAXY_API_KEY
         Specify the Galaxy API for the remote server
