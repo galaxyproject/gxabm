@@ -15,6 +15,20 @@ import os
 
 from pprint import pprint
 
+# class ansi:
+#     HEADER = '\033[95m'
+#     OKBLUE = '\033[94m'
+#     OKCYAN = '\033[96m'
+#     OKGREEN = '\033[92m'
+#     WARNING = '\033[93m'
+#     FAIL = '\033[91m'
+#     RESET = '\033[0m'
+#     BOLD = '\033[1m'
+#     UNDERLINE = '\033[4m'
+
+BOLD = '\033[1m'
+CLEAR = '\033[0m'
+
 # Default value for the Galaxy server URL.  This can be overriden with an
 # environment variable or on the command line
 GALAXY_SERVER = 'https://benchmarking.usegvl.org/initial/galaxy/'
@@ -51,12 +65,13 @@ def workflows():
 def run(args):
 	global API_KEY, GALAXY_SERVER
 
-	if args.workflow is None:
+	if len(args) == 0:
 		print('ERROR: No workflow configuration was specified')
 		sys.exit(1)
 
-	if not os.path.isfile(args.workflow):
-		print(f'ERROR: Could not find {args.workflow}')
+	name = args[0]
+	if not os.path.isfile(name):
+		print(f'ERROR: Could not find {name}')
 		sys.exit(1)
 
 	if os.path.exists(INVOCATIONS_DIR):
@@ -66,7 +81,7 @@ def run(args):
 	else:
 		os.mkdir(INVOCATIONS_DIR)
 
-	with open(args.workflow, 'r') as stream:
+	with open(name, 'r') as stream:
 		try:
 			config = yaml.safe_load(stream)
 		except yaml.YAMLError as exc:
@@ -146,12 +161,12 @@ def rna_seq():
 	pprint(result)
 
 
-def histories():
+def histories(args):
 	global API_KEY, GALAXY_SERVER
 	gi = bioblend.galaxy.GalaxyInstance(url=GALAXY_SERVER, key=API_KEY)
 	print(f"Connected to {GALAXY_SERVER}")
-	if 'history' in args:
-		history_list = gi.histories.get_histories(name=args.history)
+	if len(args) > 0:
+		history_list = gi.histories.get_histories(name=args[0])
 	else:
 		history_list = gi.histories.get_published_histories()
 
@@ -178,9 +193,42 @@ def status(args):
 		print(f"{invocation['id']}\t{invocation['workflow_id']}\t{invocation['history_id']}\t{invocation['state']}")
 
 
+def help():
+	print(f"""
+{BOLD}SYNOPSIS{CLEAR}
+    Run workflows on remote Galaxy instances.
 
-if __name__ == '__main__':
-	# Get defaults from the environment if available
+{BOLD}USAGE{CLEAR}
+    ./workflow.py [-k KEY] [-s SERVER] [COMMAND...]
+	
+{BOLD}OPTIONS{CLEAR}
+    {BOLD}-k{CLEAR}|{BOLD}--key{CLEAR} GALAXY_API_KEY
+        Specify the Galaxy API for the remote server
+    {BOLD}-s{CLEAR}|{BOLD}--server{CLEAR}
+        The URL for the remote Galaxy server
+		
+{BOLD}COMMANDS{CLEAR}
+    {BOLD}wf{CLEAR}|{BOLD}workflows{CLEAR}
+        List all public workflows and their inputs
+    {BOLD}hist{CLEAR}|{BOLD}histories{CLEAR}
+        List all public histories and their datasets
+    {BOLD}st{CLEAR}|{BOLD}status{CLEAR} <invocation_id>
+        If the {BOLD}invocation_id{CLEAR} is specified then the invocation report for that workflow
+        invocation is returned.  Otherwise lists all the workflow invocations on 
+        the server
+    {BOLD}run{CLEAR} <configuration.yml>
+        Run the workflow specified in the {BOLD}configuration.yml{CLEAR} file.
+    {BOLD}help{CLEAR}|{BOLD}-h{CLEAR}|{BOLD}--help{CLEAR}
+        Prints this help screen
+        
+{BOLD}EXAMPLES{CLEAR}
+    ./workflow.py run configs/paired-dna.yml
+    ./workflow.py st da4e6f496166d13f
+    
+""")
+
+def main():
+	global API_KEY, GALAXY_SERVER
 	value = os.environ.get('GALAXY_SERVER')
 	if value is not None:
 		GALAXY_SERVER = value
@@ -188,6 +236,45 @@ if __name__ == '__main__':
 	value = os.environ.get('API_KEY')
 	if value is not None:
 		API_KEY = value
+
+	commands = list()
+	index = 1
+	while index < len(sys.argv):
+		arg = sys.argv[index]
+		index += 1
+		if arg in ['-k', '--key']:
+			API_KEY = sys.argv[index]
+			index += 1
+		elif arg in ['-s', '--server']:
+			GALAXY_SERVER = sys.argv[index]
+			index += 1
+		else:
+			commands.append(arg)
+
+	if len(commands) == 0:
+		help()
+		sys.exit(0)
+	command = commands.pop(0)
+	if command in ['-h', '--help', 'help']:
+		help()
+	elif command in ['hist', 'histories']:
+		histories(commands)
+	elif command in ['wf', 'workflows']:
+		workflows()
+	elif command == 'run':
+		run(commands)
+	elif command in ['st', 'status']:
+		status(command)
+	else:
+		print(f"\n{BOLD}ERROR:{CLEAR} Unknown command {BOLD}{command}{CLEAR}")
+		help()
+
+if __name__ == '__main__':
+	main()
+
+
+def ignored():
+	# Get defaults from the environment if available
 
 	parser = argparse.ArgumentParser(description='Run Galaxy workflows')
 	parser.add_argument('-s', '--server', required=False, help='the Galaxy server URL.')
