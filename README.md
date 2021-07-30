@@ -24,21 +24,23 @@ chmod +x workflow.py
 ```
 
 ### OPTIONS
--k|--key GALAXY_API_KEY<br/>
-  Specify the Galaxy API for the remote server
-  
--s|--server URL<br/>
-  The URL for the remote Galaxy server
-
-Both the Galaxy API key and Galaxy server URL can be specified in environment variables.
-
 ```
     -k|--key GALAXY_API_KEY
         Specify the Galaxy API for the remote server
     -s|--server
         The URL for the remote Galaxy server
 ```
+Both the Galaxy API key and Galaxy server URL can be specified in environment variables.
+
+```
+export GALAXY_API_KEY=<your api key>
+export GALAXY_SERVER=https://benchmarking.usegvl.org/initial/galaxy
+```
+
+
+
 ### COMMANDS
+
 ```
     wf|workflows
         List all public workflows and their inputs
@@ -96,7 +98,7 @@ Scrape the results of a workflow invocation and output in a format suitable for 
 
 ### Contributing
 
-Fork this repository and then create a working branch for yourself base off the `dev` branch. All pull requests should target  `dev` and not the `master` branch.
+Fork this repository and then create a working branch for yourself from the `dev` branch. All pull requests should target  `dev` and not the `master` branch.
 
 ```bash
 git clone https://github.com/ksuderman/bioblend-scripts.git
