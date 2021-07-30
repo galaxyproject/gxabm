@@ -23,12 +23,6 @@ chmod +x workflow.py
 ./workflow.py help
 ```
 
-### SYNOPSIS
-Run workflows on remote Galaxy instances.
-
-### USAGE
-./workflow.py [-k KEY] [-s SERVER] [COMMAND...]
-
 ### OPTIONS
 -k|--key GALAXY_API_KEY<br/>
   Specify the Galaxy API for the remote server
@@ -39,23 +33,28 @@ Run workflows on remote Galaxy instances.
 Both the Galaxy API key and Galaxy server URL can be specified in environment variables.
 
 ```
-export GALAXY_API_KEY=<your Galaxy api key>
-export GALAXY_SERVER=https://benchmarking.usegvl.org/initial/galaxy
+    -k|--key GALAXY_API_KEY
+        Specify the Galaxy API for the remote server
+    -s|--server
+        The URL for the remote Galaxy server
 ```
-
 ### COMMANDS
-wf|workflows
-    List all public workflows and their inputs
-hist|histories
-    List all public histories and their datasets
-st|status <invocation_id>
-    If the invocation_id is specified then the invocation report for that workflow
-    invocation is returned.  Otherwise lists all the workflow invocations on
-    the server
-run <configuration.yml>
-    Run the workflow specified in the configuration.yml file.
-help|-h|--help
-    Prints this help screen
+```
+    wf|workflows
+        List all public workflows and their inputs
+    hist|histories
+        List all public histories and their datasets
+    st|status <invocation_id>
+        If the invocation_id is specified then the invocation report for that workflow
+        invocation is returned.  Otherwise lists all the workflow invocations on
+        the server
+    run <configuration.yml>
+        Run the workflow specified in the configuration.yml file.
+    version
+        Print the version number and exit
+    help|-h|--help
+        Prints this help screen
+```
 
 When a workflow is run with the `run` command the invocation details will be saved to a JSON file with the invocation ID as the file name with a *.json* extension.  Use the invocation ID with the `st` (`status`) command to get detailed information about that invocation.
 

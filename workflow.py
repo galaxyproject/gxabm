@@ -12,7 +12,7 @@ import os
 
 from pprint import pprint
 
-VERSION='1.0.0-RC1'
+VERSION='1.0.0'
 
 BOLD = '\033[1m'
 CLEAR = '\033[0m'
@@ -84,18 +84,18 @@ def run(args):
     gi = bioblend.galaxy.GalaxyInstance(url=GALAXY_SERVER, key=API_KEY)
     print(f"Connected to {GALAXY_SERVER}")
 
-    workflow = config['workflow']
+    workflow = config['workflow_id']
     inputs = {}
     for spec in config['inputs']:
         input = gi.workflows.get_workflow_inputs(workflow, spec['name'])
         if input is None or len(input) == 0:
             print('ERROR: Invalid input specification')
             sys.exit(1)
-        inputs[input[0]] = {'id': spec['id'], 'src': 'hda'}
+        inputs[input[0]] = {'id': spec['dataset_id'], 'src': 'hda'}
 
-    if 'history' in config:
-        print(f"Saving output to a history named {config['history']}")
-        invocation = gi.workflows.invoke_workflow(workflow, inputs=inputs, history_name=config['history'])
+    if 'output_history_name' in config:
+        print(f"Saving output to a history named {config['output_history_name']}")
+        invocation = gi.workflows.invoke_workflow(workflow, inputs=inputs, history_name=config['output_history_name'])
     else:
         invocation = gi.workflows.invoke_workflow(workflow, inputs=inputs)
 
