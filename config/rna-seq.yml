@@ -1,10 +1,23 @@
-workflow_id: 3606d3101a772650
-inputs:
-  - name: Reference FASTA
-    id: '3947ba9ca107312f'
-  - name: GTF
-    id: '048a970701a6dc44'
-  - name: FASTA Dataset
-    id: 'ca5081d2c8f1088a'
-output_history_name: RNA seq test results
+- workflow_id: d6d3c2119c4849e4
+  output_history_base_name: RNA-seq
+  reference_data:
+    - name: Reference Transcript (FASTA)
+      dataset_id: 50a269b7a99356aa
+  runs:
+    - history_name: 1
+      inputs:
+      - name: FASTQ RNA Dataset
+        dataset_id: 28fa757e56346a34
+    - history_name: 2
+      inputs:
+      - name: FASTQ RNA Dataset
+        dataset_id: 1faa2d3b2ed5c436
+    - history_name: 3
+      inputs:
+      - name: FASTQ RNA Dataset
+        dataset_id: ec8c5112d867eb82
+    - history_name: 4
+      inputs:
+      - name: FASTQ RNA Dataset
+        dataset_id: 0aedafdec1eb4aeb
 
