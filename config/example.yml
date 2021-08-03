@@ -1,0 +1,32 @@
+runs:
+  - workflow_id: b94314cb9cb46380
+    comments: DNA testing
+    references:
+      - name: FASTQ Reference
+        dataset_id: badfood
+      - name: GTF
+        dataset_id: more
+    inputs:
+      - name: FASTQ Dataset
+        dataset_ids:
+          - input: data1
+            ref: ref2
+          - input: data2
+            ref: ref2
+      - name: GTF Dataset
+        dataset_ids:
+          - input: data1
+            ref: ref2
+          - input: data2
+            ref: ref2
+        dataset_id: 1f04e612d8649780
+    output_history_base_name: 10 CPU Example Dataset History
+  - workflow_id: b94314cb9cb46380
+    comments: RNA testing
+    inputs:
+      - name: FASTQ Dataset
+        dataset_ids:
+          - data2
+        dataset_id: 1f04e612d8649780
+    output_history_name: 18 CPU Example Dataset History 2
+
