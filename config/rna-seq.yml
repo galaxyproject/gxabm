@@ -1,5 +1,5 @@
 - workflow_id: d6d3c2119c4849e4
-  output_history_base_name: RNA-seq
+  output_history_base_name: RNA-seq 8x16
   reference_data:
     - name: Reference Transcript (FASTA)
       dataset_id: 50a269b7a99356aa
