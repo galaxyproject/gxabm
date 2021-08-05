@@ -177,7 +177,14 @@ def workflow_show(args:list):
 # Dataset related functions
 #
 def dataset_list(args: list):
-    print("dataset list not implemented")
+    gi = connect()
+    datasets = gi.datasets.get_datasets(deleted=False, purged=False)
+    if len(datasets) == 0:
+        print('No datasets found')
+        return
+    print(f'Found {len(datasets)} datasets')
+    for dataset in datasets:
+        print(f"{dataset['id']}\t{dataset['name']}")
 
 def dataset_delete(args: list):
     print("dataset delete not implemented")
@@ -186,9 +193,13 @@ def dataset_upload(args: list):
     print("dataset upload not implemented")
 
 def dataset_download(args: list):
-    print("dataset download not implemented")
+    if len(args) == 0:
+        print('ERROR: no workflow ID given')
+        return
+    gi = connect()
+    pprint(gi.datasets.download_dataset(args[0]))
 
-def dataset_show(args: list):
+def dataset_show(args: list):  
     print("dataset show not implemented")
 
 #
