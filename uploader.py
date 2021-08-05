@@ -40,6 +40,9 @@ def bold(text):
     return f"{BOLD}{text}{CLEAR}"
 
 
+#
+# Help functions
+#
 def help():
     print (f"""
 {bold('SYNOPSIS')}
@@ -64,10 +67,10 @@ def workflow_help(args: list):
         Manage workflows on a Galaxy instance.
 
     {bold('USAGE')}
-        ./uploader.py workflow [list|delete|upload] [OPTIONS]
+        ./uploader.py workflow [list|show|delete|upload|download] [OPTIONS]
 
     {bold('COMMANDS')}
-
+        
     {bold('OPTIONS')}
 
     {bold('EXAMPLES')}
@@ -83,7 +86,7 @@ def library_help(args: list):
         Manage dataset libraries on a Galaxy instance.
 
     {bold('USAGE')}
-        ./uploader.py library [list|delete|upload] [OPTIONS]
+        ./uploader.py library [list|show|delete|upload] [OPTIONS]
 
     {bold('COMMANDS')}
 
@@ -102,7 +105,7 @@ def dataset_help(args: list):
         Manage datasets on a Galaxy instance.
 
     {bold('USAGE')}
-        ./uploader.py dataset [list|delete|upload] [OPTIONS]
+        ./uploader.py dataset [list|delete|upload|download] [OPTIONS]
 
     {bold('COMMANDS')}
 
@@ -114,26 +117,83 @@ def dataset_help(args: list):
     Copyright 2021 The Galaxy Project. All rights reserved.    
     """)
 
+def connect():
+    """
+    Create a connection to the Galaxy instance
 
+    :return: a GalaxyInstance object
+    """
+    global GALAXY_SERVER, API_KEY
+    return bioblend.galaxy.GalaxyInstance(url=GALAXY_SERVER, key=API_KEY)
+
+
+#
+# Workflow related functions
+#
 def workflow_list(args: list):
-    print("workflow list not implemented")
+    gi = connect()
+    workflows = gi.workflows.get_workflows(published=True)
+    if len(workflows) == 0:
+        print('No workflows found')
+        return
+    print(f'Found {len(workflows)} workflows')
+    for workflow in workflows:
+        print(f"{workflow['id']}\t{workflow['name']}")
 
 def workflow_delete(args:list):
-    print('workflow delete not implemented')
+    if len(args) == 0:
+        print(f'ERROR: no workflow ID given.')
+        return
+    gi = connect()
+    print(gi.workflows.delete_workflow(args[0]))
 
 def workflow_upload(args:list):
-    print("workload upload not implemented")
+    if len(args) == 0:
+        print('ERROR: no workflow file given')
+        return
+    path = args[0]
+    if not os.path.exists(path):
+        print(f'ERROR: file not found: {path}')
+        return
+    gi = connect()
+    pprint(gi.workflows.import_workflow_from_local_path(path, publish=True))
+
+def workflow_download(args:list):
+    if len(args) == 0:
+        print('ERROR: no workflow ID given')
+        return
+    gi = connect()
+    pprint(gi.workflows.export_workflow_dict(args[0]))
 
 def workflow_show(args:list):
-    print("workload show not implemented")
+    if len(args) == 0:
+        print('ERROR: no workflow ID given')
+        return
+    gi = connect()
+    pprint(gi.workflows.show_workflow(args[0]))
 
-workflow_commands = {
-    'upload': workflow_upload,
-    'list': workflow_list,
-    'delete': workflow_delete,
-    'show': workflow_show,
-    'help': workflow_help
-}
+
+#
+# Dataset related functions
+#
+def dataset_list(args: list):
+    print("dataset list not implemented")
+
+def dataset_delete(args: list):
+    print("dataset delete not implemented")
+
+def dataset_upload(args: list):
+    print("dataset upload not implemented")
+
+def dataset_download(args: list):
+    print("dataset download not implemented")
+
+def dataset_show(args: list):
+    print("dataset show not implemented")
+
+#
+# Library related functions
+#
 
 def library_list(args: list):
     print("library list not implemented")
@@ -147,6 +207,16 @@ def library_upload(args: list):
 def library_show(args: list):
     print("library show not implemented")
 
+
+workflow_commands = {
+    'upload': workflow_upload,
+    'download': workflow_download,
+    'list': workflow_list,
+    'delete': workflow_delete,
+    'show': workflow_show,
+    'help': workflow_help
+}
+
 library_commands = {
     'upload': library_upload,
     'list': library_list,
@@ -154,18 +224,6 @@ library_commands = {
     'show': library_show,
     'help': library_help
 }
-
-def dataset_list(args: list):
-    print("dataset list not implemented")
-
-def dataset_delete(args: list):
-    print("dataset delete not implemented")
-
-def dataset_upload(args: list):
-    print("dataset upload not implemented")
-
-def dataset_show(args: list):
-    print("dataset show not implemented")
 
 dataset_commands = {
     'upload': dataset_upload,
@@ -175,20 +233,12 @@ dataset_commands = {
     'help': dataset_help
 }
 
-command_list = {
+all_commands = {
     'workflow': workflow_commands,
     'dataset': dataset_commands,
     'library': library_commands
 }
 
-# def workflow(args: list):
-#     command = args.pop(0)
-#     if command == 'list':
-#         workflow_list(args)
-#     elif command == 'delete':
-#         workflow_delete(args)
-#     elif command == 'upload':
-#         workflow_upload(args)
 
 def main():
     global API_KEY, GALAXY_SERVER
@@ -223,19 +273,19 @@ def main():
     elif command in ['-v', '--version', 'version']:
         print(f"    Galaxy Workflow Runner v{VERSION}")
         print(f"    Copyright 2021 The Galaxy Project. All Rights Reserved.")
-    elif command in command_list:
+    elif command in all_commands:
         if len(commands) == 0:
             print(f'ERROR: missing subcommand')
             print(f'Type "./uploader.py {command} help" for more help.')
             return
 
-        subcommands = command_list[command]
+        subcommands = all_commands[command]
         subcommand = commands.pop(0)
         if subcommand not in subcommands:
             print(f'ERROR: unrecognized subcommand')
             print(f'Type "./uploader.py {command} help" for more help.')
             return
-        print(f'Dispatching "{command} {subcommand}')
+        # print(f'Dispatching "{command} {subcommand}"')
         handler = subcommands[subcommand]
         handler(commands)
     else:
