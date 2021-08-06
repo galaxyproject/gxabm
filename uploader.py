@@ -238,6 +238,7 @@ library_commands = {
 
 dataset_commands = {
     'upload': dataset_upload,
+    'download': dataset_download,
     'list': dataset_list,
     'delete': dataset_delete,
     'show': dataset_show,
