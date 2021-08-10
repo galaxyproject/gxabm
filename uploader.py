@@ -194,13 +194,20 @@ def dataset_upload(args: list):
     if len(args) == 0:
         print('ERROR: no dataset file given')
         return
-    elif len(args) == 1:
-        # No history assigned - create new history
-        history = gi.histories.create_history('New BioBlend dataset').get('id')
     else:
-        history = args[1]
-    path = args[0]
-    pprint(gi.tools.put_url(path, history))
+        index = 1
+        while index < len(args):
+            arg = args[index]
+            index += 1
+            if arg == '-id':
+                history = args[index]
+                index += 1
+            elif arg == '-c':
+                history = gi.histories.create_history(args[index]).get('id')
+                index += 1
+            else:
+                print('ERROR: invalid option')
+    pprint(gi.tools.put_url(args[0], history))
 
 def dataset_download(args: list):
     gi = connect()
