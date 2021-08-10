@@ -178,7 +178,7 @@ def workflow_show(args:list):
 #
 def dataset_list(args: list):
     gi = connect()
-    datasets = gi.datasets.get_datasets(deleted=False, purged=False)
+    datasets = gi.datasets.get_datasets(limit=100, deleted=False, purged=False)
     if len(datasets) == 0:
         print('No datasets found')
         return
@@ -190,14 +190,34 @@ def dataset_delete(args: list):
     print("dataset delete not implemented")
 
 def dataset_upload(args: list):
-    print("dataset upload not implemented")
+    gi = connect()
+    if len(args) == 0:
+        print('ERROR: no dataset file given')
+        return
+    else:
+        index = 1
+        while index < len(args):
+            arg = args[index]
+            index += 1
+            if arg == '-id':
+                history = args[index]
+                index += 1
+            elif arg == '-c':
+                history = gi.histories.create_history(args[index]).get('id')
+                index += 1
+            else:
+                print('ERROR: invalid option')
+    pprint(gi.tools.put_url(args[0], history))
 
 def dataset_download(args: list):
+    gi = connect()
     if len(args) == 0:
         print('ERROR: no workflow ID given')
         return
-    gi = connect()
-    pprint(gi.datasets.download_dataset(args[0]))
+    elif len(args) > 1:
+        pprint(gi.datasets.download_dataset(args[0], file_path=args[1]))
+    else:
+        pprint(gi.datasets.download_dataset(args[0]))
 
 def dataset_show(args: list):  
     print("dataset show not implemented")
