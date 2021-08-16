@@ -180,7 +180,13 @@ def workflow_download(args:list):
         print('ERROR: no workflow ID given')
         return
     gi = connect()
-    pprint(gi.workflows.export_workflow_dict(args[0]))
+    workflow = json.dumps(gi.workflows.export_workflow_dict(args[0]), indent=4)
+    if len(args) == 2:
+        with open(args[1], 'w') as f:
+            f.write(workflow)
+            print(f'Wrote {args[1]}')
+    else:
+        print(workflow)
 
 def workflow_show(args:list):
     if len(args) == 0:
@@ -252,6 +258,9 @@ def library_delete(args: list):
 def library_upload(args: list):
     print("library upload not implemented")
 
+def library_download(args: list):
+    print("library download not implemented")
+
 def library_show(args: list):
     print("library show not implemented")
 
@@ -261,14 +270,25 @@ workflow_commands = {
     'download': workflow_download,
     'list': workflow_list,
     'delete': workflow_delete,
+    'up': workflow_upload,
+    'down': workflow_download,
+    'dl': workflow_download,
+    'ls': workflow_list,
+    'rm': workflow_delete,
     'show': workflow_show,
     'help': workflow_help
 }
 
 library_commands = {
     'upload': library_upload,
+    'download': library_download,
     'list': library_list,
     'delete': library_delete,
+    'up': library_upload,
+    'down': library_download,
+    'dl': library_download,
+    'ls': library_list,
+    'rm': library_delete,
     'show': library_show,
     'help': library_help
 }
@@ -278,6 +298,11 @@ dataset_commands = {
     'download': dataset_download,
     'list': dataset_list,
     'delete': dataset_delete,
+    'up': dataset_upload,
+    'down': dataset_download,
+    'dl': dataset_download,
+    'ls': dataset_list,
+    'rm': dataset_delete,
     'show': dataset_show,
     'help': dataset_help
 }
@@ -295,10 +320,10 @@ def parse_profile(profile_name: str):
     profiles = None
     for profile_path in PROFILE_SEARCH_PATH:
         profile_path = os.path.expanduser(profile_path)
-        print(f'Checking profile {profile_path}')
+        # print(f'Checking profile {profile_path}')
         if os.path.exists(profile_path):
             with open(profile_path, 'r') as f:
-                print(f'Loading profile from {profile_path}')
+                # print(f'Loading profile from {profile_path}')
                 profiles = yaml.safe_load(f)
             break
     if profiles is None:

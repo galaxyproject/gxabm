@@ -1,0 +1,24 @@
+- name: 
+    - workflow
+    - wf
+  menu:
+    - name: ['upload', 'up']
+      handler: workflow_upload
+    - name: ['download', 'dl']
+      handler: workflow_download
+    - name: ['list', 'ls']
+      handler: workflow_list
+    - name: ['delete', 'del', 'rm']
+      handler: workflow_delete     
+- name: 
+    - dataset
+    - ds
+  menu:
+    - name: ['upload', 'up']
+      handler: dataset_upload
+    - name: ['download', 'dl']
+      handler: dataset_download
+    - name: ['list', 'ls']
+      handler: dataset_list
+    - name: ['delete', 'del', 'rm']
+      handler: dataset_delete     
