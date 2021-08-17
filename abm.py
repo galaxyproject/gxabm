@@ -70,14 +70,52 @@ def workflow_help(args: list):
         Manage workflows on a Galaxy instance.
 
     {bold('USAGE')}
-        {program} workflow [list|show|delete|upload|download] [OPTIONS]
+        {program} workflow [list|upload|download|help] [OPTIONS]
 
     {bold('COMMANDS')}
-        
-    {bold('OPTIONS')}
+        {bold('list')}|{bold('ls')}
+            list the workflows available on the Galaxy instance
+        {bold('download')}|{bold('down')}|{bold('dl')} ID <path>
+            downloads a workflow from the Galaxy instance. If the <path> is given then
+            workflow with be saved to that path.  Any existing file at that location will
+            be overwritten.                    
+        {bold('upload')}|{bold('up')} PATH
+            uploads a workflow to the Galaxy instance.
+                                        
+    {bold('EXAMPLES')}
+        {program} workflow ls
+        {program} wf dl 5683bc67af /home/user/workflows/workflow.ga
+        {program} wf upload /home/user/workflows/workflow.ga
+
+    Copyright 2021 The Galaxy Project. All rights reserved.    
+    """)
+
+
+def history_help(args: list):
+    program = sys.argv[0]
+    print(f"""
+    {bold('SYNOPSIS')}
+        Manage histories on a Galaxy instance.
+
+    {bold('USAGE')}
+        {program} history [list|upload|download|help] [OPTIONS]
+
+    {bold('COMMANDS')}
+        {bold('list')}|{bold('ls')}
+            list the histories available on the Galaxy instance
+        {bold('download')}|{bold('down')}|{bold('dl')} ID PATH
+            downloads a history from the Galaxy instance and saves to the path.  
+            Any existing file at that location will be overwritten.                    
+        {bold('upload')}|{bold('up')} PATH [NAME]
+            uploads a dataset to the Galaxy instance. If the NAME is provided the
+            dataset will be uploaded to a history with that name.  If the history
+            does not exist it will be created.
+            
 
     {bold('EXAMPLES')}
-
+        {program} workflow ls
+        {program} wf dl 5683bc67af /home/user/workflows/workflow.ga
+        {program} wf upload /home/user/workflows/workflow.ga
 
     Copyright 2021 The Galaxy Project. All rights reserved.    
     """)
@@ -110,9 +148,18 @@ def dataset_help(args: list):
         Manage datasets on a Galaxy instance.
 
     {bold('USAGE')}
-        {program} dataset [list|delete|upload|download] [OPTIONS]
+        {program} dataset [list|upload|download] [OPTIONS]
 
     {bold('COMMANDS')}
+        {bold('list')}|{bold('ls')}
+            list the histories available on the Galaxy instance
+        {bold('download')}|{bold('down')}|{bold('dl')} ID PATH
+            downloads a history from the Galaxy instance and saves to the path.  
+            Any existing file at that location will be overwritten.                    
+        {bold('upload')}|{bold('up')} PATH [NAME]
+            uploads a dataset to the Galaxy instance. If the NAME is provided the
+            dataset will be uploaded to a history with that name.  If the history
+            does not exist it will be created.
 
     {bold('OPTIONS')}
 
@@ -265,6 +312,7 @@ def library_show(args: list):
     print("library show not implemented")
 
 
+'''
 workflow_commands = {
     'upload': workflow_upload,
     'download': workflow_download,
@@ -315,7 +363,9 @@ all_commands = {
     'library': library_commands,
     'lib': library_commands
 }
+'''
 
+all_commands = {}
 def parse_profile(profile_name: str):
     profiles = None
     for profile_path in PROFILE_SEARCH_PATH:
@@ -339,6 +389,20 @@ def parse_profile(profile_name: str):
     API_KEY = profile['key']
     return True
 
+def parse_menu():
+    menu_config = 'menu.yml'
+    if not os.path.exists(menu_config):
+        print("ERROR: Unable to load the menu configuration.")
+        sys.exit(1)
+    with open(menu_config) as f:
+        menu_data = yaml.safe_load(f)
+    for menu in menu_data:
+        submenu = dict()
+        for item in menu['menu']:
+            for name in item['name']:
+                submenu[name] = globals()[item['handler']]
+        for name in menu['name']:
+            all_commands[name] = submenu
 
 def main():
     global API_KEY, GALAXY_SERVER
@@ -372,6 +436,7 @@ def main():
         help()
         sys.exit(0)
 
+    parse_menu()
     program = sys.argv[0]
     command = commands.pop(0)
     if command in ['-h', '--help', 'help']:
@@ -401,4 +466,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+    #parse_menu()
 

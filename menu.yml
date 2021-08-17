@@ -9,7 +9,9 @@
     - name: ['list', 'ls']
       handler: workflow_list
     - name: ['delete', 'del', 'rm']
-      handler: workflow_delete     
+      handler: workflow_delete
+    - name: ['help', '-h']
+      handler: workflow_help
 - name: 
     - dataset
     - ds
@@ -21,4 +23,19 @@
     - name: ['list', 'ls']
       handler: dataset_list
     - name: ['delete', 'del', 'rm']
-      handler: dataset_delete     
+      handler: dataset_delete
+    - name: ['help', '-h']
+      handler: dataset_help
+- name:
+    - history
+    - hist
+    - hs
+  menu:
+    - name: ['list', 'ls']
+      handler: history_list
+    - name: ['upload', 'up']
+      handler: history_upload
+    - name: ['download', 'down', 'dl']
+      handler: history_download
+    - name: ['help', '-h']
+      handler: history_help
