@@ -93,9 +93,7 @@ def run(args):
             config = yaml.safe_load(stream)
             print(f"Loaded {name}")
         except yaml.YAMLError as exc:
-            print('Error encountered parsing the YAML input file')
             print(exc)
-            sys.exit(1)
 
     gi = bioblend.galaxy.GalaxyInstance(url=GALAXY_SERVER, key=API_KEY)
     print(f"Connected to {GALAXY_SERVER}")
