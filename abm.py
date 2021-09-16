@@ -41,12 +41,23 @@ class Keys:
     HISTORY_BASE_NAME = 'output_history_base_name'
     HISTORY_NAME = 'history_name'
 
+datasets = {
+    "dna": [
+        "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR013/ERR013101/ERR013101_1.fastq.gz",
+        "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR015/ERR015526/ERR015526_2.fastq.gz",
+        "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR592/SRR592109/SRR592109_2.fastq.gz",
+        "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR233/SRR233167/SRR233167_2.fastq.gz",
+        "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR047/ERR047678/ERR047678_1.fastq.gz",
+        "ftp://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/data/AshkenazimTrio/HG003_NA24149_father/NIST_Illumina_2x250bps/reads/D2_S1_L002_R1_002.fastq.gz"
+    ],
+    "rna": []
+}
+
 def bold(text:str):
     """
     Wraps the text in ANSI control sequences to generate bold text in the terminal.
 
     :param text: the text to be made bold
-    :type str:
     :return: the original string wrapped in ANSI control sequences
     """
     return f"{BOLD}{text}{CLEAR}"
@@ -59,18 +70,18 @@ def help():
     program = sys.argv[0]
     print (f"""
 {bold('SYNOPSIS')}
-    Upload workflows and dataset to a Galaxy instance.
+    Manage workflows and datasets on remote Galaxy instances.
     
 {bold('USAGE')}
     {program} COMMAND SUB-COMMAND [OPTIONS]
     
 {bold('COMMANDS')}
     {bold('workflow')}|{bold('wf')}
-        manage workflows on the Galaxy instance
+        manage workflows on a Galaxy instance
     {bold('dataset')}|{bold('ds')}
-        manage datasets on the Galaxy instance
+        manage datasets on a Galaxy instance
     {bold('history')}|{bold('hist')}
-        manage histories on the Galaxy instance
+        manage histories on a Galaxy instance
                 
 {bold('SUB-COMMANDS')}
     Most of the above commands support at least the following sub-commands.  
@@ -143,12 +154,18 @@ def history_help(args: list):
             uploads a dataset to the Galaxy instance. If the NAME is provided the
             dataset will be uploaded to a history with that name.  If the history
             does not exist it will be created.
-            
+        {bold('export')} HISTORY_ID
+            archives a history for export to another Galaxy instance. Unfortunately
+            the URL needed to import the history archive must be retrieved from the
+            Galaxy UI
+        {bold('import')} URL
+            imports a history archive that has been exported from another Galaxy 
+            instance.
 
     {bold('EXAMPLES')}
-        {program} workflow ls
-        {program} wf dl 5683bc67af /home/user/workflows/workflow.ga
-        {program} wf upload /home/user/workflows/workflow.ga
+        {program} history ls
+        {program} hist export 5683bc67af 
+        {program} history import https://benchmarking.usegvl.org/initial/galaxy/history/export_archive?id=96536849def3442b&jeha_id=c02e713d983534f9
 
     Copyright 2021 The Galaxy Project. All rights reserved.    
     """)
@@ -161,14 +178,25 @@ def library_help(args: list):
         Manage dataset libraries on a Galaxy instance.
 
     {bold('USAGE')}
-        {program} library [list|show|delete|upload] [OPTIONS]
+        {program} library [list|create|delete|upload] [OPTIONS]
 
     {bold('COMMANDS')}
-
+        {bold('list')} [ID]
+            Lists the data libraries available on the server.  If a library ID
+            is provided then details about that library will be displayed.  If a
+            library ID is not provided the all libraries will be listed.
+        {bold('create')} NAME [DESCIPTION]
+            Creates a new library with the given NAME and optional DESCRIPTION.
+        {bold('delete')} ID
+            Deletes a library and all of its datasets.  NOTE: this is a destructive
+            operation and can not be undone.  NOT IMPLEMENTED.
+                
     {bold('OPTIONS')}
 
     {bold('EXAMPLES')}
-
+        {program} library create Testing "Library of datasets used for testing"
+        {program} lib ls
+        {program} lib list 12345abcd
 
     Copyright 2021 The Galaxy Project. All rights reserved.    
     """)
@@ -376,13 +404,12 @@ def find_workflow_id(gi, name_or_id):
     except:
         print('Caught an exception')
         print(sys.exc_info())
-        pass
     print(f"Warning: unable to find workflow {name_or_id}")
     return None
 
 
 def find_dataset_id(gi, name_or_id):
-    print(f"Finding dataset {name_or_id}")
+    # print(f"Finding dataset {name_or_id}")
     try:
         ds = gi.datasets.show_dataset(name_or_id)
         return ds['id']
@@ -390,14 +417,13 @@ def find_dataset_id(gi, name_or_id):
         pass
 
     try:
-        print('Trying by name')
+        # print('Trying by name')
         ds = gi.datasets.get_datasets(name=name_or_id) #, deleted=True, purged=True)
         if len(ds) > 0:
             return ds[0]['id']
     except:
         print('Caught an exception')
         print(sys.exc_info())
-        pass
     print(f"Warning: unable to find dataset {name_or_id}")
     return name_or_id
 
@@ -452,7 +478,7 @@ def workflow_validate(args: list):
     if len(args) == 0:
         print('ERROR: no workflow configuration specified')
         return
-    pprint(args)
+    # pprint(args)
 
     workflow_path = args[0]
     print(f"Workflow path: {workflow_path}")
@@ -460,7 +486,7 @@ def workflow_validate(args: list):
         print(f'ERROR: can not find workflow configuration {workflow_path}')
         return
     workflows = parse_workflow(workflow_path)
-    pprint(workflows)
+    # pprint(workflows)
     gi = connect()
     for workflow in workflows:
         wfid = workflow[Keys.WORKFLOW_ID]
@@ -469,7 +495,7 @@ def workflow_validate(args: list):
             print(f"Unable to load the workflow ID for {workflow[Keys.WORKFLOW_ID]}")
             return
         else:
-            print(f"Found workflow id {wfid}")
+            print(f"Workflow: {workflow[Keys.WORKFLOW_ID]} -> {wfid}")
         inputs = {}
         history_base_name = wfid
         if Keys.HISTORY_BASE_NAME in workflow:
@@ -482,7 +508,7 @@ def workflow_validate(args: list):
                     print(f'ERROR: Invalid input specification for {spec[Keys.NAME]}')
                     sys.exit(1)
                 dsid = find_dataset_id(gi, spec[Keys.DATASET_ID])
-                print(f"Reference input dataset {dsid}")
+                print(f"Reference input dataset {spec[Keys.DATASET_ID]} -> {dsid}")
                 inputs[input[0]] = { 'id': dsid, 'src':'hda'}
 
         count = 0
@@ -496,9 +522,9 @@ def workflow_validate(args: list):
                 input = gi.workflows.get_workflow_inputs(wfid, spec[Keys.NAME])
                 if input is None or len(input) == 0:
                     print(f'ERROR: Invalid input specification for {spec[Keys.NAME]}')
-                    sys.exit(1)
+                    raise
                 dsid = find_dataset_id(gi, spec[Keys.DATASET_ID])
-                print(f"Input dataset ID: {dsid}")
+                print(f"Input dataset: {spec[Keys.DATASET_ID]} -> {dsid}")
                 inputs[input[0]] = {'id': dsid, 'src' : 'hda' }
 
 
@@ -589,7 +615,9 @@ def dataset_list(args: list):
         return
     print(f'Found {len(datasets)} datasets')
     for dataset in datasets:
-        print(f"{dataset['id']}\t{dataset['name']}\t{dataset['deleted']}\t{dataset['purged']}")
+        state = dataset['state'] if 'state' in dataset else 'unknown'
+        print(f"{dataset['id']}\t{dataset['deleted']}\t{state}\t{dataset['name']}")
+        # pprint(dataset)
 
 def dataset_delete(args: list):
     print("dataset delete not implemented")
@@ -617,14 +645,14 @@ def dataset_upload(args: list):
 def dataset_download(args: list):
     gi = connect()
     if len(args) == 0:
-        print('ERROR: no workflow ID given')
+        print('ERROR: no dataset ID given')
         return
     elif len(args) > 1:
         pprint(gi.datasets.download_dataset(args[0], file_path=args[1]))
     else:
         pprint(gi.datasets.download_dataset(args[0]))
 
-def dataset_show(args: list):  
+def dataset_find(args: list):
     if len(args) == 0:
         print('ERROR: now dataset name given.')
         return
@@ -634,15 +662,15 @@ def dataset_show(args: list):
         print('WARNING: no datasets found with that name')
         return
     if len(datasets) > 1:
-        print('WARNING: found more than one dataset with that name. Using the first')
-        print('dataset in the list, which one that is will be indeterminate.')
+        print(f'WARNING: found {len(datasets)} datasets with that name. Using the first')
+        print('dataset in the list. Which one that is will be indeterminate.')
 
     ds = datasets[0]
     pprint(ds)
 
 def dataset_test(args: list):
     if len(args) == 0:
-        print("ERROR: now dataset ID provided")
+        print("ERROR: no dataset ID provided")
         return
     gi = connect()
     dataset = gi.datasets.show_dataset(args[0])
@@ -665,19 +693,117 @@ def dataset_test(args: list):
 #
 
 def library_list(args: list):
-    print("library list not implemented")
+    gi = connect()
+    if len(args) == 0:
+        for library in gi.libraries.get_libraries():
+            print(f"{library['id']}\t{library['name']}\t{library['description']}")
+        return
+    folders = gi.libraries.show_library(args[0], contents=True)
+    for folder in folders:
+        print(f"{folder['id']}\t{folder['type']}\t{folder['name']}")
+
+
+def library_create(args: list):
+    if len(args) != 2:
+        print("ERROR: Invalid parameters, at least the name must be specified")
+        return
+    name = args[0]
+    description = None
+    if len(args) == 2:
+        description = args[1]
+    gi = connect()
+    result = gi.libraries.create_library(name, description=description)
+    pprint(result)
 
 def library_delete(args: list):
     print("library delete not implemented")
 
 def library_upload(args: list):
-    print("library upload not implemented")
+    if len(args) != 3:
+        print("ERROR: Invalid parameters. Specify the library and folder names and the dataset to upload")
+        return
+    gi = connect()
+    libraries = gi.libraries.get_libraries(name=args[0])
+    if len(libraries) == 0:
+        print(f"ERROR: No such library found: {args[0]}")
+        return
+    if len(libraries) > 1:
+        print(f"WARNING: more than one library name matched. Using the first one found")
+        for library in libraries:
+            print(f"{library['id']}\t{library['create_time']}\t{library['name']}")
+
+    library_id = libraries[0]['id']
+    folders = gi.libraries.get_folders(library_id, name=args[1])
+    if len(folders) == 0:
+        print(f"ERROR: no folder with the name: {args[1]}")
+        return
+    folder_id = folders[0]['id']
+    dataset_url = datasets['dna'][int(args[2])]
+    result = gi.libraries.upload_file_from_url(library_id, dataset_url, folder_id=folder_id)
+    pprint(result)
+    return
+
+    # library_id = args[0]
+    # if len(args) == 3:
+    #     folder_id = args[1]
+    #     file_url = datasets['dna'][int(args[2])]
+    # else:
+    #     file_url = datasets['dna'][int(args[1])]
+    # # ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR592/SRR592109/SRR592109_2.fastq.gz
+    # result = gi.libraries.upload_file_from_url(library_id, file_url, folder_id=folder_id)
+    # pprint(result)
 
 def library_download(args: list):
     print("library download not implemented")
 
 def library_show(args: list):
     print("library show not implemented")
+
+#
+# Jobs related functions
+#
+
+def job_list(args:list):
+    gi = connect()
+    for job in gi.jobs.get_jobs():
+        print(f"{job['id']}\t{job['state']}\t{job['update_time']}\t{job['tool_id']}")
+
+def job_show(args:list):
+    if len(args) != 1:
+        print("ERROR: Invalid parameters. Job ID is required")
+        return
+    gi = connect()
+    job = gi.jobs.show_job(args[0], full_details=True)
+    print(json.dumps(job))
+
+#
+# Folder related functions
+#
+
+def folder_list(args:list):
+    if len(args) == 0:
+        print("ERROR: no library ID was provided")
+        return
+    gi = connect()
+    folders = gi.libraries.get_folders(args[0])
+    pprint(folders)
+
+
+def folder_create(args:list):
+    if len(args) < 2:
+        print("ERROR: Invalid parameters.  Required the library ID, folder name and folder description (optional")
+        return
+    library_id = args[0]
+    folder_name = args[1]
+    folder_description = "No description available"
+    if len(args) > 2:
+        folder_description = args[2]
+    gi = connect()
+    result = gi.libraries.create_folder(library_id, folder_name, folder_description)
+    pprint(result)
+
+def folder_delete(args:list):
+    print("This functionality has not been implemented yet.")
 
 #
 # History related functions
@@ -692,11 +818,50 @@ def history_list(args:list):
     for history in gi.histories.get_published_histories():
         print(f"{history['id']}\t{history['name']}\t{history['deleted']}\t{history['published']}")
 
+def history_show(args: list):
+    gi = connect()
+    history = gi.histories.show_history(args[0])
+    pprint(history)
+
+def history_find(args: list):
+    gi = connect()
+    for history in gi.histories.get_histories(name=args[0]):
+        print(f"{history['id']}\t{history['name']}")
+
 def history_download(args:list):
     print('history download not implemented')
 
 def history_upload(args:list):
     print('history upload not implemented')
+
+def history_export(args:list):
+    if len(args) == 0:
+        print("ERROR: no history ID specified")
+        return
+    gi = connect()
+    jeha_id = gi.histories.export_history(args[0], gzip=True, wait=True)
+    global GALAXY_SERVER
+    print(f"The history can be imported from {GALAXY_SERVER}/history/export_archive?id={args[0]}&jeha_id={jeha_id}")
+
+def _history_import(args:list):
+    gi = connect()
+    result = gi.histories.import_history(url=args[0])
+    pprint(result)
+
+def history_import(args:list):
+    if len(args) != 3:
+        print("ERROR: Invalid command")
+        print(f"USAGE: {sys.argv[0]} history import SERVER HISTORY_ID JEHA_ID")
+        return
+
+    server,key = parse_profile(args[0])
+    if server is None:
+        return
+    url = f"{server}history/export_archive?id={args[1]}&jeha_id={args[2]}"
+    gi = connect()
+    print(f"Importing history from {url}")
+    result = gi.histories.import_history(url=url)
+    pprint(result)
 
 '''
 workflow_commands = {
@@ -765,16 +930,18 @@ def parse_profile(profile_name: str):
             break
     if profiles is None:
         print(f'ERROR: Could not locate an abm profile file in {PROFILE_SEARCH_PATH}')
-        return False
+        return None,None
     if profile_name not in profiles:
         print(f'ERROR: {profile_name} is not the name of a valid profile.')
         print(f'The defined profile names are {profiles.keys()}')
-        return False
-    global GALAXY_SERVER, API_KEY
+        return None,None
     profile = profiles[profile_name]
-    GALAXY_SERVER = profile['url']
-    API_KEY = profile['key']
-    return True
+    return (profile['url'], profile['key'])
+    # global GALAXY_SERVER, API_KEY
+    # profile = profiles[profile_name]
+    # GALAXY_SERVER = profile['url']
+    # API_KEY = profile['key']
+    # return True
 
 def get_menu(name: str):
     if name in all_commands:
@@ -791,35 +958,55 @@ def register_handler(name:str, commands: list, handler):
 def alias(shortcut, fullname):
     all_commands[shortcut] = all_commands[fullname]
 
+
 def init_menu():
-    register_handler("workflow", ['upload', 'up'], workflow_upload)
-    register_handler("workflow", ['download', 'dl'], workflow_download)
-    register_handler("workflow", ['list', 'ls'], workflow_list)
-    register_handler("workflow", ['delete', 'del', 'rm'], workflow_delete)
-    register_handler("workflow", ['run'], workflow_run)
-    register_handler("workflow", ['show'], workflow_show)
-    register_handler("workflow", ['translate', 'tr'], workflow_translate)
-    register_handler("workflow", ['test'], workflow_test)
-    register_handler("workflow", ['validate'], workflow_validate)
-    register_handler("workflow", ['help', '-h'], workflow_help)
-    register_handler("dataset", ['upload', 'up'], dataset_upload)
-    register_handler("dataset", ['download', 'dl'], dataset_download)
-    register_handler("dataset", ['list', 'ls'], dataset_list)
-    register_handler("dataset", ['delete', 'del', 'rm'], dataset_delete)
-    register_handler("dataset", ['show'], dataset_show)
-    register_handler("dataset", ['test'], dataset_test)
-    register_handler("dataset", ['help', '-h'], dataset_help)
-    register_handler("history", ['list', 'ls'], history_list)
-    register_handler("history", ['upload', 'up'], history_upload)
-    register_handler("history", ['download', 'down', 'dl'], history_download)
-    register_handler("history", ['help', '-h'], history_help)
+    register_handler('workflow', ['upload', 'up'], workflow_upload)
+    register_handler('workflow', ['download', 'dl'], workflow_download)
+    register_handler('workflow', ['list', 'ls'], workflow_list)
+    register_handler('workflow', ['delete', 'del', 'rm'], workflow_delete)
+    register_handler('workflow', ['run'], workflow_run)
+    register_handler('workflow', ['show'], workflow_show)
+    register_handler('workflow', ['translate', 'tr'], workflow_translate)
+    register_handler('workflow', ['test'], workflow_test)
+    register_handler('workflow', ['validate'], workflow_validate)
+    register_handler('workflow', ['help', '-h'], workflow_help)
+
+    register_handler('dataset', ['upload', 'up'], dataset_upload)
+    register_handler('dataset', ['download', 'dl'], dataset_download)
+    register_handler('dataset', ['list', 'ls'], dataset_list)
+    register_handler('dataset', ['delete', 'del', 'rm'], dataset_delete)
+    register_handler('dataset', ['find'], dataset_find)
+    register_handler('dataset', ['test'], dataset_test)
+    register_handler('dataset', ['help', '-h'], dataset_help)
+
+    register_handler('history', ['list', 'ls'], history_list)
+    register_handler('history', ['show'], history_show)
+    register_handler('history', ['find'], history_find)
+    register_handler('history', ['import'], history_import)
+    register_handler('history', ['export'], history_export)
+    register_handler('history', ['upload', 'up'], history_upload)
+    register_handler('history', ['download', 'down', 'dl'], history_download)
+    register_handler('history', ['help', '-h'], history_help)
+
+    register_handler('library', ['list', 'ls'], library_list)
+    register_handler('library', ['help'], library_help)
+    register_handler('library', ['create', 'new'], library_create)
+    register_handler('library', ['upload', 'up'], library_upload)
+    register_handler('library', ['download', 'down', 'dl'], library_download)
+
+    register_handler('folder', ['list', 'ls'], folder_list)
+    register_handler('folder', ['create', 'new'], folder_create)
+    register_handler('folder', ['delete', 'rm'], folder_delete)
+
+    register_handler('jobs', ['list', 'ls'], job_list)
+    register_handler('jobs', ['show', 'get'], job_show)
 
     alias('wf', 'workflow')
     alias('ds', 'dataset')
     alias('hist', 'history')
-    all_commands['wf'] = all_commands['workflow']
-    all_commands['ds'] = all_commands['dataset']
-    all_commands['hist'] = all_commands['history']
+    alias('hs', 'history')
+    alias('lib', 'library')
+    alias('job', 'jobs')
 
 
 def parse_menu():
@@ -847,8 +1034,18 @@ def main():
     if value is not None:
         API_KEY = value
 
+    # The first parameter must always be the name of a profile.
+    # This negates the need for the --profile parameter below.
+    if len(sys.argv) < 2 or sys.argv[1] in ['-h', '--help', 'help']:
+        help()
+        return
+    # global GALAXY_SERVER, API_KEY
+    GALAXY_SERVER, API_KEY = parse_profile(sys.argv[1])
+    if GALAXY_SERVER is None:
+        return
+
     commands = list()
-    index = 1
+    index = 2
     while index < len(sys.argv):
         arg = sys.argv[index]
         index += 1
@@ -859,7 +1056,8 @@ def main():
             GALAXY_SERVER = sys.argv[index]
             index += 1
         elif arg in ['-p', '--profile']:
-            if not parse_profile(sys.argv[index]):
+            GALAXY_SERVER, API_KEY = parse_profile(sys.argv[index])
+            if GALAXY_SERVER is None:
                 return
             index += 1
         else:
@@ -887,7 +1085,7 @@ def main():
         subcommands = all_commands[command]
         subcommand = commands.pop(0)
         if subcommand not in subcommands:
-            print(f'ERROR: unrecognized subcommand')
+            print(f'ERROR: unrecognized subcommand "{subcommand}"')
             print(f'Type ".{program} {command} help" for more help.')
             return
         # print(f'Dispatching "{command} {subcommand}"')
