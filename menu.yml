@@ -1,0 +1,77 @@
+- name: 
+    - workflow
+    - wf
+  help: 'manage workflows'
+  menu:
+    - name: ['upload', 'up']
+      handler: workflow_upload
+      params: PATH
+      help: 'upload a workflow file to the server'
+    - name: ['download', 'dl']
+      handler: workflow_download
+      help: 'download a workflow'
+      params: ID PATH
+    - name: ['list', 'ls']
+      handler: workflow_list
+      help: 'list workflows available on the serer'
+    - name: ['delete', 'del', 'rm']
+      handler: workflow_delete
+      help: 'delete a workflow from the server'
+      params: ID
+    - name: ['run']
+      handler: workflow_run
+      help: run one of the workflow figurations
+      params: PATH
+    - name: ['translate', 'tr']
+      handler: workflow_translate
+      help: translate workflow and dataset ID values into names
+      params: PATH
+    - name: ['validate']
+      handler: workflow_validate
+      help: validate that workflow and dataset names can be translated into IDs
+      params: PATH
+- name:
+    - dataset
+    - ds
+  help: manage datasets
+  menu:
+    - name: ['upload', 'up']
+      handler: dataset_upload
+      params: PATH
+      help: upload a data set to the server
+    - name: ['download', 'dl']
+      handler: dataset_download
+      params: ID PATH
+      help: download a dataset from the server
+    - name: ['list', 'ls']
+      handler: dataset_list
+      help: lists all the datasets on the server
+    - name: ['show']
+      handler: dataset_show
+      params: ID
+      help: show detailed information on a dataset
+- name:
+    - history
+    - hist
+    - hs
+  help: manage histories
+  menu:
+    - name: ['list', 'ls']
+      handler: history_list
+      help: list histories on the server
+    - name: ['import', 'imp', 'im']
+      params: "CLOUD HISTORY_ID JEHA_ID"
+      handler: history_import
+      help: import a history from another Galaxy server
+    - name: ['export', 'exp', 'ex']
+      handler: history_export
+      help: prepares a history for export to another Galaxy server
+- name: [ jobs, job ]
+  help: manage jobs on the server
+  menu:
+    - name: [ list, ls ]
+      help: list all jobs
+      handler: jobs_list
+    - name: [ show ]
+      help: show detailed information about a job
+      handler: jobs_show

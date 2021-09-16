@@ -1,0 +1,9 @@
+gcp:
+  url: http://35.190.158.130/galaxy
+  key:
+aws:
+  url: http://34.228.216.217/galaxy/
+  key:
+js:
+  url: https://benchmarking.usegvl.org/initial/galaxy/
+  key:

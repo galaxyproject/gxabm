@@ -1,0 +1,10 @@
+- workflow_id: Benchmarking RNA Single-Read Cloud Costs
+  output_history_base_name: Workflow Testing - RNA Single
+  reference_data:
+  - dataset_id: gencode.v38.transcripts.fa.gz
+    name: Reference Transcript (FASTA)
+  runs:
+  - history_name: SRS9551191
+    inputs:
+    - dataset_id: SRR15206520 (fastq-dump)
+      name: FASTQ RNA Dataset
