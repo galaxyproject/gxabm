@@ -93,39 +93,6 @@ def print_help(menu_data, command):
     print("    Copyright 2021 The Galaxy Project\n")
 
 
-
-# def create_rev_index(gi):
-#     wfindex = dict()
-#     for workflow in gi.workflows.get_workflows(published=True):
-#         # pprint(workflow)
-#         # wfindex[workflow[Keys.NAME]] = workflow['id']
-#         wfindex[workflow['id']] = workflow[Keys.NAME]
-#         print(f"Index workflow {workflow['id']} ")
-#     # index['workflow'] = wfindex
-#     dsindex = dict()
-#     for dataset in gi.datasets.get_datasets(limit=1000, deleted=True, purged=False, ):
-#         # dsindex[dataset[Keys.NAME]] = dataset['id']
-#         dsindex[dataset['id']] = dataset[Keys.NAME]
-#         print(f"index dataset {dataset['id']}")
-#     # index['dataset'] = dsindex
-#     return wfindex, dsindex
-#
-#
-# def create_index(gi):
-#     wfindex = dict()
-#     for workflow in gi.workflows.get_workflows(published=True):
-#         # pprint(workflow)
-#         wfindex[workflow[Keys.NAME]] = workflow['id']
-#         print(f"Index {workflow[Keys.NAME]} = {workflow['id']}")
-#     # index['workflow'] = wfindex
-#     dsindex = dict()
-#     for dataset in gi.datasets.get_datasets(limit=1000, deleted=False, purged=False):
-#         dsindex[dataset[Keys.NAME]] = dataset['id']
-#     # index['dataset'] = dsindex
-#     return wfindex, dsindex
-
-
-
 all_commands = {}
 
 
