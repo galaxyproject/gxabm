@@ -20,6 +20,7 @@ class Keys:
     HISTORY_BASE_NAME = 'output_history_base_name'
     HISTORY_NAME = 'history_name'
 
+
 def find_workflow_id(gi, name_or_id):
     try:
         wf = gi.workflows.show_workflow(name_or_id)
