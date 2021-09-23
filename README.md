@@ -23,20 +23,33 @@ chmod +x workflow.py
 ./workflow.py help
 ```
 
+### Credentials
+
+To use these scripts you will need an [API key for the Galaxy server](https://training.galaxyproject.org/training-material/faqs/galaxy/preferences_admin_api_key.html). While the Galaxy URL and API key can be specified on the command line, it is easier to define them as environment variables, preferably in a file you can source to make them available.
+
+```
+# In env.sh
+export GALAXY_SERVER=https://benchmarking.usegvl.org/initial/galaxy/
+export API_KEY=<your api key>
+```
+
+Then you can use:
+
+```
+source env.sh
+./workflow.py ...
+```
+
+
+
 ### OPTIONS
+
 ```
     -k|--key GALAXY_API_KEY
         Specify the Galaxy API for the remote server
     -s|--server
         The URL for the remote Galaxy server
 ```
-Both the Galaxy API key and Galaxy server URL can be specified in environment variables.
-
-```
-export GALAXY_API_KEY=<your api key>
-export GALAXY_SERVER=https://benchmarking.usegvl.org/initial/galaxy
-```
-
 
 
 ### COMMANDS
@@ -69,7 +82,7 @@ When a workflow is run with the `run` command the invocation details will be sav
 
 The runtime parameters for benchmarking runs are specified in a YAML configuration file.  The configuration file can contain more than one runtime configuration specified as a YAML list. This file can be stored anywhere, but several examples are included in the `config` directory. 
 
-The YAML configuration for a single run looks like:
+The YAML configuration for a single workflow looks like:
 
 ```
 - workflow_id: d6d3c2119c4849e4

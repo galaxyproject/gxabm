@@ -1,4 +1,7 @@
+__pycache__/
 .venv
 .idea
-invocations/
 .ktx
+invocations/
+workflows/
+data/
