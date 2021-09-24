@@ -136,6 +136,7 @@ def find(args: list):
     gi = connect()
     pprint(gi.workflows.get_workflows(name=args[0]))
 
+
 def run(args: list):
     if len(args) == 0:
         print('ERROR: no workflow configuration specified')
