@@ -1,3 +1,5 @@
+import sys
+
 from common import connect
 from pprint import pprint
 
@@ -80,5 +82,35 @@ def himport(args: list):
     result = gi.histories.import_history(url=url)
     pprint(result)
 
+
+def delete(args:list):
+    if len(args) != 1:
+        print('ERROR: please provide the history ID')
+        return
+    gi = connect()
+    gi.histories.delete_history(args[0], True)
+    print(f"Deleted history {args[0]}")
+
+
+def purge(args:list):
+    if len(args) != 1:
+        print("ERROR: Please pass a string used to filter histories to be deleted.")
+        print("Use 'abm <cloud> history purge *' to remove ALL histories.")
+        return
+    all = args[0] == '0'
+    gi = connect()
+    print('Purging histories')
+    count = 0
+    for history in gi.histories.get_histories():
+        if all or args[0] in history['name']:
+            gi.histories.delete_history(history['id'], True)
+            print(f"Deleted user history {history['id']}")
+            count += 1
+    for history in gi.histories.get_published_histories():
+        if all or args[0] in history['name']:
+            gi.histories.delete_history(history['id'], True)
+            print(f"Deleted published history {history['id']}")
+            count += 1
+    print(f'Purged {count} histories')
 
 

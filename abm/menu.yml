@@ -90,6 +90,14 @@
     - name: [cleanup, clean, clear]
       help: remove empty histories
       handler: history.clean
+    - name: [delete, del, rm]
+      params: ID
+      help: delete a single history
+      handler: history.delete
+    - name: [ purge ]
+      params: STR
+      help: delete all histories that contain STR in the name. Use * to purge all histories.
+      handler: history.purge
 - name: [ jobs, job ]
   help: manage jobs on the server
   menu:
