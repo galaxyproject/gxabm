@@ -8,7 +8,7 @@ Copyright 2021 The Galaxy Project. All rights reserved.
 """
 
 import common
-from common import connect
+from common import parse_profile
 import job
 import dataset
 import workflow
@@ -26,8 +26,6 @@ VERSION = '1.1.0'
 
 BOLD = '\033[1m'
 CLEAR = '\033[0m'
-
-PROFILE_SEARCH_PATH = ['~/.abm/profile.yml', '.abm-profile.yml']
 
 def bold(text: str):
     """
@@ -94,26 +92,6 @@ def print_help(menu_data, command):
 
 
 all_commands = {}
-
-
-def parse_profile(profile_name: str):
-    profiles = None
-    for profile_path in PROFILE_SEARCH_PATH:
-        profile_path = os.path.expanduser(profile_path)
-        if os.path.exists(profile_path):
-            with open(profile_path, 'r') as f:
-                # print(f'Loading profile from {profile_path}')
-                profiles = yaml.safe_load(f)
-            break
-    if profiles is None:
-        print(f'ERROR: Could not locate an abm profile file in {PROFILE_SEARCH_PATH}')
-        return None, None
-    if profile_name not in profiles:
-        print(f'ERROR: {profile_name} is not the name of a valid profile.')
-        print(f'The defined profile names are {profiles.keys()}')
-        return None, None
-    profile = profiles[profile_name]
-    return (profile['url'], profile['key'])
 
 
 def get_menu(name: str):
