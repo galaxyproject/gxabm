@@ -1,82 +1,47 @@
 # Benchmarking Scripts
-Python Bioblend scripts for automating tasks in Galaxy
+An opinionated Python Bioblend script for automating benchmarking tasks in Galaxy.
 
-## Prerequisites
 
-The only Python requirement (so far) is the Bioblend library.
 
-Create a Python virtual environment and install the *bioblend* and *pyyaml* libraries:
+## Installation
 
-```
-python3 -m venv .venv
-source .venv/bin/activate
-pip install --upgrade pip
-pip install bioblend
-pip install pyyaml
-```
-
-**NOTE:** On Linux and MacOS system you can set the executable bit on the `workflow.py`
-file so you do not need to explicitly run the script with Python.
-
-```
-chmod +x workflow.py
-./workflow.py help
-```
+1. Clone this repository.
+   ```bash
+   git clone https://github.com/ksuderman/bioblend-scripts.git
+   cd bioblend-scripts
+   ```
+1. Create a virtual env and install the required libraries
+   ```bash
+   python3 -m venv .venv
+   source .venv/bin/activate
+   pip install --upgrade pip
+   pip install -r requirements.txt
+   ```
 
 ### Credentials
 
-To use these scripts you will need an [API key for the Galaxy server](https://training.galaxyproject.org/training-material/faqs/galaxy/preferences_admin_api_key.html). While the Galaxy URL and API key can be specified on the command line, it is easier to define them as environment variables, preferably in a file you can source to make them available.
+You will need an [API key](https://training.galaxyproject.org/training-material/faqs/galaxy/preferences_admin_api_key.html) for every Galaxy instance you would like to intereact with.  The `abm` script loads the Galaxy server URLs and API keys from a Yaml configuration file that it expects to find in `$HOME/.abm/profile.yml`.  You can use the `profile-sample.yml` file as a starting point and it includes the URLs for all Galaxy instances we haves used to date (Sept 22, 2021 as of this writing). 
 
-```
-# In env.sh
-export GALAXY_SERVER=https://benchmarking.usegvl.org/initial/galaxy/
-export API_KEY=<your api key>
-```
+## Usage
 
-Then you can use:
+To get general usage information run the command:
 
-```
-source env.sh
-./workflow.py ...
+```bash
+python3 abm help
 ```
 
+You can get information about a specific `abm` command with:
 
-
-### OPTIONS
-
-```
-    -k|--key GALAXY_API_KEY
-        Specify the Galaxy API for the remote server
-    -s|--server
-        The URL for the remote Galaxy server
+```bash
+python3 abm workflow help
 ```
 
+When running a command (i.e. not just printing help) you will need to specify the Galaxy instance to target as the first parameter:
 
-### COMMANDS
-
+```bash
+python3 abm aws workflow list
+python3 abm aws workflow run configs/paired-dna.yml
 ```
-    wf|workflows
-        List all public workflows and their inputs
-    hist|histories
-        List all public histories and their datasets
-    st|status <invocation_id>
-        If the invocation_id is specified then the invocation report for that workflow
-        invocation is returned.  Otherwise lists all the workflow invocations on
-        the server
-    run <configuration.yml>
-        Run the workflow specified in the configuration.yml file.
-    version
-        Print the version number and exit
-    help|-h|--help
-        Prints this help screen
-```
-
-When a workflow is run with the `run` command the invocation details will be saved to a JSON file with the invocation ID as the file name with a *.json* extension.  Use the invocation ID with the `st` (`status`) command to get detailed information about that invocation.
-
-### EXAMPLES
-
-    ./workflow.py run configs/paired-dna.yml
-    ./workflow.py st da4e6f496166d13f
 
 ## Runtime Configuration
 
@@ -90,7 +55,7 @@ The YAML configuration for a single workflow looks like:
   reference_data:
     - name: Reference Transcript (FASTA)
       dataset_id: 50a269b7a99356aa
-  runs:
+      runs:
     - history_name: 1
       inputs:
       - name: FASTQ RNA Dataset
@@ -118,10 +83,30 @@ The YAML configuration for a single workflow looks like:
   - **inputs**
     The one or more input datasets to the workflow.  Each input specification consists of:
     1. **name** the input name as specified in the workflow editor
-    2. **dataset_id** the History API ID as displayed in the workflow editor or with the `./workflow.py histories` command.
+    2. **dataset_id** the History API ID as displayed in the workflow editor or with the  `abm history list` command.
 
-  
-### Contributing
+## Moving Workflows
+
+The `workflow translate` and `workflow validate` commands can be used when moving workflows and datasets between Galaxy instances.  The `workflow translate` command takes the path to a workflow configuration file, translates the workflow and dataset ID values to their name as it appears in the Galaxy user interface, and write the configuration to stdout.  To save the translated workflow configuration simple redirect the output to a file
+
+```bash
+python3 abm aws workflow translate config/rna-seq.yml > config/rna-seq-named.yml
+```
+
+Then use the `workflow validate` command to ensure that the other Galaxy instance has the same workflow and datasets installed.
+
+```b
+python3 abm gcp workflow validate config/rna-seq-named.yml
+```
+
+
+
+## Future Work
+
+- Integrate with the [Galaxy Benchmarker](https://github.com/usegalaxy-eu/GalaxyBenchmarker)
+- Use as much as we can from [Git-Gat](https://github.com/hexylena/git-gat)
+
+## Contributing
 
 Fork this repository and then create a working branch for yourself from the `dev` branch. All pull requests should target  `dev` and not the `master` branch.
 

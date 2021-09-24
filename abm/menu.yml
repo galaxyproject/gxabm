@@ -1,0 +1,143 @@
+- name: 
+    - workflow
+    - wf
+  help: 'manage workflows'
+  menu:
+    - name: ['upload', 'up']
+      handler: workflow.upload
+      params: PATH
+      help: 'upload a workflow file to the server'
+    - name: ['download', 'dl']
+      handler: workflow.download
+      help: 'download a workflow'
+      params: ID PATH
+    - name: ['list', 'ls']
+      handler: workflow.list
+      help: 'list workflows available on the serer'
+    - name: [show]
+      handler: workflow.show
+      help: display details about the workflow
+      params: ID
+    - name: [find]
+      handler: workflow.find
+      help: find a workflow by name
+      params: NAME
+    - name: ['delete', 'del', 'rm']
+      handler: workflow.delete
+      help: 'delete a workflow from the server'
+      params: ID
+    - name: ['run']
+      handler: workflow.run
+      help: run one of the workflow figurations
+      params: PATH
+    - name: ['translate', 'tr']
+      handler: workflow.translate
+      help: translate workflow and dataset ID values into names
+      params: PATH
+    - name: ['validate']
+      handler: workflow.validate
+      help: validate that workflow and dataset names can be translated into IDs
+      params: PATH
+- name:
+    - dataset
+    - ds
+  help: manage datasets
+  menu:
+    - name: ['upload', 'up']
+      handler: dataset.upload
+      params: PATH
+      help: upload a data set to the server
+    - name: ['download', 'dl']
+      handler: dataset.download
+      params: ID PATH
+      help: download a dataset from the server
+    - name: ['list', 'ls']
+      handler: dataset.list
+      help: lists all the datasets on the server
+    - name: ['show']
+      handler: dataset.show
+      params: ID
+      help: show detailed information on a dataset
+    - name: [cleanup, clean, clear]
+      handler: dataset.clean
+      params: "[STATE [STATE...]]"
+      help: deletes and purges all datasets that are not 'ok'
+- name:
+    - history
+    - hist
+    - hs
+  help: manage histories
+  menu:
+    - name: ['list', 'ls']
+      handler: history.list
+      help: list histories on the server
+    - name: ['import', 'imp', 'im']
+      params: "CLOUD HISTORY_ID JEHA_ID"
+      handler: history.himport
+      help: import a history from another Galaxy server
+    - name: ['export', 'exp', 'ex']
+      handler: history.export
+      params: ID
+      help: prepares a history for export to another Galaxy server
+    - name: [find]
+      handler: history.find
+      help: find a history by name
+      params: NAME
+    - name: [show]
+      handler: history.show
+      params: ID
+      help: show detailed information about a history
+    - name: [cleanup, clean, clear]
+      help: remove empty histories
+      handler: history.clean
+    - name: [delete, del, rm]
+      params: ID
+      help: delete a single history
+      handler: history.delete
+    - name: [ purge ]
+      params: STR
+      help: delete all histories that contain STR in the name. Use * to purge all histories.
+      handler: history.purge
+- name: [ jobs, job ]
+  help: manage jobs on the server
+  menu:
+    - name: [ list, ls ]
+      help: list all jobs
+      handler: job.list
+    - name: [ show ]
+      help: show detailed information about a job
+      handler: job.show
+      params: ID
+    - name: [ metrics ]
+      help: display runtime metrics for the job
+      handler: job.metrics
+      params: ID
+- name: [library, lib]
+  help: manage data libraries on the server
+  menu:
+    - name: [list, ls]
+      help: list all libraries on the server
+      handler: library.list
+    - name: [show]
+      help: show detailed information about a library
+      handler: library.show
+      params: ID
+    - name: [create, new]
+      help: create a new library
+      handler: library.create
+      params: NAME
+    - name: [upload, up]
+      help: upload a dataset to a libary
+      handler: library.upload
+      params: LIBRARY FOLDER DATASET_ID
+- name: [folder]
+  help: manage folders in data libraries
+  menu:
+    - name: [list, ls]
+      handler: folder.list
+      help: list the folders in a data library
+      params: LIBRARY_ID
+    - name: [create, new]
+      handler: folder.create
+      params: LIBRARY_ID NAME
+      help: creates a new folder in a data library
