@@ -22,7 +22,7 @@ import history
 import library
 import folder
 
-VERSION = '1.1.1'
+VERSION = '1.2.1-dev'
 
 BOLD = '\033[1m'
 CLEAR = '\033[0m'
