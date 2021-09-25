@@ -67,7 +67,8 @@ def print_main_help(menu_data):
     print()
     head("NOTES")
     print(f"    Available SUBCOMMANDS and OPTIONS depend on the command. Use the {bold('help')} subcommand")
-    print(f"    to learn more about each of the commands\n")
+    print(f"    to learn more about each of the commands. For example:\n")
+    print(f"    $> abm workflow help\n")
     print("    Copyright 2021 The Galaxy Project\n")
 
 
