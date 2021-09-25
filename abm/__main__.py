@@ -9,20 +9,20 @@ Copyright 2021 The Galaxy Project. All rights reserved.
 
 import common
 from common import parse_profile
+import yaml
+import sys
+import os
+
+# These imports are required because they need to be added to the symbol table
+# so the parse_menu method can find them in globals()
 import job
 import dataset
 import workflow
 import history
 import library
 import folder
-import yaml
-import json
-import sys
-import os
 
-from pprint import pprint
-
-VERSION = '1.1.0'
+VERSION = '1.1.1'
 
 BOLD = '\033[1m'
 CLEAR = '\033[0m'
@@ -38,12 +38,15 @@ def bold(text: str):
 
 
 help_args = ['help', '-h', '--help']
+version_args = ['-v', '--version', 'version']
 
 def head(text):
     print(bold(text))
 
+
 def command_list(commands:list):
     return '|'.join(bold(c) for c in commands)
+
 
 def print_main_help(menu_data):
     print()
@@ -66,6 +69,7 @@ def print_main_help(menu_data):
     print(f"    Available SUBCOMMANDS and OPTIONS depend on the command. Use the {bold('help')} subcommand")
     print(f"    to learn more about each of the commands\n")
     print("    Copyright 2021 The Galaxy Project\n")
+
 
 def print_help(menu_data, command):
     submenu = None
@@ -138,6 +142,7 @@ def parse_menu():
             alias(command_alias, name)
     return menu_data
 
+
 def version():
     print()
     print(f"    Galaxy Automated Benchmarking v{VERSION}")
@@ -151,7 +156,6 @@ def main():
         print_main_help(menu_data)
         return
 
-    version_args = ['-v', '--version', 'version']
     program = sys.argv[0]
     profile = sys.argv[1]
     if profile in version_args:
@@ -175,7 +179,6 @@ def main():
         print_help(menu_data, command)
         return
 
-
     common.GALAXY_SERVER, common.API_KEY = parse_profile(profile)
     if common.GALAXY_SERVER is None:
         return
@@ -185,7 +188,6 @@ def main():
             print(f'ERROR: unrecognized subcommand "{subcommand}"')
             print(f'Type "{program} {command} help" for more help.')
             return
-        # print(f'Dispatching "{command} {subcommand}"')
         handler = subcommands[subcommand]
         handler(params)
     else:
