@@ -1,5 +1,4 @@
 from common import connect
-from pprint import pprint
 import json
 
 
@@ -33,5 +32,8 @@ def metrics(args: list):
     metrics = {}
     for m in gi.jobs.get_metrics(args[0]):
         metrics[m['name']] = get_value(m)
-    print(f"{metrics['galaxy_slots']},{metrics['galaxy_memory_mb']},{metrics['runtime_seconds']}")
+    try:
+        print(f"{metrics['galaxy_slots']},{metrics['galaxy_memory_mb']},{metrics['runtime_seconds']}")
+    except:
+        print(',,')
 

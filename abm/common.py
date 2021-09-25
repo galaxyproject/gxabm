@@ -7,7 +7,6 @@ GALAXY_SERVER = None
 API_KEY = None
 PROFILE_SEARCH_PATH = ['~/.abm/profile.yml', '.abm-profile.yml']
 
-
 datasets = {
     "dna": [
         "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR013/ERR013101/ERR013101_1.fastq.gz",
@@ -20,6 +19,7 @@ datasets = {
     "rna": []
 }
 
+
 def connect():
     """
     Create a connection to the Galaxy instance
@@ -27,16 +27,12 @@ def connect():
     :return: a GalaxyInstance object
     """
     if GALAXY_SERVER is None:
-        print('ERROR: The Galaxy server URL has not been set.  You must either:')
-        print('  1. Configure a profile and put it in ~/.abm/profile.yml')
-        print('  2. Set the environment variable GALAXY_SERVER, or')
-        print('  3. Pass the server URL with the -s|--server option')
+        print('ERROR: The Galaxy server URL has not been set.  Please check your')
+        print('       configuration in ~/.abm/profile.yml and try again.')
         sys.exit(1)
     if API_KEY is None:
-        print('ERROR: The Galaxy API key has not been set.  You must either:')
-        print('  1. Configure a profile and put it in ~/.abm/profile.yml')
-        print('  2. Set the environment variable API_KEY, or')
-        print('  3. Pass the APi key with the -k|--key option')
+        print('ERROR: The Galaxy API key has not been set.  Please check your')
+        print('       configuration in ~/.abm/profile.yml and try again.')
         sys.exit(1)
     return bioblend.galaxy.GalaxyInstance(url=GALAXY_SERVER, key=API_KEY)
 
@@ -61,7 +57,9 @@ def parse_profile(profile_name: str):
         return None, None
     if profile_name not in profiles:
         print(f'ERROR: {profile_name} is not the name of a valid profile.')
-        print(f'The defined profile names are {profiles.keys()}')
+        keys = list(profiles.keys())
+        quoted_keys = ', '.join([f"'{k}'" for k in keys[0:-2]]) + f", and '{keys[-1]}'"
+        print(f'The defined profile names are: {quoted_keys}')
         return None, None
     profile = profiles[profile_name]
     return (profile['url'], profile['key'])
