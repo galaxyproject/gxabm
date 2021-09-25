@@ -1,6 +1,6 @@
 import sys
 
-from common import connect
+from common import connect, parse_profile
 from pprint import pprint
 
 #
@@ -68,15 +68,20 @@ def _import(args: list):
 
 
 def himport(args: list):
-    if len(args) != 3:
+    if len(args) != 3 or (len(args) == 1 and 'http' not in args[1]):
         print("ERROR: Invalid command")
         print(f"USAGE: {sys.argv[0]} history import SERVER HISTORY_ID JEHA_ID")
+        print(f"       {sys.argv[0]} history import http://GALAXY_SERVER_URL")
         return
 
-    server, key = parse_profile(args[0])
-    if server is None:
-        return
-    url = f"{server}history/export_archive?id={args[1]}&jeha_id={args[2]}"
+    if len(args) == 1:
+        url = args[0]
+    else:
+        server, key = parse_profile(args[0])
+        if server is None:
+            return
+        url = f"{server}history/export_archive?id={args[1]}&jeha_id={args[2]}"
+
     gi = connect()
     print(f"Importing history from {url}")
     result = gi.histories.import_history(url=url)
