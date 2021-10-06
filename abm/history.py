@@ -1,4 +1,6 @@
+import os
 import sys
+import yaml
 
 from common import connect, parse_profile
 from pprint import pprint
@@ -68,19 +70,33 @@ def _import(args: list):
 
 
 def himport(args: list):
-    if len(args) != 3 or (len(args) == 1 and 'http' not in args[1]):
-        print("ERROR: Invalid command")
+    def error_message(msg = 'Invalid command'):
+        print(f"ERROR: {msg}")
         print(f"USAGE: {sys.argv[0]} history import SERVER HISTORY_ID JEHA_ID")
         print(f"       {sys.argv[0]} history import http://GALAXY_SERVER_URL")
-        return
 
     if len(args) == 1:
-        url = args[0]
-    else:
+        if 'http' in args[0]:
+            url = args[0]
+        else:
+            config = f'{os.path.dirname(__file__)}/histories.yml'
+            if not os.path.exists(config):
+                error_message()
+                return
+            with open(config, 'r') as f:
+                datasets = yaml.load(f)
+            if not args[0] in datasets:
+                error_message('Please specify a URL or name of the history to import')
+                return
+            url = datasets[args[0]]
+    elif len(args) == 3:
         server, key = parse_profile(args[0])
         if server is None:
             return
         url = f"{server}history/export_archive?id={args[1]}&jeha_id={args[2]}"
+    else:
+        error_message()
+        return
 
     gi = connect()
     print(f"Importing history from {url}")
