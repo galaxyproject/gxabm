@@ -14,9 +14,11 @@ def list(args: list):
     for history in gi.histories.get_histories():
         print(f"{history['id']}\t{history['name']}\t{history['deleted']}\t{history['published']}")
 
-    print('Histories Published by all users')
-    for history in gi.histories.get_published_histories():
-        print(f"{history['id']}\t{history['name']}\t{history['deleted']}\t{history['published']}")
+    if len(args) > 0:
+        if args[0] in [ 'all', '-a', '--all' ]:
+            print('Histories Published by all users')
+            for history in gi.histories.get_published_histories():
+                print(f"{history['id']}\t{history['name']}\t{history['deleted']}\t{history['published']}")
 
 
 def show(args: list):
