@@ -2,7 +2,7 @@ import os
 import sys
 import yaml
 
-from common import connect, parse_profile
+from common import connect, parse_profile, GALAXY_SERVER
 from pprint import pprint
 
 #
@@ -53,6 +53,11 @@ def download(args: list):
 
 def upload(args: list):
     print('history upload not implemented')
+
+
+def test(args: list):
+    global GALAXY_SERVER
+    print(f"The history can be imported from {GALAXY_SERVER}/history/export_archive?")
 
 
 def export(args: list):

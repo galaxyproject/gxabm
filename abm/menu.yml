@@ -94,6 +94,9 @@
       params: ID
       help: delete a single history
       handler: history.delete
+    - name: [ test ]
+      handler: history.test
+      help: hook used for testing and development
     - name: [ purge ]
       params: STR
       help: delete all histories that contain STR in the name. Use * to purge all histories.
