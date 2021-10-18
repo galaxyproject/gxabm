@@ -102,9 +102,12 @@ def upload(args: list):
         print(f'ERROR: file not found: {path}')
         return
     gi = connect()
-    # pprint(gi.workflows.import_workflow_from_local_path(path, publish=True))
+    print("Importing the workflow")
+    pprint(gi.workflows.import_workflow_from_local_path(path, publish=True))
     runnable = for_path(path)
-    install_shed_repos(runnable, gi, False)
+    print("Installing tools")
+    result = install_shed_repos(runnable, gi, False)
+    pprint(result)
 
 
 def download(args: list):
