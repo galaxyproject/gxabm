@@ -23,8 +23,16 @@ def list(args: list):
 
 
 def show(args: list):
+    contents = False
+    if '-c' in args:
+        contents = True
+        args.remove('-c')
+    if '--contents' in args:
+        contents = True
+        args.remove('--contents')
+
     gi = connect()
-    history = gi.histories.show_history(args[0])
+    history = gi.histories.show_history(args[0], contents=contents)
     pprint(history)
 
 
@@ -57,25 +65,50 @@ def upload(args: list):
 
 
 def test(args: list):
-    # global GALAXY_SERVER
-    print(f"The history can be imported from {common.GALAXY_SERVER}/history/export_archive?id=9198b7907edea3fa&jeha_id=97cf03bfbaeeac26")
+    gi = connect()
+    gi.datasets.publish_dataset('bbd44e69cb8906b5a5560acb9ce77faa', published=True)
 
 
 def export(args: list):
     wait = False
-    if '--wait' in args or '-w' in args:
+    if '--wait' in args:
         wait = True
         args.remove('--wait')
+    if  '-w' in args:
+        wait = True
         args.remove('-w')
     if len(args) == 0:
         print("ERROR: no history ID specified")
         return
     gi = connect()
-    jeha_id = gi.histories.export_history(args[0], gzip=True, wait=True)
+    jeha_id = gi.histories.export_history(args[0], gzip=True, wait=wait)
     # global GALAXY_SERVER
-    print(f"The history can be imported from {common.GALAXY_SERVER}/history/export_archive?id={args[0]}&jeha_id={jeha_id}")
+    if wait:
+        print(f"The history can be imported from {common.GALAXY_SERVER}/history/export_archive?id={args[0]}&jeha_id={jeha_id}")
+    else:
+        print("Please run the following command to obtain the ID of the export job:")
+        print("python abm <cloud> job list | grep EXPOR")
+        print()
 
 
+def publish(args: list):
+    if len(args) == 0:
+        print("ERROR: No history ID provided.")
+        return
+    gi = connect()
+    gi.histories.update_history(args[0], published=True)
+
+
+def rename(args: list):
+    if len(args) != 2:
+        print("ERROR: Invalid command")
+        print("USAGE: rename ID 'new history name'")
+        return
+    gi = connect()
+    result = gi.histories.update_history(args[0], name=args[1])
+    pprint(result)
+
+    
 def _import(args: list):
     gi = connect()
     result = gi.histories.import_history(url=args[0])
@@ -94,7 +127,7 @@ def himport(args: list):
         else:
             config = f'{os.path.dirname(__file__)}/histories.yml'
             if not os.path.exists(config):
-                error_message()
+                error_message('The histories config file was not found.')
                 return
             with open(config, 'r') as f:
                 datasets = yaml.load(f)
@@ -105,6 +138,7 @@ def himport(args: list):
     elif len(args) == 3:
         server, key = parse_profile(args[0])
         if server is None:
+            error_message(f"Invalid server profile name: {args[0]}")
             return
         url = f"{server}history/export_archive?id={args[1]}&jeha_id={args[2]}"
     else:
