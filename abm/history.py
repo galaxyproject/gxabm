@@ -62,13 +62,18 @@ def test(args: list):
 
 
 def export(args: list):
+    wait = False
+    if '--wait' in args or '-w' in args:
+        wait = True
+        args.remove('--wait')
+        args.remove('-w')
     if len(args) == 0:
         print("ERROR: no history ID specified")
         return
     gi = connect()
     jeha_id = gi.histories.export_history(args[0], gzip=True, wait=True)
-    global GALAXY_SERVER
-    print(f"The history can be imported from {GALAXY_SERVER}/history/export_archive?id={args[0]}&jeha_id={jeha_id}")
+    # global GALAXY_SERVER
+    print(f"The history can be imported from {common.GALAXY_SERVER}/history/export_archive?id={args[0]}&jeha_id={jeha_id}")
 
 
 def _import(args: list):
