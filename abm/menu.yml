@@ -70,7 +70,8 @@
   menu:
     - name: ['list', 'ls']
       handler: history.list
-      help: list histories on the server
+      help: list histories on the server.
+      params: "[-a|--all]"
     - name: ['import', 'imp', 'im']
       params: "CLOUD [HISTORY_ID JEHA_ID | URL"
       handler: history.himport
@@ -85,8 +86,12 @@
       params: NAME
     - name: [show]
       handler: history.show
-      params: ID
+      params: "ID [-c|--contents]"
       help: show detailed information about a history
+    - name: [pub, publish]
+      handler: history.publish
+      help: publish the given history
+      params: ID
     - name: [cleanup, clean, clear]
       help: remove empty histories
       handler: history.clean
