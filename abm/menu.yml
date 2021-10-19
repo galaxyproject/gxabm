@@ -38,6 +38,14 @@
       handler: workflow.validate
       help: validate that workflow and dataset names can be translated into IDs
       params: PATH
+    - name: ['pub', 'publish']
+      handler: workflow.publish
+      help: publish a workflow
+      params: ID
+    - name: ['ren', 'rename']
+      handler: workflow.rename
+      params: "ID 'new workflow name'"
+      help: "rename a workflow on the Galaxy server"
 - name:
     - dataset
     - ds
@@ -92,6 +100,10 @@
       handler: history.publish
       help: publish the given history
       params: ID
+    - name: [ren, rename]
+      handler: history.rename
+      help: rename a history
+      params: "ID 'new history name'"
     - name: [cleanup, clean, clear]
       help: remove empty histories
       handler: history.clean
