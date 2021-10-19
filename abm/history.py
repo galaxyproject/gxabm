@@ -96,7 +96,8 @@ def publish(args: list):
         print("ERROR: No history ID provided.")
         return
     gi = connect()
-    gi.histories.update_history(args[0], published=True)
+    result = gi.histories.update_history(args[0], published=True)
+    print(f"Published: {result['published']}")
 
 
 def rename(args: list):
@@ -106,9 +107,9 @@ def rename(args: list):
         return
     gi = connect()
     result = gi.histories.update_history(args[0], name=args[1])
-    pprint(result)
+    print(f"History renamed to {result['name']}")
 
-    
+
 def _import(args: list):
     gi = connect()
     result = gi.histories.import_history(url=args[0])

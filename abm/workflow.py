@@ -223,6 +223,24 @@ def test(args: list):
     pprint(flows)
 
 
+def publish(args: list):
+    if len(args) != 1:
+        print("USAGE: publish ID" )
+        return
+    gi = connect()
+    result = gi.workflows.update_workflow(args[0], published=True)
+    print(f"Published: {result['published']}")
+
+
+def rename(args: list):
+    if len(args) != 2:
+        print("USAGE: rename ID 'new workflow name'")
+        return
+    gi = connect()
+    result = gi.workflows.update_workflow(args[0], name=args[1])
+    print(f"Renamed workflow to {result['name']}")
+
+
 def translate(args: list):
     if len(args) == 0:
         print('ERROR: no workflow configuration specified')
