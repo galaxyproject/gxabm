@@ -32,9 +32,8 @@ def find_workflow_id(gi, name_or_id):
         wf = gi.workflows.get_workflows(name=name_or_id, published=True)
         return wf[0]['id']
     except:
-        print('Caught an exception')
-        print(sys.exc_info())
-    print(f"Warning: unable to find workflow {name_or_id}")
+        pass
+    #print(f"Warning: unable to find workflow {name_or_id}")
     return None
 
 
@@ -287,21 +286,22 @@ def validate(args: list):
     if len(args) == 0:
         print('ERROR: no workflow configuration specified')
         return
-    # pprint(args)
 
     workflow_path = args[0]
-    print(f"Workflow path: {workflow_path}")
     if not os.path.exists(workflow_path):
         print(f'ERROR: can not find workflow configuration {workflow_path}')
         return
     workflows = parse_workflow(workflow_path)
-    # pprint(workflows)
     gi = connect()
     for workflow in workflows:
         wfid = workflow[Keys.WORKFLOW_ID]
-        wfid = find_workflow_id(gi, wfid)
+        try:
+            wfid = find_workflow_id(gi, wfid)
+        except:
+            wfid = None
+
         if wfid is None:
-            print(f"Unable to load the workflow ID for {workflow[Keys.WORKFLOW_ID]}")
+            print(f"The workflow '{workflow[Keys.WORKFLOW_ID]}' does not exist on this server.")
             return
         else:
             print(f"Workflow: {workflow[Keys.WORKFLOW_ID]} -> {wfid}")
