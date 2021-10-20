@@ -2,6 +2,11 @@
 
 set -eu
 
+if [[ $# != 2 ]] ; then
+    echo "USAGE: $0 <cloud> <job id>"
+    exit 1
+fi
+
 CLOUD=$1
 JOBID=$2
 
