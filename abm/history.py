@@ -70,12 +70,12 @@ def test(args: list):
 
 
 def export(args: list):
-    wait = False
-    if '--wait' in args:
-        wait = True
-        args.remove('--wait')
-    if  '-w' in args:
-        wait = True
+    wait = True
+    if '--no-wait' in args:
+        wait = False
+        args.remove('--no-wait')
+    if  '-n' in args:
+        wait = False
         args.remove('-w')
     if len(args) == 0:
         print("ERROR: no history ID specified")
@@ -87,7 +87,7 @@ def export(args: list):
         print(f"The history can be imported from {common.GALAXY_SERVER}/history/export_archive?id={args[0]}&jeha_id={jeha_id}")
     else:
         print("Please run the following command to obtain the ID of the export job:")
-        print("python abm <cloud> job list | grep EXPOR")
+        print("python abm <cloud> job list | grep EXPORT")
         print()
 
 

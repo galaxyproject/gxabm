@@ -86,7 +86,7 @@
       help: import a history from another Galaxy server
     - name: ['export', 'exp', 'ex']
       handler: history.export
-      params: ID
+      params: "ID [-n|--no-wait]"
       help: prepares a history for export to another Galaxy server
     - name: [find]
       handler: history.find
