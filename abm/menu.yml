@@ -132,6 +132,12 @@
       help: display runtime metrics for the job
       handler: job.metrics
       params: ID
+- name: [config, conf, cfg]
+  help: manage configuration profiles
+  menu:
+    - name: [list, ls]
+      help: list configured servers
+      handler: config.list
 - name: [library, lib]
   help: manage data libraries on the server
   menu:
