@@ -80,11 +80,18 @@ def export(args: list):
     if len(args) == 0:
         print("ERROR: no history ID specified")
         return
+    hid = args[0]
     gi = connect()
-    jeha_id = gi.histories.export_history(args[0], gzip=True, wait=wait)
+    jeha_id = gi.histories.export_history(hid, gzip=True, wait=wait)
     # global GALAXY_SERVER
     if wait:
         print(f"The history can be imported from {common.GALAXY_SERVER}/history/export_archive?id={args[0]}&jeha_id={jeha_id}")
+        history = gi.histories.show_history(hid, contents=False)
+        tags = history['tags']
+        if 'exported' not in tags:
+            tags.append('exported')
+            gi.histories.update_history(hid, tags)
+            print(f"History tagged with: {tags}")
     else:
         print("Please run the following command to obtain the ID of the export job:")
         print("python abm <cloud> job list | grep EXPORT")
