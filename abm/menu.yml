@@ -122,8 +122,9 @@
   help: manage jobs on the server
   menu:
     - name: [ list, ls ]
-      help: list all jobs
+      help: list all jobs, or jobs in a particular state
       handler: job.list
+      params: "[-s|--state ok|running|error|waiting]"
     - name: [ show ]
       help: show detailed information about a job
       handler: job.show
