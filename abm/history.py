@@ -9,17 +9,38 @@ from pprint import pprint
 #
 # History related functions
 #
+
+def longest_name(histories: list):
+    longest = 0
+    for history in histories:
+        if len(history['name']) > longest:
+            longest = len(history['name'])
+    return longest
+
+
+def pad(value: bool):
+    if value:
+        return 'True   '
+    return 'False  '
+
+
+def print_histories(histories: list):
+    id_width = len(histories[0]['id'])
+    name_width = longest_name(histories)
+
+    print(f"{'ID':<{id_width}} {'Name':<{name_width}} Deleted Public  Tags" )
+    for history in histories:
+        print(f"{history['id']:<{id_width}} {history['name']:<{name_width}} {pad(history['deleted'])} {pad(history['published'])} {', '.join(history['tags'])}")
+
+
 def list(args: list):
     gi = connect()
-    print('Listing histories')
-    for history in gi.histories.get_histories():
-        print(f"{history['id']}\t{history['name']}\t{history['deleted']}\t{history['published']}")
+    print_histories(gi.histories.get_histories())
 
     if len(args) > 0:
         if args[0] in [ 'all', '-a', '--all' ]:
             print('Histories Published by all users')
-            for history in gi.histories.get_published_histories():
-                print(f"{history['id']}\t{history['name']}\t{history['deleted']}\t{history['published']}")
+            print_histories(gi.histories.get_published_histories())
 
 
 def show(args: list):
@@ -90,7 +111,7 @@ def export(args: list):
         tags = history['tags']
         if 'exported' not in tags:
             tags.append('exported')
-            gi.histories.update_history(hid, tags)
+            gi.histories.update_history(hid, tags=tags)
             print(f"History tagged with: {tags}")
     else:
         print("Please run the following command to obtain the ID of the export job:")
