@@ -51,13 +51,18 @@ def show(args: list):
     if '--contents' in args:
         contents = True
         args.remove('--contents')
-
+    if len(args) == 0:
+        print("ERROR: No history ID provided.")
+        return
     gi = connect()
     history = gi.histories.show_history(args[0], contents=contents)
     pprint(history)
 
 
 def find(args: list):
+    if len(args) == 0:
+        print("ERROR: No history ID provided")
+        return
     gi = connect()
     for history in gi.histories.get_histories(name=args[0]):
         print(f"{history['id']}\t{history['name']}")
