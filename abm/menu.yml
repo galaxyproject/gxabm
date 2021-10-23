@@ -100,11 +100,11 @@
       handler: history.show
       params: "ID [-c|--contents]"
       help: show detailed information about a history
-    - name: [pub, publish]
+    - name: [publist, pub]
       handler: history.publish
       help: publish the given history
       params: ID
-    - name: [ren, rename]
+    - name: [renanm, ren]
       handler: history.rename
       help: rename a history
       params: "ID 'new history name'"
