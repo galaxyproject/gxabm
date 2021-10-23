@@ -77,6 +77,7 @@ def clean(args: list):
             pprint(info)
             return
 
+
 def download(args: list):
     print('history download not implemented')
 
@@ -211,3 +212,22 @@ def purge(args:list):
     print(f'Purged {count} histories')
 
 
+def tag(args: list):
+    replace = False
+    if '--replace' in args:
+        replace = True
+        args.remove('--replace')
+    if '-r' in args:
+        replace = True
+        args.remove('-r')
+    if len(args) < 2:
+        print("ERROR: Invalid command. Please provide the history ID and one or more tags.")
+        return
+
+    gi = connect()
+    hid = args.pop(0)
+    if not replace:
+        history = gi.histories.show_history(hid, contents=False)
+        args += history['tags']
+    gi.histories.update_history(hid, tags=args)
+    print(f"Set history tags to: {', '.join(args)}")

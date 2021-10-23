@@ -92,6 +92,10 @@
       handler: history.find
       help: find a history by name
       params: NAME
+    - name: [tag]
+      handler: history.tag
+      help: add or replace history tags
+      params: ID [-r|--repace] tag1 [tag2...]
     - name: [show]
       handler: history.show
       params: "ID [-c|--contents]"

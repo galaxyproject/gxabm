@@ -45,4 +45,3 @@ def metrics(args: list):
         print(f"{metrics['galaxy_slots']},{metrics['galaxy_memory_mb']},{metrics['runtime_seconds']}")
     except:
         print(',,')
-
