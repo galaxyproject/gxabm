@@ -10,9 +10,12 @@ js:
 main:
   url: https://usegalaxy.org
   key: yourapikeygoeshere
-bench1:
+b1:
   url: https://bench1.usegvl.org/galaxy
   key: yourapikeygoeshere
-bench2:
+b2:
   url: https://bench2.usegvl.org/galaxy
+  key: yourapikeygoeshere
+ks1:
+  url: https://ks1.usegvl.org/initial/galaxy/
   key: yourapikeygoeshere

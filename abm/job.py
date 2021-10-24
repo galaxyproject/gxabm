@@ -1,10 +1,19 @@
 from common import connect
 import json
-
+from pprint import pprint
 
 def list(args: list):
+    state = ''
+    while len(args) > 0:
+        arg = args.pop(0)
+        if arg in ['-s', '--state', 'state']:
+            if len(args) == 0:
+                print("ERROR: specify a state, eg 'ok', 'error'")
+                return
+            state = args.pop(0)
+
     gi = connect()
-    for job in gi.jobs.get_jobs():
+    for job in gi.jobs.get_jobs(state=state):
         print(f"{job['id']}\t{job['state']}\t{job['update_time']}\t{job['tool_id']}")
 
 
@@ -36,4 +45,3 @@ def metrics(args: list):
         print(f"{metrics['galaxy_slots']},{metrics['galaxy_memory_mb']},{metrics['runtime_seconds']}")
     except:
         print(',,')
-

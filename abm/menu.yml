@@ -38,6 +38,14 @@
       handler: workflow.validate
       help: validate that workflow and dataset names can be translated into IDs
       params: PATH
+    - name: ['pub', 'publish']
+      handler: workflow.publish
+      help: publish a workflow
+      params: ID
+    - name: ['ren', 'rename']
+      handler: workflow.rename
+      params: "ID 'new workflow name'"
+      help: "rename a workflow on the Galaxy server"
 - name:
     - dataset
     - ds
@@ -70,23 +78,36 @@
   menu:
     - name: ['list', 'ls']
       handler: history.list
-      help: list histories on the server
+      help: list histories on the server.
+      params: "[-a|--all]"
     - name: ['import', 'imp', 'im']
       params: "CLOUD [HISTORY_ID JEHA_ID | URL"
       handler: history.himport
       help: import a history from another Galaxy server
     - name: ['export', 'exp', 'ex']
       handler: history.export
-      params: ID
+      params: "ID [-n|--no-wait]"
       help: prepares a history for export to another Galaxy server
     - name: [find]
       handler: history.find
       help: find a history by name
       params: NAME
+    - name: [tag]
+      handler: history.tag
+      help: add or replace history tags
+      params: ID [-r|--repace] tag1 [tag2...]
     - name: [show]
       handler: history.show
-      params: ID
+      params: "ID [-c|--contents]"
       help: show detailed information about a history
+    - name: [publish, pub]
+      handler: history.publish
+      help: publish the given history
+      params: ID
+    - name: [renanm, ren]
+      handler: history.rename
+      help: rename a history
+      params: "ID 'new history name'"
     - name: [cleanup, clean, clear]
       help: remove empty histories
       handler: history.clean
@@ -94,6 +115,9 @@
       params: ID
       help: delete a single history
       handler: history.delete
+    - name: [ test ]
+      handler: history.test
+      help: hook used for testing and development
     - name: [ purge ]
       params: STR
       help: delete all histories that contain STR in the name. Use * to purge all histories.
@@ -102,8 +126,9 @@
   help: manage jobs on the server
   menu:
     - name: [ list, ls ]
-      help: list all jobs
+      help: list all jobs, or jobs in a particular state
       handler: job.list
+      params: "[-s|--state ok|running|error|waiting]"
     - name: [ show ]
       help: show detailed information about a job
       handler: job.show
@@ -112,6 +137,12 @@
       help: display runtime metrics for the job
       handler: job.metrics
       params: ID
+- name: [config, conf, cfg]
+  help: manage configuration profiles
+  menu:
+    - name: [list, ls]
+      help: list configured servers
+      handler: config.list
 - name: [library, lib]
   help: manage data libraries on the server
   menu:
