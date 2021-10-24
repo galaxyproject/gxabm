@@ -100,7 +100,7 @@
       handler: history.show
       params: "ID [-c|--contents]"
       help: show detailed information about a history
-    - name: [publist, pub]
+    - name: [publish, pub]
       handler: history.publish
       help: publish the given history
       params: ID
