@@ -28,7 +28,7 @@ import config
 log = logging.getLogger('abm')
 log.setLevel(logging.ERROR)
 
-VERSION = '1.3.0-dev'
+VERSION = '1.3.0'
 
 BOLD = '\033[1m'
 CLEAR = '\033[0m'
