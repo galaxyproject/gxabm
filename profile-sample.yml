@@ -12,7 +12,7 @@ main:
   key: yourapikeygoeshere
 bench1:
   url: https://bench1.usegvl.org/galaxy
-  key: yourapikeygoeshere
+  key: 88aa5518ca165e7599ab44cf7f9077dd
 bench2:
   url: https://bench2.usegvl.org/galaxy
-  key: yourapikeygoeshere
+  key: 86eed5dd512abeee994dbddf8070dd7d
