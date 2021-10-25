@@ -32,9 +32,8 @@ def find_workflow_id(gi, name_or_id):
         wf = gi.workflows.get_workflows(name=name_or_id, published=True)
         return wf[0]['id']
     except:
-        print('Caught an exception')
-        print(sys.exc_info())
-    print(f"Warning: unable to find workflow {name_or_id}")
+        pass
+    #print(f"Warning: unable to find workflow {name_or_id}")
     return None
 
 
@@ -102,9 +101,12 @@ def upload(args: list):
         print(f'ERROR: file not found: {path}')
         return
     gi = connect()
-    # pprint(gi.workflows.import_workflow_from_local_path(path, publish=True))
+    print("Importing the workflow")
+    pprint(gi.workflows.import_workflow_from_local_path(path, publish=True))
     runnable = for_path(path)
-    install_shed_repos(runnable, gi, False)
+    print("Installing tools")
+    result = install_shed_repos(runnable, gi, False)
+    pprint(result)
 
 
 def download(args: list):
@@ -220,6 +222,24 @@ def test(args: list):
     pprint(flows)
 
 
+def publish(args: list):
+    if len(args) != 1:
+        print("USAGE: publish ID" )
+        return
+    gi = connect()
+    result = gi.workflows.update_workflow(args[0], published=True)
+    print(f"Published: {result['published']}")
+
+
+def rename(args: list):
+    if len(args) != 2:
+        print("USAGE: rename ID 'new workflow name'")
+        return
+    gi = connect()
+    result = gi.workflows.update_workflow(args[0], name=args[1])
+    print(f"Renamed workflow to {result['name']}")
+
+
 def translate(args: list):
     if len(args) == 0:
         print('ERROR: no workflow configuration specified')
@@ -266,25 +286,27 @@ def validate(args: list):
     if len(args) == 0:
         print('ERROR: no workflow configuration specified')
         return
-    # pprint(args)
 
     workflow_path = args[0]
-    print(f"Workflow path: {workflow_path}")
     if not os.path.exists(workflow_path):
         print(f'ERROR: can not find workflow configuration {workflow_path}')
         return
     workflows = parse_workflow(workflow_path)
-    # pprint(workflows)
     gi = connect()
     for workflow in workflows:
         wfid = workflow[Keys.WORKFLOW_ID]
-        wfid = find_workflow_id(gi, wfid)
+        try:
+            wfid = find_workflow_id(gi, wfid)
+        except:
+            wfid = None
+
         if wfid is None:
-            print(f"Unable to load the workflow ID for {workflow[Keys.WORKFLOW_ID]}")
+            print(f"The workflow '{workflow[Keys.WORKFLOW_ID]}' does not exist on this server.")
             return
         else:
             print(f"Workflow: {workflow[Keys.WORKFLOW_ID]} -> {wfid}")
         inputs = {}
+        errors = 0
         history_base_name = wfid
         if Keys.HISTORY_BASE_NAME in workflow:
             history_base_name = workflow[Keys.HISTORY_BASE_NAME]
@@ -294,29 +316,28 @@ def validate(args: list):
                 input = gi.workflows.get_workflow_inputs(wfid, spec[Keys.NAME])
                 if input is None or len(input) == 0:
                     print(f'ERROR: Invalid input specification for {spec[Keys.NAME]}')
-                    sys.exit(1)
-                dsid = find_dataset_id(gi, spec[Keys.DATASET_ID])
-                print(f"Reference input dataset {spec[Keys.DATASET_ID]} -> {dsid}")
-                inputs[input[0]] = {'id': dsid, 'src': 'hda'}
+                    errors += 1
+                    #sys.exit(1)
+                else:
+                    dsid = find_dataset_id(gi, spec[Keys.DATASET_ID])
+                    print(f"Reference input dataset {spec[Keys.DATASET_ID]} -> {dsid}")
+                    inputs[input[0]] = {'id': dsid, 'src': 'hda'}
 
         count = 0
         for run in workflow[Keys.RUNS]:
             count += 1
-            if Keys.HISTORY_NAME in run:
-                output_history_name = f"{history_base_name} {run[Keys.HISTORY_NAME]}"
-            else:
-                output_history_name = f"{history_base_name} run {count}"
             for spec in run[Keys.INPUTS]:
                 input = gi.workflows.get_workflow_inputs(wfid, spec[Keys.NAME])
                 if input is None or len(input) == 0:
                     print(f'ERROR: Invalid input specification for {spec[Keys.NAME]}')
-                    raise
-                dsid = find_dataset_id(gi, spec[Keys.DATASET_ID])
-                print(f"Input dataset: {spec[Keys.DATASET_ID]} -> {dsid}")
-                inputs[input[0]] = {'id': dsid, 'src': 'hda'}
+                    errors += 1
+                else:
+                    dsid = find_dataset_id(gi, spec[Keys.DATASET_ID])
+                    print(f"Input dataset: {spec[Keys.DATASET_ID]} -> {dsid}")
+                    inputs[input[0]] = {'id': dsid, 'src': 'hda'}
 
-
-
-
-
+        if errors == 0:
+            print("This workflow configuration is valid and can be executed on this server.")
+        else:
+            print("The above problems need to be corrected before this workflow configuration can be used.")
 

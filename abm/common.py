@@ -37,12 +37,11 @@ def connect():
     return bioblend.galaxy.GalaxyInstance(url=GALAXY_SERVER, key=API_KEY)
 
 
-def parse_profile(profile_name: str):
+def load_profiles():
     '''
-    Parse the profile containing Galaxy URLs and API keys.
+    Load the profile configuration file.
 
-    :param profile_name: path to the profile to parse
-    :return: a tuple containing the Galaxy URL and API key
+    :return: a dictionary containing the YAML content of the configuration.
     '''
     profiles = None
     for profile_path in PROFILE_SEARCH_PATH:
@@ -52,6 +51,17 @@ def parse_profile(profile_name: str):
                 # print(f'Loading profile from {profile_path}')
                 profiles = yaml.safe_load(f)
             break
+    return profiles
+
+
+def parse_profile(profile_name: str):
+    '''
+    Parse the profile containing Galaxy URLs and API keys.
+
+    :param profile_name: path to the profile to parse
+    :return: a tuple containing the Galaxy URL and API key
+    '''
+    profiles = load_profiles()
     if profiles is None:
         print(f'ERROR: Could not locate an abm profile file in {PROFILE_SEARCH_PATH}')
         return None, None

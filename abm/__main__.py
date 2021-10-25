@@ -7,11 +7,13 @@ Copyright 2021 The Galaxy Project. All rights reserved.
 
 """
 
-import common
-from common import parse_profile
 import yaml
 import sys
 import os
+import logging
+import common
+from common import parse_profile
+from pprint import pprint
 
 # These imports are required because they need to be added to the symbol table
 # so the parse_menu method can find them in globals()
@@ -21,8 +23,12 @@ import workflow
 import history
 import library
 import folder
+import config
 
-VERSION = '1.3.0-dev'
+log = logging.getLogger('abm')
+log.setLevel(logging.ERROR)
+
+VERSION = '1.3.0'
 
 BOLD = '\033[1m'
 CLEAR = '\033[0m'
@@ -108,6 +114,7 @@ def get_menu(name: str):
 
 
 def register_handler(name: str, commands: list, handler):
+    log.debug("Registering handler for menu: %s", name)
     menu = get_menu(name)
     for command in commands:
         menu[command] = handler
@@ -118,6 +125,7 @@ def alias(shortcut, fullname):
 
 
 def parse_menu():
+    log.debug('parse_menu')
     menu_config = f'{os.path.dirname(__file__)}/menu.yml'
     if not os.path.exists(menu_config):
         print(f"ERROR: Unable to load the menu configuration from {menu_config}")
@@ -128,14 +136,17 @@ def parse_menu():
         # Use the first name in the list as the main name for the item. The
         # others will be aliased below.
         name = main_menu_item['name'][0]
+        log.debug('Menu name: %s', name)
         for submenu_item in main_menu_item['menu']:
             handler = globals()
             handler_name = submenu_item['handler']
+            log.debug('Submenu item: %s', handler_name)
             for part in handler_name.split('.'):
+                log.debug("Part: %s", part)
                 if type(handler) is not dict:
                     handler = handler.__dict__
                 handler = handler[part]
-            if type(handler) == 'dict':
+            if isinstance(handler, dict):
                 print(f"Handler not found {handler_name}")
                 sys.exit(1)
             register_handler(name, submenu_item['name'], handler)
@@ -157,22 +168,40 @@ def main():
         print_main_help(menu_data)
         return
 
+    if '--debug' in sys.argv:
+        print("Enable debugging")
+        log.setLevel(logging.DEBUG)
+        sys.argv.remove('--debug')
     program = sys.argv[0]
     profile = sys.argv[1]
     if profile in version_args:
         version()
         return
-    command = sys.argv[2]
-    if command in version_args:
-        version()
-        return
-    subcommand = None
-    if len(sys.argv) > 3:
-        subcommand = sys.argv[3]
-    if len(sys.argv) > 4:
-        params = sys.argv[4:]
+
+    if profile == 'config':
+        command = profile
+        profile = None
+        if len(sys.argv) < 3:
+            print_help(menu_data, command)
+            return
+        subcommand = sys.argv[2]
+        if len(sys.argv) > 3:
+            params = sys.argv[3:]
+        else:
+            params = []
     else:
-        params = []
+        command = sys.argv[2]
+        if command in version_args:
+            version()
+            return
+        subcommand = None
+        if len(sys.argv) > 3:
+            subcommand = sys.argv[3]
+        if len(sys.argv) > 4:
+            params = sys.argv[4:]
+        else:
+            params = []
+
     if command in help_args:
         print_help(menu_data, profile)
         return
@@ -180,9 +209,10 @@ def main():
         print_help(menu_data, command)
         return
 
-    common.GALAXY_SERVER, common.API_KEY = parse_profile(profile)
-    if common.GALAXY_SERVER is None:
-        return
+    if profile is not None:
+        common.GALAXY_SERVER, common.API_KEY = parse_profile(profile)
+        if common.GALAXY_SERVER is None:
+            return
     if command in all_commands:
         subcommands = all_commands[command]
         if subcommand not in subcommands:
@@ -192,7 +222,7 @@ def main():
         handler = subcommands[subcommand]
         handler(params)
     else:
-        print(f'\n{bold("ERROR:")} Unknown command {bold("{command}")}')
+        print(f'\n{bold("ERROR:")} Unknown command {bold({command})}')
         print_main_help(menu_data)
 
 

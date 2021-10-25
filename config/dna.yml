@@ -1,30 +1,30 @@
-- workflow_id: a957da0e6fed152b
-  output_history_base_name: DNA 16C 50G-MEM
+- workflow_id: 39f1e01ca3950c18
+  output_history_base_name: DNA 29C 116G-MEM
   runs:
     - history_name: HG00171
       inputs:
       - name: FASTQ Dataset
-        dataset_id: e49d4a2f705b9571
+        dataset_id: 39f1e01ca3950c18
     - history_name: HG00152
       inputs:
       - name: FASTQ Dataset
-        dataset_id: 234de07cebbc5c94
+        dataset_id: de503f2935ac5629
     - history_name: HG00599
       inputs:
       - name: FASTQ Dataset
-        dataset_id: 6e64073425d9dad5
+        dataset_id: 313eddf294db855d
     - history_name: HG01167
       inputs:
       - name: FASTQ Dataset
-        dataset_id: 6ae43b3a46b25f74
+        dataset_id: e7234e29592c1dfb
     - history_name: HG003
       inputs:
       - name: FASTQ Dataset
-        dataset_id: dbafe90fc7cff8d0
-- workflow_id: b94314cb9cb46380
-  output_history_base_name: PairedDNA 16C 50G-MEM
+        dataset_id: 4783dc2b62a59076
+- workflow_id: de503f2935ac5629
+  output_history_base_name: PairedDNA 29C 116G-MEM
   runs:
     - history_name: SRS9540951
       inputs:
       - name: FASTQ Dataset
-        dataset_id: f0fd4a09540cb16f
+        dataset_id: 1911cd3ad456a791
