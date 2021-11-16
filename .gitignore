@@ -2,6 +2,7 @@ __pycache__/
 .venv
 .idea
 .ktx
+.kube/
 invocations/
 workflows/
 data/
