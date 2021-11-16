@@ -53,8 +53,8 @@ def find_dataset_id(gi, name_or_id):
     except:
         print('Caught an exception')
         print(sys.exc_info())
-    print(f"Warning: unable to find dataset {name_or_id}")
-    return name_or_id
+    #print(f"Warning: unable to find dataset {name_or_id}")
+    return None
 
 
 def parse_workflow(workflow_path: str):
@@ -69,6 +69,7 @@ def parse_workflow(workflow_path: str):
         except yaml.YAMLError as exc:
             print('Error encountered parsing the YAML input file')
             print(exc)
+            #TODO Don't do this...
             sys.exit(1)
     return config
 
@@ -320,8 +321,12 @@ def validate(args: list):
                     #sys.exit(1)
                 else:
                     dsid = find_dataset_id(gi, spec[Keys.DATASET_ID])
-                    print(f"Reference input dataset {spec[Keys.DATASET_ID]} -> {dsid}")
-                    inputs[input[0]] = {'id': dsid, 'src': 'hda'}
+                    if dsid is None:
+                        print(f"ERROR: Reference dataset not found {spec[Keys.DATASET_ID]}")
+                        errors += 1
+                    else:
+                        print(f"Reference input dataset {spec[Keys.DATASET_ID]} -> {dsid}")
+                        inputs[input[0]] = {'id': dsid, 'src': 'hda'}
 
         count = 0
         for run in workflow[Keys.RUNS]:
@@ -333,11 +338,18 @@ def validate(args: list):
                     errors += 1
                 else:
                     dsid = find_dataset_id(gi, spec[Keys.DATASET_ID])
-                    print(f"Input dataset: {spec[Keys.DATASET_ID]} -> {dsid}")
-                    inputs[input[0]] = {'id': dsid, 'src': 'hda'}
+                    if dsid is None:
+                        print(f"ERROR: Dataset not found {spec[Keys.DATASET_ID]}")
+                        errors += 1
+                    else:
+                        print(f"Input dataset: {spec[Keys.DATASET_ID]} -> {dsid}")
+                        inputs[input[0]] = {'id': dsid, 'src': 'hda'}
 
         if errors == 0:
             print("This workflow configuration is valid and can be executed on this server.")
         else:
+            print("---------------------------------")
+            print("WARNING")
             print("The above problems need to be corrected before this workflow configuration can be used.")
+            print("---------------------------------")
 
