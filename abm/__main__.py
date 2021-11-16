@@ -24,6 +24,9 @@ import history
 import library
 import folder
 import config
+import benchmark
+import helm
+import kubectl
 
 log = logging.getLogger('abm')
 log.setLevel(logging.ERROR)
@@ -210,7 +213,7 @@ def main():
         return
 
     if profile is not None:
-        common.GALAXY_SERVER, common.API_KEY = parse_profile(profile)
+        common.GALAXY_SERVER, common.API_KEY, common.KUBECONFIG = parse_profile(profile)
         if common.GALAXY_SERVER is None:
             return
     if command in all_commands:
