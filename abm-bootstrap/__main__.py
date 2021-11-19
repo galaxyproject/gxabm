@@ -77,9 +77,7 @@ def wait_for(cloud: str, id: str):
     print(result)
     # lines = result.split('\n')
     # job = filter(lines, id)
-    if len(job) == 1:
-        tokens = job[0].split()
-        waiting = tokens[2] != 'Running'
+    waiting = json.dumps(result)['state'] != 'ok'
     if waiting:
         # print(f'{len(pods)} zzz...')
         time.sleep(30)
