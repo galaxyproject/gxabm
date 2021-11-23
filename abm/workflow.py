@@ -144,6 +144,11 @@ def run(args: list):
     if len(args) == 0:
         print('ERROR: no workflow configuration specified')
         return
+    if '--force' not in args:
+        print("This method has been deprected.  Include the --force option")
+        print("to force exection of the workflow.run method.")
+        return
+    args.remove('--force')
     workflow_path = args[0]
     if not os.path.exists(workflow_path):
         print(f'ERROR: can not find workflow configuration {workflow_path}')
