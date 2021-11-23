@@ -28,8 +28,8 @@
       params: ID
     - name: ['run']
       handler: workflow.run
-      help: run one of the workflow figurations
-      params: PATH
+      help: DEPRECATED. run one of the workflow figurations. Use the --force option to use.
+      params: PATH [--force]
     - name: ['translate', 'tr']
       handler: workflow.translate
       help: translate workflow and dataset ID values into names
@@ -152,6 +152,9 @@
       help: run a benchmark
       handler: benchmark.run
       params: PATH
+    - name: [summarize, summary]
+      help: summarize metrics
+      handler: benchmark.summarize
     - name: [test]
       help: entry point for test (experimental) code
       handler: benchmark.test
