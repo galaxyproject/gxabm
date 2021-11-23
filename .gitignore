@@ -6,5 +6,6 @@ __pycache__/
 invocations/
 workflows/
 data/
+metrics/
 tools.yml
 
