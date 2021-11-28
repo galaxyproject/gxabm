@@ -4,6 +4,8 @@ import yaml
 import os
 import time
 import json
+import io
+from contextlib import redirect_stdout
 from pprint import pprint
 
 # Args from yml config files
@@ -17,11 +19,8 @@ def main():
       profile = yaml.safe_load(f)
   if profile is None:
     print(f'ERROR: Could not locate an abm profile file in {configPath}')
-  
-  # runs = profile["runs"] # num
-  # workflowConfs = profile["workflow_conf"] # array
+
   clouds = profile['cloud']
-  # jobConfigs = profile["jobConfigs"] # array
 
   # RNA-paired hist on main: b7a6e3abfe13a9c3
   # RNA-single hist on main: 68c184b7901bc21a
@@ -36,12 +35,14 @@ def main():
   for id in historyID:
     # make separate function
     # got rid of --no-wait
-    result = subprocess.run(["python3", "abm", "main", "history", "export", id, "--no-wait"])
     # returns job id, pass abm the status
     # wait for - give cloud id
-    exportJobID = subprocess.run(["python3", "abm", "main", "job", "list", '|', "grep", "EXPORT"])
-    wait_for("main", exportJobID.stdout)
-    exportURL.append(result.stdout)
+    wait_for("main", id)
+    f = io.StringIO()
+    with redirect_stdout(f):
+      subprocess.run(["python3", "abm", "main", "history", "export", id])
+    out = f.getvalue()
+    exportURL.append((out)[32:])
 
   # download workflows from js
   for wf in workflows:
@@ -67,6 +68,7 @@ def main():
 
 
 def wait_for(cloud: str, id: str):
+  subprocess.run(["python3", "abm", "main", "history", "export", id, "--no-wait"])
   print(f"Waiting for export")
   waiting = True
   while waiting:
@@ -77,7 +79,7 @@ def wait_for(cloud: str, id: str):
     print(result)
     # lines = result.split('\n')
     # job = filter(lines, id)
-    waiting = json.dumps(result)['state'] != 'ok'
+    waiting = json.loads(result)['state'] != 'ok'
     if waiting:
         # print(f'{len(pods)} zzz...')
         time.sleep(30)
