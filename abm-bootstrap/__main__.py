@@ -40,14 +40,16 @@ def main():
     wait_for("main", id)
     f = io.StringIO()
     with redirect_stdout(f):
+      # Should print statement that includes URL
       subprocess.run(["python3", "abm", "main", "history", "export", id])
     out = f.getvalue()
     exportURL.append((out)[32:])
 
+  # print(exportURL)
   # download workflows from js
   for wf in workflows:
-    subprocess.run(["python3", "abm", "js", "wf", "download", wf, "./workflows"])
-    subprocess.run(["python3", "abm", "js", "wf", "translate", wf])
+    subprocess.run(["python3", "abm", "main", "wf", "download", wf, "./workflows"])
+    subprocess.run(["python3", "abm", "main", "wf", "translate", wf])
   
   # for each instance:
   for cloud in clouds:
