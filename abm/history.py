@@ -111,18 +111,22 @@ def export(args: list):
     gi = connect()
     jeha_id = gi.histories.export_history(hid, gzip=True, wait=wait)
     # global GALAXY_SERVER
+    export_url = "unknown"
     if wait:
-        print(f"The history can be imported from {common.GALAXY_SERVER}/history/export_archive?id={args[0]}&jeha_id={jeha_id}")
+        export_url = f"{common.GALAXY_SERVER}/history/export_archive?id={args[0]}&jeha_id={jeha_id}"
+        print(f"The history can be imported from {export_url}")
         history = gi.histories.show_history(hid, contents=False)
         tags = history['tags']
         if 'exported' not in tags:
             tags.append('exported')
             gi.histories.update_history(hid, tags=tags)
             print(f"History tagged with: {tags}")
+
     else:
         print("Please run the following command to obtain the ID of the export job:")
         print("python abm <cloud> job list | grep EXPORT")
         print()
+    return export_url
 
 
 def publish(args: list):

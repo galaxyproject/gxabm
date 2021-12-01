@@ -5,6 +5,7 @@ import os
 import time
 import json
 import io
+from abm import history, workflow
 from contextlib import redirect_stdout
 from pprint import pprint
 
@@ -38,12 +39,15 @@ def main():
     # returns job id, pass abm the status
     # wait for - give cloud id
     wait_for("main", id)
-    f = io.StringIO()
-    with redirect_stdout(f):
-      # Should print statement that includes URL
-      subprocess.run(["python3", "abm", "main", "history", "export", id])
-    out = f.getvalue()
-    exportURL.append((out)[32:])
+    # f = io.StringIO()
+    # with redirect_stdout(f):
+    #   # Should print statement that includes URL
+    #   subprocess.run(["python3", "abm", "main", "history", "export", id])
+    # out = f.getvalue()
+    result = history.export([id])
+    # exportURL.append((out)[32:])
+    pprint(result)
+  exit(0)
 
   # print(exportURL)
   # download workflows from js
