@@ -1,0 +1,21 @@
+gcp:
+  url: http://35.190.158.130/galaxy/
+  key: yourapikeygoeshere
+aws:
+  url: http://34.228.216.217/galaxy/
+  key: yourapikeygoeshere
+js:
+  url: https://benchmarking.usegvl.org/initial/galaxy/
+  key: yourapikeygoeshere
+main:
+  url: https://usegalaxy.org/
+  key: yourapikeygoeshere
+b1:
+  url: https://bench1.usegvl.org/galaxy/
+  key: yourapikeygoeshere
+b2:
+  url: https://bench2.usegvl.org/galaxy/
+  key: yourapikeygoeshere
+ks1:
+  url: https://ks1.usegvl.org/initial/galaxy/
+  key: yourapikeygoeshere
