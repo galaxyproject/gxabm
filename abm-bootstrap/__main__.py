@@ -5,6 +5,7 @@ import os
 import time
 import json
 import io
+from abm import history, workflow
 from contextlib import redirect_stdout
 from pprint import pprint
 
@@ -38,12 +39,13 @@ def main():
     # returns job id, pass abm the status
     # wait for - give cloud id
     wait_for("main", id)
-    f = io.StringIO()
-    with redirect_stdout(f):
-      # Should print statement that includes URL
-      subprocess.run(["python3", "abm", "main", "history", "export", id])
-    out = f.getvalue()
-    exportURL.append((out)[32:])
+    # f = io.StringIO()
+    # with redirect_stdout(f):
+    #   # Should print statement that includes URL
+    #   subprocess.run(["python3", "abm", "main", "history", "export", id])
+    # out = f.getvalue()
+    result = history.export([id])
+    exportURL.append(result)
 
   # print(exportURL)
   # download workflows from js
@@ -60,7 +62,12 @@ def main():
     for filename in os.listdir("./workflow"):
       validateStatus = subprocess.run(["python3", "abm", cloud, "wf", "validate", filename],
                                       capture_output=True, text=True)
-                                      
+      pprint(json.dumps(validateStatus.stdout))
+      
+      # pprint Python obj
+      # take returned json
+      # import abm folder/workflow/history/etc. and run those methods
+      # if validateStatus ... ?
       subprocess.run(["python3", "abm", cloud, "wf", "upload", filename])
 
 
