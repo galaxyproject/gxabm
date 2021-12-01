@@ -1,29 +1,29 @@
-- workflow_id: 8557135ce1bff84d
-  output_history_base_name: PairRNA 16C 58G-MEM
+- workflow_id: 313eddf294db855d
+  output_history_base_name: PairRNA 29C 116G-MEM
   reference_data:
     - name: Reference Transcript (FASTA)
-      dataset_id: d61e7f405474c541
+      dataset_id: 51c3ab8059d6e8c3
   runs:
     - history_name: SRS9276533
       inputs:
       - name: FASTQ RNA Dataset
-        dataset_id: 28fa757e56346a34
+        dataset_id: 13fe9f71f926a1c7
     - history_name: SRS9276520
       inputs:
       - name: FASTQ RNA Dataset
-        dataset_id: 1faa2d3b2ed5c436
+        dataset_id: 3aa1f85f26578042
     - history_name: SRS9276534
       inputs:
       - name: FASTQ RNA Dataset
-        dataset_id: ec8c5112d867eb82
-- workflow_id: 69906830c7478863
-  output_history_base_name: RNA 16C 58G-MEM
+        dataset_id: be4cbda5b9d08d77
+- workflow_id: e7234e29592c1dfb
+  output_history_base_name: RNA 29C 116G-MEM
   reference_data:
     - name: Reference Transcript (FASTA)
-      dataset_id: d61e7f405474c541
+      dataset_id: 51c3ab8059d6e8c3
   runs:
     - history_name: SRS9551191
       inputs:
       - name: FASTQ RNA Dataset
-        dataset_id: 0aedafdec1eb4aeb
+        dataset_id: 44d8c78f7d6f7231
 

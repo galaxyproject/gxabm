@@ -299,6 +299,7 @@ def validate(args: list):
         return
     workflows = parse_workflow(workflow_path)
     gi = connect()
+    total_errors = 0
     for workflow in workflows:
         wfid = workflow[Keys.WORKFLOW_ID]
         try:
@@ -356,5 +357,10 @@ def validate(args: list):
             print("---------------------------------")
             print("WARNING")
             print("The above problems need to be corrected before this workflow configuration can be used.")
+<<<<<<< HEAD
             print("---------------------------------")
+=======
+        total_errors += errors
+>>>>>>> dev
 
+    return total_errors == 0
