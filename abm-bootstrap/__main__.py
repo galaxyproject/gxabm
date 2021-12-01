@@ -60,12 +60,7 @@ def main():
     for filename in os.listdir("./workflow"):
       validateStatus = subprocess.run(["python3", "abm", cloud, "wf", "validate", filename],
                                       capture_output=True, text=True)
-      pprint(json.dumps(validateStatus.stdout))
-      
-      # pprint Python obj
-      # take returned json
-      # import abm folder/workflow/history/etc. and run those methods
-      # if validateStatus ... ?
+                                      
       subprocess.run(["python3", "abm", cloud, "wf", "upload", filename])
 
 
