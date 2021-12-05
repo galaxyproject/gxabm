@@ -15,9 +15,18 @@ from workflow import parse_workflow, find_workflow_id, find_dataset_id, Keys
 INVOCATIONS_DIR = "invocations"
 METRICS_DIR = "metrics"
 
+def run(args: list):
+    run_single(args)
 
     
-def run(args: list):
+def run_single(args: list):
+    """ Runs a single benchmark defined by *args[0]*
+
+    :param args: a list that contains a single element, the path to a benchmark
+      configuration file.
+
+    :return: True if the benchmarks completed sucessfully. False otherwise.
+    """
     if len(args) == 0:
         print('ERROR: no workflow configuration specified')
         return
@@ -101,6 +110,13 @@ def test(args: list):
 
 
 def summarize(args: list):
+    """
+    Parses all the files in the **METRICS_DIR** directory and prints metrics
+    as CSV to stdout
+
+    :param args: Ignored
+    :return: None
+    """
     row = [''] * 12
     for file in os.listdir(METRICS_DIR):
         input_path = os.path.join(METRICS_DIR, file)
@@ -124,6 +140,12 @@ def add_metrics_to_row(metrics_list: list, row: list):
 
 
 def wait_for_jobs(gi: GalaxyInstance, invocations: dict):
+    """ Blocks until all jobs defined in the *invocations* to complete.
+
+    :param gi: The *GalaxyInstance**
+    :param invocations:
+    :return:
+    """
     wfid = invocations['workflow_id']
     hid = invocations['history_id']
     for step in invocations['steps']:
