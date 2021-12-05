@@ -357,10 +357,7 @@ def validate(args: list):
             print("---------------------------------")
             print("WARNING")
             print("The above problems need to be corrected before this workflow configuration can be used.")
-<<<<<<< HEAD
             print("---------------------------------")
-=======
         total_errors += errors
->>>>>>> dev
 
     return total_errors == 0
