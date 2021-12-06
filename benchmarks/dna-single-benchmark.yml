@@ -1,11 +1,11 @@
 - name: Benchmarking DNA
   runs: 3
   workflow_conf:
-    - config/test.yml
     - config/dna-named.yml
     - config/rna-named.yml
   cloud:
-    - tacc1
+    - iu1
+    - iu2
   job_configs:
-    - rules/4x8.yml
-    - rules/8x16.yml
+    - rules/rules_4x8.yml
+    - rules/rules_8x16.yml

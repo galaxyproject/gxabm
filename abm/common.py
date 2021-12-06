@@ -94,3 +94,4 @@ def run(command, env:dict=None):
 def find_executable(name):
     return run(f"which {name}")
 
+
