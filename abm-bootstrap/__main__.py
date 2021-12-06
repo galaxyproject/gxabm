@@ -4,6 +4,10 @@ import yaml
 import os
 import time
 import json
+
+from pathlib import Path
+path = str(Path(Path(__file__).parent.absolute()).parent.absolute())
+sys.path.insert(0, path)
 from abm import history, workflow
 
 # Args from yml config files
@@ -44,8 +48,7 @@ def main():
   for cloud in clouds:
     # 	import histories from main
     for url in exportURL:
-      subprocess.run(["python3", "abm", cloud, "history", "import", url])
-      history.import([url])
+      history._import([url])
 
     for filename in os.listdir("./workflow"):
       workflow.validate([filename])
