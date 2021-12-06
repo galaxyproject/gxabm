@@ -4,10 +4,11 @@ import yaml
 import os
 import time
 import json
-import io
+
+from pathlib import Path
+path = str(Path(Path(__file__).parent.absolute()).parent.absolute())
+sys.path.insert(0, path)
 from abm import history, workflow
-from contextlib import redirect_stdout
-from pprint import pprint
 
 # Args from yml config files
 # use abm as a library to run commands
@@ -34,43 +35,24 @@ def main():
   
   # export histories from main
   for id in historyID:
-    # make separate function
-    # got rid of --no-wait
-    # returns job id, pass abm the status
-    # wait for - give cloud id
     wait_for("main", id)
-    # f = io.StringIO()
-    # with redirect_stdout(f):
-    #   # Should print statement that includes URL
-    #   subprocess.run(["python3", "abm", "main", "history", "export", id])
-    # out = f.getvalue()
     result = history.export([id])
-    # exportURL.append((out)[32:])
-    pprint(result)
-  exit(0)
+    exportURL.append(result)
 
-  # print(exportURL)
   # download workflows from js
   for wf in workflows:
-    subprocess.run(["python3", "abm", "main", "wf", "download", wf, "./workflows"])
-    subprocess.run(["python3", "abm", "main", "wf", "translate", wf])
+    workflow.export([wf, "./workflows"])
+    workflow.translate([wf])
   
   # for each instance:
   for cloud in clouds:
     # 	import histories from main
     for url in exportURL:
-      subprocess.run(["python3", "abm", cloud, "history", "import", url])
+      history._import([url])
 
     for filename in os.listdir("./workflow"):
-      validateStatus = subprocess.run(["python3", "abm", cloud, "wf", "validate", filename],
-                                      capture_output=True, text=True)
-      pprint(json.dumps(validateStatus.stdout))
-      
-      # pprint Python obj
-      # take returned json
-      # import abm folder/workflow/history/etc. and run those methods
-      # if validateStatus ... ?
-      subprocess.run(["python3", "abm", cloud, "wf", "upload", filename])
+      workflow.validate([filename])
+      workflow.upload([filename])
 
 
 def wait_for(cloud: str, id: str):
