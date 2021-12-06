@@ -6,7 +6,7 @@ from pprint import pprint
 from planemo.runnable import for_path
 from planemo.galaxy.workflows import install_shed_repos
 
-from common import connect
+from .common import connect
 
 INVOCATIONS_DIR = "invocations"
 
