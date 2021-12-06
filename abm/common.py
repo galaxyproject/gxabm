@@ -88,9 +88,7 @@ def run(command, env:dict=None):
         os.environ['KUBECONFIG'] = KUBECONFIG
     result = subprocess.run(command.split(), capture_output=True, env=os.environ)
     if result.returncode == 0:
-        return result.stdout.decode('utf-8').strip()
-    print(f"ERROR: {result.stderr.decode('utf-8')}")
-    return None
+        raise RuntimeError(result.stdout.decode('utf-8').strip())
 
 
 def find_executable(name):
