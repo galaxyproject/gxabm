@@ -28,8 +28,8 @@
       params: ID
     - name: ['run']
       handler: workflow.run
-      help: DEPRECATED. run one of the workflow figurations. Use the --force option to use.
-      params: PATH [--force]
+      help: run one of the workflow configurations.  If specified the prefix will be prepended to the new history name.
+      params: PATH [history_name_prefix]
     - name: ['translate', 'tr']
       handler: workflow.translate
       help: translate workflow and dataset ID values into names

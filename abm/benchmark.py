@@ -50,11 +50,13 @@ def run(args: list):
                 print(f"WARNGING: no kubeconfig for instance {cloud}")
                 continue
             for job_conf in config['job_configs']:
-                if not helm.update([job_conf]):
+                job_conf_path = f"rules/{job_conf}.yml"
+                if not helm.update([job_conf_path]):
                     print(f"WARNING: job conf not found {job_conf}")
                     continue
+                history_name_prefix = f"Run {n} {job_conf}"
                 for workflow_conf in config['workflow_conf']:
-                    workflow.run(workflow_conf)
+                    workflow.run([workflow_conf, history_name_prefix])
 
 
     

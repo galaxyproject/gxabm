@@ -217,7 +217,9 @@ def run(args: list):
                 inputs[input[0]] = {'id': dsid, 'src': 'hda'}
 
             print(f"Running workflow {wfid}")
-            invocation = gi.workflows.invoke_workflow(wfid, inputs=inputs, history_name=output_history_name)
+            if len(args) > 1:
+                new_history_name = f"{args[1]} {output_history_name}"
+            invocation = gi.workflows.invoke_workflow(wfid, inputs=inputs, history_name=new_history_name)
             id = invocation['id']
             output_path = os.path.join(INVOCATIONS_DIR, id + '.json')
             with open(output_path, 'w') as f:

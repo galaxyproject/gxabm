@@ -7,5 +7,5 @@
     - iu1
     - iu2
   job_configs:
-    - rules/rules_4x8.yml
-    - rules/rules_8x16.yml
+    - 4x8
+    - 8x16
