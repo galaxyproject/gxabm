@@ -1,10 +1,14 @@
 import os
 import sys
 import yaml
+import subprocess
 import bioblend.galaxy
 
+# TODO: These should be encapsultated into a proper *context* type object.
 GALAXY_SERVER = None
 API_KEY = None
+KUBECONFIG = None
+
 PROFILE_SEARCH_PATH = ['~/.abm/profile.yml', '.abm-profile.yml']
 
 datasets = {
@@ -37,6 +41,11 @@ def connect():
     return bioblend.galaxy.GalaxyInstance(url=GALAXY_SERVER, key=API_KEY)
 
 
+def set_active_profile(profile_name: str):
+    GALAXY_SERVER, API_KEY, KUBECONFIG = parse_profile(profile_name)
+    return GALAXY_SERVER != None
+
+
 def load_profiles():
     '''
     Load the profile configuration file.
@@ -58,19 +67,36 @@ def parse_profile(profile_name: str):
     Parse the profile containing Galaxy URLs and API keys.
 
     :param profile_name: path to the profile to parse
-    :return: a tuple containing the Galaxy URL and API key
+    :return: a tuple containing the Galaxy URL, API key, and path to the kubeconfig
     '''
     profiles = load_profiles()
     if profiles is None:
         print(f'ERROR: Could not locate an abm profile file in {PROFILE_SEARCH_PATH}')
-        return None, None
+        return None, None, None
     if profile_name not in profiles:
         print(f'ERROR: {profile_name} is not the name of a valid profile.')
         keys = list(profiles.keys())
         quoted_keys = ', '.join([f"'{k}'" for k in keys[0:-2]]) + f", and '{keys[-1]}'"
         print(f'The defined profile names are: {quoted_keys}')
-        return None, None
+        return None, None, None
     profile = profiles[profile_name]
-    return (profile['url'], profile['key'])
+    if 'kube' in profile:
+        return (profile['url'], profile['key'], os.path.expanduser(profile['kube']))
+    return (profile['url'], profile['key'], None)
+
+
+def run(command, env:dict=None):
+    if env is not None:
+        for name,value in env.items():
+            os.environ[name] = value
+    if KUBECONFIG is not None:
+        os.environ['KUBECONFIG'] = KUBECONFIG
+    result = subprocess.run(command.split(), capture_output=True, env=os.environ)
+    if result.returncode == 0:
+        raise RuntimeError(result.stdout.decode('utf-8').strip())
+
+
+def find_executable(name):
+    return run(f"which {name}")
 
 

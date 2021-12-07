@@ -101,6 +101,16 @@ python3 abm gcp workflow validate config/rna-seq-named.yml
 
 
 
+## Troubleshooting
+
+
+
+````
+kubeadm init phase certs all --apiserver-advertise-address=0.0.0.0 --apiserver-cert-extra-sans=10.161.233.80,114.215.201.87`
+````
+
+
+
 ## Future Work
 
 - Integrate with the [Galaxy Benchmarker](https://github.com/usegalaxy-eu/GalaxyBenchmarker)

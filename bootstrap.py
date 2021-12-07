@@ -8,7 +8,7 @@ import json
 # from pathlib import Path
 # path = str(Path(Path(__file__).parent.absolute()).parent.absolute())
 # sys.path.insert(0, path)
-from abm.lib import history, workflow, common
+from lib import history, workflow, common
 
 # Args from yml config files
 # use abm as a library to run commands
@@ -21,9 +21,6 @@ def main():
   # Expect a list of cloud ID values in sys.argv[1:] to be bootstrapped.
   # For now we will assume all data/workflows will be exported/downloaded from
   # main, but these should be parameterized.
-
-
-  for dest_cloud in sys.argv[1:]:
 
 
   # Original code
@@ -64,7 +61,7 @@ def main():
     workflow.translate([wf])
   
   # for each instance:
-  for cloud in clouds:
+  for cloud in sys.argv[1:]:
     # 	import histories from main
     for url in exportURL:
       history._import([url])

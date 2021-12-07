@@ -1,0 +1,11 @@
+- output_history_base_name: BenchMarkTest
+  workflow_id: Benchmarking DNA Cloud Costs
+  runs:
+  - history_name: HG00171
+    inputs:
+    - dataset_id: ERR013101_1.fastq.gz
+      name: FASTQ Dataset
+  - history_name: HG00152
+    inputs:
+    - dataset_id: ERR015526_2.fastq.gz
+      name: FASTQ Dataset
