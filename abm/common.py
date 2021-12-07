@@ -4,6 +4,7 @@ import yaml
 import subprocess
 import bioblend.galaxy
 
+# TODO: These should be encapsultated into a proper *context* type object.
 GALAXY_SERVER = None
 API_KEY = None
 KUBECONFIG = None
@@ -38,6 +39,11 @@ def connect():
         print('       configuration in ~/.abm/profile.yml and try again.')
         sys.exit(1)
     return bioblend.galaxy.GalaxyInstance(url=GALAXY_SERVER, key=API_KEY)
+
+
+def set_active_profile(profile_name: str):
+    GALAXY_SERVER, API_KEY, KUBECONFIG = parse_profile(profile_name)
+    return GALAXY_SERVER != None
 
 
 def load_profiles():
