@@ -16,7 +16,7 @@ from lib.common import parse_profile
 
 # These imports are required because they need to be added to the symbol table
 # so the parse_menu method can find them in globals()
-from lib import job, dataset, workflow, history, library, folder
+from lib import job, dataset, workflow, history, library, folder, benchmark, helm, kubectl, config
 
 log = logging.getLogger('abm')
 log.setLevel(logging.ERROR)

@@ -1,9 +1,5 @@
-import subprocess
 import sys
-import yaml
 import os
-import time
-import json
 
 # from pathlib import Path
 # path = str(Path(Path(__file__).parent.absolute()).parent.absolute())
@@ -55,9 +51,9 @@ def main():
 
   # download workflows from js
   for wf in workflows:
-    #subprocess.run(["python3", "abm", "main", "wf", "download", wf, "./workflows"])
-    workflow.download([wf, './workflows'])
-    # subprocess.run(["python3", "abm", "main", "wf", "translate", wf])
+    # TODO create a random directory in /tmp and cleanup afterwards.
+    output_filename = f"/tmp/{wf}.ga"
+    workflow.download([wf, "./workflows"], output_filename)
     workflow.translate([wf])
   
   # for each instance:
@@ -103,4 +99,5 @@ def main():
 #     return run(f"which {name}")
 
 if __name__ == '__main__':
-    main()
+  main()
+
