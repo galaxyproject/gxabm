@@ -13,7 +13,6 @@ import os
 import logging
 from lib import common
 from lib.common import parse_profile
-from pprint import pprint
 
 # These imports are required because they need to be added to the symbol table
 # so the parse_menu method can find them in globals()
