@@ -2,8 +2,8 @@ import os
 import sys
 import yaml
 
-import common
-from common import connect, parse_profile
+import abm.common
+from abm.common import connect, parse_profile
 from pprint import pprint
 
 #

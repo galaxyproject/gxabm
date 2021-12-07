@@ -46,7 +46,9 @@ def main():
 
   # download workflows from js
   for wf in workflows:
-    workflow.export([wf, "./workflows"])
+    # TODO create a random directory in /tmp and cleanup afterwards.
+    output_filename = f"/tmp/{wf}.ga"
+    workflow.download([wf, "./workflows"], output_filename)
     workflow.translate([wf])
       
   profiles = common.load_profiles()
@@ -65,4 +67,6 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+  #main()
+  workflow.test(sys.argv[1:])
+
