@@ -5,6 +5,8 @@ import json
 from pprint import pprint
 from planemo.runnable import for_path
 from planemo.galaxy.workflows import install_shed_repos
+
+import common
 from bioblend.galaxy import GalaxyInstance
 from common import connect
 
@@ -233,11 +235,11 @@ def run(args: list):
 
 
 def test(args: list):
-    gi = connect()
-    print(f"Searching for workflow {args[0]}")
-    flows = gi.workflows.get_workflows(name=args[0], published=True)
-    pprint(flows)
-
+    # gi = connect()
+    # print(f"Searching for workflow {args[0]}")
+    # flows = gi.workflows.get_workflows(name=args[0], published=True)
+    # pprint(flows)
+    print(__name__)
 
 def publish(args: list):
     if len(args) != 1:
