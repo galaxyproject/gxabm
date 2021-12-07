@@ -1,23 +1,14 @@
 import sys
 import os
 
-# from pathlib import Path
-# path = str(Path(Path(__file__).parent.absolute()).parent.absolute())
-# sys.path.insert(0, path)
 from lib import history, workflow, common
 
 # Args from yml config files
 # use abm as a library to run commands
-# take benchmarking config as an input
 def main():
 
   # Load all the profiles
   profiles = common.load_profiles()
-
-  # Expect a list of cloud ID values in sys.argv[1:] to be bootstrapped.
-  # For now we will assume all data/workflows will be exported/downloaded from
-  # main, but these should be parameterized.
-
 
   # Original code
   ###
@@ -55,48 +46,25 @@ def main():
     output_filename = f"/tmp/{wf}.ga"
     workflow.download([wf, "./workflows"], output_filename)
     workflow.translate([wf])
-  
+
+  # Expect a list of cloud ID values in sys.argv[1:] to be bootstrapped.
+  # For now we will assume all data/workflows will be exported/downloaded from
+  # main, but that should be parameterized as well
+
   # for each instance:
   for cloud in sys.argv[1:]:
+    # Ensure GALAXY_SERVER and API_KEY are set appropriatedly.
+    common.set_active_profile(cloud)
     # 	import histories from main
     for url in exportURL:
+      # TODO we will need to wait here.  I will modify the import method to return the job ID to wait on.
       history._import([url])
 
     for filename in os.listdir("./workflow"):
+      # TODO Check return code from validate to see if we should upload.
       workflow.validate([filename])
       workflow.upload([filename])
 
-
-# def wait_for(cloud: str, id: str):
-#   subprocess.run(["python3", "abm", "main", "history", "export", id, "--no-wait"])
-#   print(f"Waiting for export")
-#   waiting = True
-#   while waiting:
-#     result = run(f"python3 abm {cloud} job show {id}")
-#     if result is None:
-#       waiting = False
-#       break
-#     print(result)
-#     # lines = result.split('\n')
-#     # job = filter(lines, id)
-#     waiting = json.loads(result)['state'] != 'ok'
-#     if waiting:
-#         # print(f'{len(pods)} zzz...')
-#         time.sleep(30)
-#
-#   print(f"Export is done")
-#
-#
-# def run(command):
-#   result = subprocess.run(command.split(), capture_output=True, env=os.environ)
-#   if result.returncode == 0:
-#       return result.stdout.decode('utf-8').strip()
-#
-#   print(f"ERROR: {result.stderr.decode('utf-8')}")
-#   return None
-#
-# def find_executable(name):
-#     return run(f"which {name}")
 
 if __name__ == '__main__':
   main()
