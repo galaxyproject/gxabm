@@ -5,10 +5,11 @@ import json
 from pprint import pprint
 from planemo.runnable import for_path
 from planemo.galaxy.workflows import install_shed_repos
-
+from bioblend.galaxy import GalaxyInstance
 from common import connect
 
 INVOCATIONS_DIR = "invocations"
+METRICS_DIR = "metrics"
 
 class Keys:
     NAME = 'name'
@@ -53,8 +54,8 @@ def find_dataset_id(gi, name_or_id):
     except:
         print('Caught an exception')
         print(sys.exc_info())
-    print(f"Warning: unable to find dataset {name_or_id}")
-    return name_or_id
+    #print(f"Warning: unable to find dataset {name_or_id}")
+    return None
 
 
 def parse_workflow(workflow_path: str):
@@ -69,6 +70,7 @@ def parse_workflow(workflow_path: str):
         except yaml.YAMLError as exc:
             print('Error encountered parsing the YAML input file')
             print(exc)
+            #TODO Don't do this...
             sys.exit(1)
     return config
 
@@ -140,6 +142,14 @@ def find(args: list):
 
 
 def run(args: list):
+    """
+    Runs a single workflow defined by *args[0]*
+
+    :param args: a list that contains a single element, the path to a workflow
+      configuration file.
+
+    :return: True if the workflows completed sucessfully. False otherwise.
+    """
     if len(args) == 0:
         print('ERROR: no workflow configuration specified')
         return
@@ -155,24 +165,24 @@ def run(args: list):
     else:
         os.mkdir(INVOCATIONS_DIR)
 
+    if os.path.exists(METRICS_DIR):
+        if not os.path.isdir(METRICS_DIR):
+            print('ERROR: Can not save metrics, directory name in use.')
+            #sys.exit(1)
+            return False
+    else:
+        os.mkdir(METRICS_DIR)
+
     gi = connect()
     workflows = parse_workflow(workflow_path)
-    # with open(workflow_path, 'r') as stream:
-    #     try:
-    #         config = yaml.safe_load(stream)
-    #         print(f"Loaded {workflow_path}")
-    #     except yaml.YAMLError as exc:
-    #         print('Error encountered parsing the YAML input file')
-    #         print(exc)
-    #         sys.exit(1)
 
     print(f"Found {len(workflows)} workflow definitions")
     for workflow in workflows:
-        wfid = workflow[Keys.WORKFLOW_ID]
-        wfid = find_workflow_id(gi, wfid)
+        wf_name = workflow[Keys.WORKFLOW_ID]
+        wfid = find_workflow_id(gi, wf_name)
         if wfid is None:
             print(f"Unable to load the workflow ID for {workflow[Keys.WORKFLOW_ID]}")
-            return
+            return False
         else:
             print(f"Found workflow id {wfid}")
         inputs = {}
@@ -185,7 +195,7 @@ def run(args: list):
                 input = gi.workflows.get_workflow_inputs(wfid, spec[Keys.NAME])
                 if input is None or len(input) == 0:
                     print(f'ERROR: Invalid input specification for {spec[Keys.NAME]}')
-                    sys.exit(1)
+                    return False
                 dsid = find_dataset_id(gi, spec[Keys.DATASET_ID])
                 print(f"Reference input dataset {dsid}")
                 inputs[input[0]] = {'id': dsid, 'src': 'hda'}
@@ -201,18 +211,25 @@ def run(args: list):
                 input = gi.workflows.get_workflow_inputs(wfid, spec[Keys.NAME])
                 if input is None or len(input) == 0:
                     print(f'ERROR: Invalid input specification for {spec[Keys.NAME]}')
-                    sys.exit(1)
+                    return False
                 dsid = find_dataset_id(gi, spec[Keys.DATASET_ID])
                 print(f"Input dataset ID: {dsid}")
                 inputs[input[0]] = {'id': dsid, 'src': 'hda'}
 
-            invocation = gi.workflows.invoke_workflow(wfid, inputs=inputs, history_name=output_history_name)
-            pprint(invocation)
-            # output_path = os.path.join(INVOCATIONS_DIR, invocation['id'] + '.json')
-            output_path = os.path.join(INVOCATIONS_DIR, output_history_name.replace(' ', '_') + '.json')
+            print(f"Running workflow {wfid}")
+            if len(args) > 1:
+                new_history_name = f"{args[1]} {output_history_name}"
+            invocation = gi.workflows.invoke_workflow(wfid, inputs=inputs, history_name=new_history_name)
+            id = invocation['id']
+            output_path = os.path.join(INVOCATIONS_DIR, id + '.json')
             with open(output_path, 'w') as f:
                 json.dump(invocation, f, indent=4)
-                print(f"Wrote {output_path}")
+                print(f"Wrote invocation data to {output_path}")
+            invocations = gi.invocations.wait_for_invocation(id, 86400, 10, False)
+            print("Waiting for jobs")
+            wait_for_jobs(gi, invocations)
+    print("Benchmarking run complete")
+    return True
 
 
 def test(args: list):
@@ -321,8 +338,12 @@ def validate(args: list):
                     #sys.exit(1)
                 else:
                     dsid = find_dataset_id(gi, spec[Keys.DATASET_ID])
-                    print(f"Reference input dataset {spec[Keys.DATASET_ID]} -> {dsid}")
-                    inputs[input[0]] = {'id': dsid, 'src': 'hda'}
+                    if dsid is None:
+                        print(f"ERROR: Reference dataset not found {spec[Keys.DATASET_ID]}")
+                        errors += 1
+                    else:
+                        print(f"Reference input dataset {spec[Keys.DATASET_ID]} -> {dsid}")
+                        inputs[input[0]] = {'id': dsid, 'src': 'hda'}
 
         count = 0
         for run in workflow[Keys.RUNS]:
@@ -334,13 +355,48 @@ def validate(args: list):
                     errors += 1
                 else:
                     dsid = find_dataset_id(gi, spec[Keys.DATASET_ID])
-                    print(f"Input dataset: {spec[Keys.DATASET_ID]} -> {dsid}")
-                    inputs[input[0]] = {'id': dsid, 'src': 'hda'}
+                    if dsid is None:
+                        print(f"ERROR: Dataset not found {spec[Keys.DATASET_ID]}")
+                        errors += 1
+                    else:
+                        print(f"Input dataset: {spec[Keys.DATASET_ID]} -> {dsid}")
+                        inputs[input[0]] = {'id': dsid, 'src': 'hda'}
 
         if errors == 0:
             print("This workflow configuration is valid and can be executed on this server.")
         else:
+            print("---------------------------------")
+            print("WARNING")
             print("The above problems need to be corrected before this workflow configuration can be used.")
+            print("---------------------------------")
         total_errors += errors
 
     return total_errors == 0
+
+
+def wait_for_jobs(gi: GalaxyInstance, invocations: dict):
+    """ Blocks until all jobs defined in the *invocations* to complete.
+
+    :param gi: The *GalaxyInstance** running the jobs
+    :param invocations:
+    :return:
+    """
+    wfid = invocations['workflow_id']
+    hid = invocations['history_id']
+    for step in invocations['steps']:
+        job_id = step['job_id']
+        if job_id is not None:
+            print(f"Waiting for job {job_id} on {common.GALAXY_SERVER}")
+            status = gi.jobs.wait_for_job(job_id, 86400, 10, False)
+            data = gi.jobs.show_job(job_id, full_details=True)
+            metrics = {
+                'workflow_id': wfid,
+                'history_id': hid,
+                'metrics': data,
+                'status': status,
+                'server': common.GALAXY_SERVER
+            }
+            output_path = os.path.join(METRICS_DIR, f"{job_id}.json")
+            with open(output_path, "w") as f:
+                json.dump(metrics, f, indent=4)
+                print(f"Wrote metrics to {output_path}")
