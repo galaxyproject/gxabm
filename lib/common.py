@@ -62,7 +62,6 @@ def load_profiles():
             break
     return profiles
 
-
 def parse_profile(profile_name: str):
     '''
     Parse the profile containing Galaxy URLs and API keys.

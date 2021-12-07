@@ -11,22 +11,12 @@ import yaml
 import sys
 import os
 import logging
-import common
-from common import parse_profile
-from pprint import pprint
+from lib import common
+from lib.common import parse_profile
 
 # These imports are required because they need to be added to the symbol table
 # so the parse_menu method can find them in globals()
-import job
-import dataset
-import workflow
-import history
-import library
-import folder
-import config
-import benchmark
-import helm
-import kubectl
+from lib import job, dataset, workflow, history, library, folder, benchmark, helm, kubectl, config
 
 log = logging.getLogger('abm')
 log.setLevel(logging.ERROR)
@@ -129,7 +119,7 @@ def alias(shortcut, fullname):
 
 def parse_menu():
     log.debug('parse_menu')
-    menu_config = f'{os.path.dirname(__file__)}/menu.yml'
+    menu_config = f'{os.path.dirname(__file__)}/lib/menu.yml'
     if not os.path.exists(menu_config):
         print(f"ERROR: Unable to load the menu configuration from {menu_config}")
         sys.exit(1)
@@ -164,7 +154,7 @@ def version():
     print(f"    Copyright 2021 The Galaxy Project. All Rights Reserved.\n")
 
 
-def main():
+def entrypoint():
     menu_data = parse_menu()
 
     if len(sys.argv) < 2 or sys.argv[1] in help_args:
@@ -230,4 +220,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    entrypoint()

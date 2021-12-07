@@ -2,8 +2,7 @@ import os
 import sys
 import yaml
 
-import common
-from common import connect, parse_profile
+from lib.common import connect, parse_profile, GALAXY_SERVER
 from pprint import pprint
 
 #
@@ -113,7 +112,7 @@ def export(args: list):
     # global GALAXY_SERVER
     export_url = "unknown"
     if wait:
-        export_url = f"{common.GALAXY_SERVER}/history/export_archive?id={args[0]}&jeha_id={jeha_id}"
+        export_url = f"{GALAXY_SERVER}/history/export_archive?id={args[0]}&jeha_id={jeha_id}"
         print(f"The history can be imported from {export_url}")
         history = gi.histories.show_history(hid, contents=False)
         tags = history['tags']

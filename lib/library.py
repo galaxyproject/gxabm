@@ -1,5 +1,5 @@
 from pprint import pprint
-from common import connect
+from .common import connect
 
 
 def list(args: list):
