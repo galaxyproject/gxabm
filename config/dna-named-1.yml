@@ -1,0 +1,8 @@
+- output_history_base_name: DNA 16C 50G-MEM
+  runs:
+  - history_name: HG00171
+    inputs:
+    - dataset_id: ERR013101_1.fastq.gz
+      name: FASTQ Dataset
+  workflow_id: Benchmarking DNA Cloud Costs
+
