@@ -28,8 +28,8 @@
       params: ID
     - name: ['run']
       handler: workflow.run
-      help: run one of the workflow figurations
-      params: PATH
+      help: run one of the workflow configurations.  If specified the prefix will be prepended to the new history name.
+      params: PATH [history_name_prefix]
     - name: ['translate', 'tr']
       handler: workflow.translate
       help: translate workflow and dataset ID values into names
@@ -104,7 +104,7 @@
       handler: history.publish
       help: publish the given history
       params: ID
-    - name: [renanm, ren]
+    - name: [rename, ren]
       handler: history.rename
       help: rename a history
       params: "ID 'new history name'"
@@ -133,10 +133,49 @@
       help: show detailed information about a job
       handler: job.show
       params: ID
-    - name: [ metrics ]
+    - name: [problems, problem, prob]
+      help: list common problems that may have caused a job to fail
+      handler: job.problems
+      params: ID
+    - name: [cancel, kill]
+      help: kills a job
+      handler: job.cancel
+      params: ID
+    - name: [ metrics, stats ]
       help: display runtime metrics for the job
       handler: job.metrics
       params: ID
+- name: [benchmark, bench, bm]
+  help: execute benchmarking runs on various clouds
+  menu:
+    - name: [run]
+      help: run a benchmark
+      handler: benchmark.run
+      params: PATH
+    - name: [summarize, summary]
+      help: summarize metrics
+      handler: benchmark.summarize
+    - name: [test]
+      help: entry point for test (experimental) code
+      handler: benchmark.test
+      params: VARIES
+- name: [helm]
+  help: execute a helm command
+  menu:
+    - name: [update, up]
+      help: update the container mapper rules for memory and cpu limits
+      handler: helm.update
+      params: RULES
+    - name: [list, ls]
+      help: list some things...
+      handler: helm.list
+- name: [kubectl, kube, k]
+  help: execute a kubectl command
+  menu:
+    - name: [pods, pod]
+      help: display the pods. If no namespace is provided galaxy is assumed
+      handler: kubectl.pods
+      params: NAMESPACE
 - name: [config, conf, cfg]
   help: manage configuration profiles
   menu:

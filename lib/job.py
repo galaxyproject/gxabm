@@ -1,4 +1,4 @@
-from common import connect
+from .common import connect
 import json
 from pprint import pprint
 
@@ -37,11 +37,31 @@ def metrics(args: list):
         print("ERROR: no job ID provided")
         return
     gi = connect()
-    #metrics = gi.jobs.get_metrics(args[0])
-    metrics = {}
-    for m in gi.jobs.get_metrics(args[0]):
-        metrics[m['name']] = get_value(m)
-    try:
-        print(f"{metrics['galaxy_slots']},{metrics['galaxy_memory_mb']},{metrics['runtime_seconds']}")
-    except:
-        print(',,')
+    metrics = gi.jobs.get_metrics(args[0])
+    print(json.dumps(metrics, indent=4))
+    # metrics = {}
+    # for m in gi.jobs.get_metrics(args[0]):
+    #     metrics[m['name']] = get_value(m)
+    # try:
+    #     print(f"{metrics['galaxy_slots']},{metrics['galaxy_memory_mb']},{metrics['runtime_seconds']}")
+    # except:
+    #     print(',,')
+
+
+def cancel(args: list):
+    if len(args) == 0:
+        print('ERROR: no job ID provided.')
+        return
+    gi = connect()
+    if gi.jobs.cancel_job(args[0]):
+        print("Job canceled")
+    else:
+        print("ERROR: Unable to cancel job or job was already in a terminal state.")
+
+
+def problems(args: list):
+    if len(args) == 0:
+        print('ERROR: no job ID provided.')
+        return
+    gi = connect()
+    pprint(gi.jobs.get_common_problems(args[0]))
