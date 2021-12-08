@@ -65,11 +65,8 @@ def wait_for(cloud: str, id: str):
       waiting = False
       break
     print(result)
-    # lines = result.split('\n')
-    # job = filter(lines, id)
     waiting = json.loads(result)['state'] != 'ok'
     if waiting:
-        # print(f'{len(pods)} zzz...')
         time.sleep(30)
         
   print(f"Export is done")
