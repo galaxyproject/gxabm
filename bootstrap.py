@@ -1,6 +1,6 @@
 import sys
 import os
-import yaml;
+import yaml
 
 from lib import history, workflow, common
 
@@ -27,6 +27,8 @@ def main():
   # DNA-single hist on main: d59d7f1482fd9fd5
   # DNA-paired hist on main: df8b040f22887247
 
+  cloud = sys.argv[1]
+
   configFile = None
   with open(sys.argv[2], "r") as config:
     configFile = yaml.safe_load(config)
@@ -46,7 +48,6 @@ def main():
     # wait_for("main", id)
     result = history.export([id])
     exportURL.append(result)
-  exit(0)
 
   # download workflows from js
   for wf in workflows:
@@ -60,18 +61,18 @@ def main():
   # main, but that should be parameterized as well
 
   # for each instance:
-  for cloud in sys.argv[1:]:
+  # for cloud in sys.argv[1:]:
     # Ensure GALAXY_SERVER and API_KEY are set appropriatedly.
-    common.set_active_profile(cloud)
-    # 	import histories from main
-    for url in exportURL:
-      # TODO we will need to wait here.  I will modify the import method to return the job ID to wait on.
-      history._import([url])
+  common.set_active_profile(cloud)
+  # 	import histories from main
+  for url in exportURL:
+    # TODO we will need to wait here.  I will modify the import method to return the job ID to wait on.
+    history._import([url])
 
-    for filename in os.listdir("./workflow"):
-      # Check return code from validate to see if we should upload.
-      if not workflow.validate([filename]):
-        workflow.upload([filename])
+  for filename in os.listdir("./workflow"):
+    # Check return code from validate to see if we should upload.
+    if not workflow.validate([filename]):
+      workflow.upload([filename])
 
 
 if __name__ == '__main__':
