@@ -1,2 +1,2 @@
-alias abm="python3 abm"
+alias abm="python3 abm.py"
 source .venv/bin/activate
