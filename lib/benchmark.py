@@ -7,6 +7,7 @@ import yaml
 import json
 import helm
 import common
+from lib import GALAXY_SERVER, API_KEY, KUBECONFIG
 from common import connect, parse_profile, load_profiles
 #from workflow import parse_workflow, find_workflow_id, find_dataset_id, Keys
 import workflow
@@ -45,8 +46,9 @@ def run(args: list):
             if cloud not in profiles:
                 print(f"WARNING: no profile for instance {cloud}")
                 continue
-            common.GALAXY_SERVER, common.API_KEY, common.KUBECONFIG = parse_profile(cloud)
-            if common.KUBECONFIG is None:
+            # GALAXY_SERVER, API_KEY, KUBECONFIG = parse_profile(cloud)
+            foo
+            if KUBECONFIG is None:
                 print(f"WARNGING: no kubeconfig for instance {cloud}")
                 continue
             for job_conf in config['job_configs']:

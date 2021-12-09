@@ -5,7 +5,7 @@ import json
 from pprint import pprint
 from planemo.runnable import for_path
 from planemo.galaxy.workflows import install_shed_repos
-
+import lib
 import common
 from bioblend.galaxy import GalaxyInstance
 from common import connect
@@ -310,6 +310,7 @@ def validate(args: list):
     if not os.path.exists(workflow_path):
         print(f'ERROR: can not find workflow configuration {workflow_path}')
         return
+    print(f"Validating workflow on {lib.GALAXY_SERVER}")
     workflows = parse_workflow(workflow_path)
     gi = connect()
     total_errors = 0
