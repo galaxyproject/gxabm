@@ -7,8 +7,6 @@ from lib import history, workflow, common
 # Args from yml config files
 # use abm as a library to run commands
 def main():
-  # TODO simple command line parsing
-
   # Original code
   ###
   # configPath = sys.argv[1]
@@ -27,9 +25,10 @@ def main():
   # DNA-single hist on main: d59d7f1482fd9fd5
   # DNA-paired hist on main: df8b040f22887247
 
+  # Command line parsing
   cloud = sys.argv[1]
-
   configFile = None
+  
   with open(sys.argv[2], "r") as config:
     configFile = yaml.safe_load(config)
   
