@@ -34,7 +34,7 @@ def main():
     configFile = yaml.safe_load(config)
   
   if configFile is None:
-    print("ERROR")
+    print(f'ERROR: Could not locate an abm profile file {configFile}')
   
   histories = configFile["histories"]
   workflows = configFile["workflows"]
