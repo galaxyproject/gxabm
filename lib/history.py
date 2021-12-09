@@ -151,8 +151,12 @@ def rename(args: list):
 def _import(args: list):
     gi = connect()
     result = gi.histories.import_history(url=args[0])
-    pprint(result)
-    return result['id']
+    id = result['id']
+    try:
+        gi.jobs.wait_for_job(id, 86400, 10, False)
+    except:
+        return False
+    return True
 
 
 def himport(args: list):
