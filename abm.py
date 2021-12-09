@@ -11,7 +11,8 @@ import yaml
 import sys
 import os
 import logging
-from lib import common
+# from lib import GALAXY_SERVER
+import lib.common
 from lib.common import parse_profile
 
 # These imports are required because they need to be added to the symbol table
@@ -203,8 +204,12 @@ def entrypoint():
         return
 
     if profile is not None:
-        common.GALAXY_SERVER, common.API_KEY, common.KUBECONFIG = parse_profile(profile)
-        if common.GALAXY_SERVER is None:
+        # common.GALAXY_SERVER, common.API_KEY, common.KUBECONFIG = parse_profile(profile)
+        if not lib.common.set_active_profile(profile):
+            print(f"ERROR: Unable to set the active profile. No GALAXY_SERVER defined.")
+            return
+        if lib.GALAXY_SERVER is None:
+            print("ERROR: GALAXY_SERVER was not set in the profile.")
             return
     if command in all_commands:
         subcommands = all_commands[command]
