@@ -6,9 +6,7 @@ from lib import history, workflow, common
 # Args from yml config files
 # use abm as a library to run commands
 def main():
-
-  # Load all the profiles
-  profiles = common.load_profiles()
+  # TODO simple command line parsing
 
   # Original code
   ###
@@ -29,8 +27,12 @@ def main():
   # DNA-paired hist on main: df8b040f22887247
 
 #  historyID = ["b7a6e3abfe13a9c3", "68c184b7901bc21a", "d59d7f1482fd9fd5", "df8b040f22887247"]
+  # TODO load these from a yaml config file
   historyID = ["b7a6e3abfe13a9c3", "68c184b7901bc21a"]
   workflows = ["de503f2935ac5629", "39f1e01ca3950c18", "313eddf294db855d", "e7234e29592c1dfb"]
+
+  # TODO generate these once and write to a yaml file. Subsequent runs can use
+  # the previous config
   exportURL = []
   
   # export histories from main
