@@ -1,4 +1,4 @@
-from .common import connect, GALAXY_SERVER
+from common import connect
 from pprint import pprint
 import yaml
 

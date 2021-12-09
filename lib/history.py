@@ -2,7 +2,7 @@ import os
 import sys
 import yaml
 
-from lib.common import connect, parse_profile, GALAXY_SERVER
+from lib.common import connect, parse_profile
 from pprint import pprint
 
 #

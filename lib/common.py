@@ -3,11 +3,10 @@ import sys
 import yaml
 import subprocess
 import bioblend.galaxy
+# from lib import GALAXY_SERVER, API_KEY, KUBECONFIG
+import lib
 
-# TODO: These should be encapsultated into a proper *context* type object.
-GALAXY_SERVER = None
-API_KEY = None
-KUBECONFIG = None
+# global GALAXY_SERVER, API_KEY, KUBECONFIG
 
 PROFILE_SEARCH_PATH = ['~/.abm/profile.yml', '.abm-profile.yml']
 
@@ -23,6 +22,12 @@ datasets = {
     "rna": []
 }
 
+# def init():
+#     # TODO: These should be encapsultated into a proper *context* type object.
+#     GALAXY_SERVER = None
+#     API_KEY = None
+#     KUBECONFIG = None
+
 
 def connect():
     """
@@ -30,20 +35,20 @@ def connect():
 
     :return: a GalaxyInstance object
     """
-    if GALAXY_SERVER is None:
+    if lib.GALAXY_SERVER is None:
         print('ERROR: The Galaxy server URL has not been set.  Please check your')
         print('       configuration in ~/.abm/profile.yml and try again.')
         sys.exit(1)
-    if API_KEY is None:
+    if lib.API_KEY is None:
         print('ERROR: The Galaxy API key has not been set.  Please check your')
         print('       configuration in ~/.abm/profile.yml and try again.')
         sys.exit(1)
-    return bioblend.galaxy.GalaxyInstance(url=GALAXY_SERVER, key=API_KEY)
+    return bioblend.galaxy.GalaxyInstance(url=lib.GALAXY_SERVER, key=lib.API_KEY)
 
 
 def set_active_profile(profile_name: str):
-    GALAXY_SERVER, API_KEY, KUBECONFIG = parse_profile(profile_name)
-    return GALAXY_SERVER != None
+    lib.GALAXY_SERVER, lib.API_KEY, lib.KUBECONFIG = parse_profile(profile_name)
+    return lib.GALAXY_SERVER != None
 
 
 def load_profiles():
@@ -89,8 +94,8 @@ def run(command, env:dict=None):
     if env is not None:
         for name,value in env.items():
             os.environ[name] = value
-    if KUBECONFIG is not None:
-        os.environ['KUBECONFIG'] = KUBECONFIG
+    if lib.KUBECONFIG is not None:
+        os.environ['KUBECONFIG'] = lib.KUBECONFIG
     result = subprocess.run(command.split(), capture_output=True, env=os.environ)
     if result.returncode == 0:
         raise RuntimeError(result.stdout.decode('utf-8').strip())
