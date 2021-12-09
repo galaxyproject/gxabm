@@ -69,9 +69,9 @@ def main():
       history._import([url])
 
     for filename in os.listdir("./workflow"):
-      # TODO Check return code from validate to see if we should upload.
-      workflow.validate([filename])
-      workflow.upload([filename])
+      # Check return code from validate to see if we should upload.
+      if not workflow.validate([filename]):
+        workflow.upload([filename])
 
 
 if __name__ == '__main__':
