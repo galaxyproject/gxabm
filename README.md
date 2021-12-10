@@ -55,7 +55,7 @@ The YAML configuration for a single workflow looks like:
   reference_data:
     - name: Reference Transcript (FASTA)
       dataset_id: 50a269b7a99356aa
-      runs:
+  runs:
     - history_name: 1
       inputs:
       - name: FASTQ RNA Dataset
@@ -87,13 +87,13 @@ The YAML configuration for a single workflow looks like:
 
 ## Moving Workflows
 
-The `workflow translate` and `workflow validate` commands can be used when moving workflows and datasets between Galaxy instances.  The `workflow translate` command takes the path to a workflow configuration file, translates the workflow and dataset ID values to their name as it appears in the Galaxy user interface, and write the configuration to stdout.  To save the translated workflow configuration simple redirect the output to a file
+The `workflow translate` and `workflow validate` commands can be used when moving workflows and datasets between Galaxy instances.  The `workflow translate` command takes the path to a workflow configuration file, translates the workflow and dataset ID values to their name as they appear in the Galaxy user interface, and writes the configuration to stdout.  To save the translated workflow configuration, redirect the output to a file:
 
 ```bash
 python3 abm aws workflow translate config/rna-seq.yml > config/rna-seq-named.yml
 ```
 
-Then use the `workflow validate` command to ensure that the other Galaxy instance has the same workflow and datasets installed.
+Then use the `workflow validate` command to ensure that the other Galaxy instance has the same workflow and datasets installed:
 
 ```b
 python3 abm gcp workflow validate config/rna-seq-named.yml
