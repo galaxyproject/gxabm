@@ -1,6 +1,7 @@
 import sys
 import os
 import yaml
+import tempfile
 
 from lib import history, workflow, common
 
@@ -48,22 +49,26 @@ def main():
     result = history.export([id])
     exportURL.append(result)
 
+
+  # Create a random directory in /tmp to download workflows to
+  dir = tempfile.TemporaryDirectory(dir = "/tmp")
+
   # download workflows from js
   for wf in workflows:
-    # TODO create a random directory in /tmp and cleanup afterwards.
-    output_filename = f"/tmp/{wf}.ga"
-    workflow.download([wf, "./workflows"], output_filename)
+    output_filename = f"{dir.name}/{wf}.ga" # set tmp to return val of mktemp -d
+    workflow.download([wf, output_filename])
     workflow.translate([wf])
+
+  # Cleanup temp directory after workflows are uploaded
+  dir.cleanup()
 
   # Expect a list of cloud ID values in sys.argv[1:] to be bootstrapped.
   # For now we will assume all data/workflows will be exported/downloaded from
   # main, but that should be parameterized as well
 
-  # for each instance:
-  # for cloud in sys.argv[1:]:
-    # Ensure GALAXY_SERVER and API_KEY are set appropriatedly.
+  # Ensure GALAXY_SERVER and API_KEY are set appropriatedly.
   common.set_active_profile(cloud)
-  # 	import histories from main
+  # import histories from main
   for url in exportURL:
     # TODO we will need to wait here.  I will modify the import method to return the job ID to wait on.
     history._import([url])
