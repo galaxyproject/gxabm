@@ -2,10 +2,9 @@
   runs: 3
   workflow_conf:
     - config/dna-named.yml
-    - config/rna-named.yml
   cloud:
-    - iu1
-    - iu2
+    - tacc1
+    - tacc2
   job_configs:
     - 4x8
     - 8x16
