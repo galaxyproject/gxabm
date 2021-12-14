@@ -11,9 +11,7 @@ import yaml
 import sys
 import os
 import logging
-# from lib import GALAXY_SERVER
 import lib.common
-from lib.common import parse_profile
 
 # These imports are required because they need to be added to the symbol table
 # so the parse_menu method can find them in globals()
@@ -22,7 +20,7 @@ from lib import job, dataset, workflow, history, library, folder, benchmark, hel
 log = logging.getLogger('abm')
 log.setLevel(logging.ERROR)
 
-VERSION = '1.3.0'
+VERSION = '1.4.0'
 
 BOLD = '\033[1m'
 CLEAR = '\033[0m'
