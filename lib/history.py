@@ -2,8 +2,8 @@ import os
 import sys
 import yaml
 
-import common
-from common import connect, parse_profile
+import lib
+from lib.common import connect, parse_profile
 from pprint import pprint
 
 #
@@ -113,7 +113,7 @@ def export(args: list):
     # global GALAXY_SERVER
     export_url = "unknown"
     if wait:
-        export_url = f"{common.GALAXY_SERVER}/history/export_archive?id={args[0]}&jeha_id={jeha_id}"
+        export_url = f"{lib.GALAXY_SERVER}/history/export_archive?id={args[0]}&jeha_id={jeha_id}"
         print(f"The history can be imported from {export_url}")
         history = gi.histories.show_history(hid, contents=False)
         tags = history['tags']
@@ -151,7 +151,12 @@ def rename(args: list):
 def _import(args: list):
     gi = connect()
     result = gi.histories.import_history(url=args[0])
-    pprint(result)
+    id = result['id']
+    try:
+        gi.jobs.wait_for_job(id, 86400, 10, False)
+    except:
+        return False
+    return True
 
 
 def himport(args: list):

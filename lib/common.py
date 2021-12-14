@@ -3,10 +3,10 @@ import sys
 import yaml
 import subprocess
 import bioblend.galaxy
+# from lib import GALAXY_SERVER, API_KEY, KUBECONFIG
+import lib
 
-GALAXY_SERVER = None
-API_KEY = None
-KUBECONFIG = None
+# global GALAXY_SERVER, API_KEY, KUBECONFIG
 
 PROFILE_SEARCH_PATH = ['~/.abm/profile.yml', '.abm-profile.yml']
 
@@ -29,15 +29,22 @@ def connect():
 
     :return: a GalaxyInstance object
     """
-    if GALAXY_SERVER is None:
+    if lib.GALAXY_SERVER is None:
         print('ERROR: The Galaxy server URL has not been set.  Please check your')
         print('       configuration in ~/.abm/profile.yml and try again.')
         sys.exit(1)
-    if API_KEY is None:
+    if lib.API_KEY is None:
         print('ERROR: The Galaxy API key has not been set.  Please check your')
         print('       configuration in ~/.abm/profile.yml and try again.')
         sys.exit(1)
-    return bioblend.galaxy.GalaxyInstance(url=GALAXY_SERVER, key=API_KEY)
+    return bioblend.galaxy.GalaxyInstance(url=lib.GALAXY_SERVER, key=lib.API_KEY)
+
+
+def set_active_profile(profile_name: str):
+    print(f"Parsing profile for {profile_name}")
+    lib.GALAXY_SERVER, lib.API_KEY, lib.KUBECONFIG = parse_profile(profile_name)
+    print(lib.KUBECONFIG)
+    return lib.GALAXY_SERVER != None
 
 
 def load_profiles():
@@ -84,11 +91,12 @@ def run(command, env:dict=None):
     if env is not None:
         for name,value in env.items():
             os.environ[name] = value
-    if KUBECONFIG is not None:
-        os.environ['KUBECONFIG'] = KUBECONFIG
+    if lib.KUBECONFIG is not None:
+        os.environ['KUBECONFIG'] = lib.KUBECONFIG
     result = subprocess.run(command.split(), capture_output=True, env=os.environ)
-    if result.returncode == 0:
-        raise RuntimeError(result.stdout.decode('utf-8').strip())
+    if result.returncode != 0:
+        raise RuntimeError(result.stderr.decode('utf-8').strip())
+    return result.stdout.decode('utf-8').strip()
 
 
 def find_executable(name):

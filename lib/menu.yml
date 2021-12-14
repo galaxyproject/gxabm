@@ -104,7 +104,7 @@
       handler: history.publish
       help: publish the given history
       params: ID
-    - name: [renanm, ren]
+    - name: [rename, ren]
       handler: history.rename
       help: rename a history
       params: "ID 'new history name'"

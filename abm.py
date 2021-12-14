@@ -11,27 +11,16 @@ import yaml
 import sys
 import os
 import logging
-import common
-from common import parse_profile
-from pprint import pprint
+import lib.common
 
 # These imports are required because they need to be added to the symbol table
 # so the parse_menu method can find them in globals()
-import job
-import dataset
-import workflow
-import history
-import library
-import folder
-import config
-import benchmark
-import helm
-import kubectl
+from lib import job, dataset, workflow, history, library, folder, benchmark, helm, kubectl, config
 
 log = logging.getLogger('abm')
 log.setLevel(logging.ERROR)
 
-VERSION = '1.3.0'
+VERSION = '1.4.0'
 
 BOLD = '\033[1m'
 CLEAR = '\033[0m'
@@ -129,7 +118,7 @@ def alias(shortcut, fullname):
 
 def parse_menu():
     log.debug('parse_menu')
-    menu_config = f'{os.path.dirname(__file__)}/menu.yml'
+    menu_config = f'{os.path.dirname(__file__)}/lib/menu.yml'
     if not os.path.exists(menu_config):
         print(f"ERROR: Unable to load the menu configuration from {menu_config}")
         sys.exit(1)
@@ -164,7 +153,7 @@ def version():
     print(f"    Copyright 2021 The Galaxy Project. All Rights Reserved.\n")
 
 
-def main():
+def entrypoint():
     menu_data = parse_menu()
 
     if len(sys.argv) < 2 or sys.argv[1] in help_args:
@@ -213,8 +202,12 @@ def main():
         return
 
     if profile is not None:
-        common.GALAXY_SERVER, common.API_KEY, common.KUBECONFIG = parse_profile(profile)
-        if common.GALAXY_SERVER is None:
+        # common.GALAXY_SERVER, common.API_KEY, common.KUBECONFIG = parse_profile(profile)
+        if not lib.common.set_active_profile(profile):
+            print(f"ERROR: Unable to set the active profile. No GALAXY_SERVER defined.")
+            return
+        if lib.GALAXY_SERVER is None:
+            print("ERROR: GALAXY_SERVER was not set in the profile.")
             return
     if command in all_commands:
         subcommands = all_commands[command]
@@ -230,4 +223,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    entrypoint()

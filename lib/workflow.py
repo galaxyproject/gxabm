@@ -5,6 +5,8 @@ import json
 from pprint import pprint
 from planemo.runnable import for_path
 from planemo.galaxy.workflows import install_shed_repos
+import lib
+import common
 from bioblend.galaxy import GalaxyInstance
 from common import connect
 
@@ -217,6 +219,7 @@ def run(args: list):
                 inputs[input[0]] = {'id': dsid, 'src': 'hda'}
 
             print(f"Running workflow {wfid}")
+            new_history_name = output_history_name
             if len(args) > 1:
                 new_history_name = f"{args[1]} {output_history_name}"
             invocation = gi.workflows.invoke_workflow(wfid, inputs=inputs, history_name=new_history_name)
@@ -233,11 +236,11 @@ def run(args: list):
 
 
 def test(args: list):
-    gi = connect()
-    print(f"Searching for workflow {args[0]}")
-    flows = gi.workflows.get_workflows(name=args[0], published=True)
-    pprint(flows)
-
+    # gi = connect()
+    # print(f"Searching for workflow {args[0]}")
+    # flows = gi.workflows.get_workflows(name=args[0], published=True)
+    # pprint(flows)
+    print(__name__)
 
 def publish(args: list):
     if len(args) != 1:
@@ -308,6 +311,7 @@ def validate(args: list):
     if not os.path.exists(workflow_path):
         print(f'ERROR: can not find workflow configuration {workflow_path}')
         return
+    print(f"Validating workflow on {lib.GALAXY_SERVER}")
     workflows = parse_workflow(workflow_path)
     gi = connect()
     total_errors = 0
@@ -386,7 +390,7 @@ def wait_for_jobs(gi: GalaxyInstance, invocations: dict):
     for step in invocations['steps']:
         job_id = step['job_id']
         if job_id is not None:
-            print(f"Waiting for job {job_id} on {common.GALAXY_SERVER}")
+            print(f"Waiting for job {job_id} on {lib.GALAXY_SERVER}")
             status = gi.jobs.wait_for_job(job_id, 86400, 10, False)
             data = gi.jobs.show_job(job_id, full_details=True)
             metrics = {
@@ -394,7 +398,7 @@ def wait_for_jobs(gi: GalaxyInstance, invocations: dict):
                 'history_id': hid,
                 'metrics': data,
                 'status': status,
-                'server': common.GALAXY_SERVER
+                'server': lib.GALAXY_SERVER
             }
             output_path = os.path.join(METRICS_DIR, f"{job_id}.json")
             with open(output_path, "w") as f:

@@ -1,4 +1,4 @@
-from common import connect
+from .common import connect
 import json
 from pprint import pprint
 
