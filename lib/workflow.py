@@ -219,6 +219,7 @@ def run(args: list):
                 inputs[input[0]] = {'id': dsid, 'src': 'hda'}
 
             print(f"Running workflow {wfid}")
+            new_history_name = output_history_name
             if len(args) > 1:
                 new_history_name = f"{args[1]} {output_history_name}"
             invocation = gi.workflows.invoke_workflow(wfid, inputs=inputs, history_name=new_history_name)
@@ -389,7 +390,7 @@ def wait_for_jobs(gi: GalaxyInstance, invocations: dict):
     for step in invocations['steps']:
         job_id = step['job_id']
         if job_id is not None:
-            print(f"Waiting for job {job_id} on {common.GALAXY_SERVER}")
+            print(f"Waiting for job {job_id} on {lib.GALAXY_SERVER}")
             status = gi.jobs.wait_for_job(job_id, 86400, 10, False)
             data = gi.jobs.show_job(job_id, full_details=True)
             metrics = {
@@ -397,7 +398,7 @@ def wait_for_jobs(gi: GalaxyInstance, invocations: dict):
                 'history_id': hid,
                 'metrics': data,
                 'status': status,
-                'server': common.GALAXY_SERVER
+                'server': lib.GALAXY_SERVER
             }
             output_path = os.path.join(METRICS_DIR, f"{job_id}.json")
             with open(output_path, "w") as f:

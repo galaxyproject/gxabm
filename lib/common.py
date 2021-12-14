@@ -22,12 +22,6 @@ datasets = {
     "rna": []
 }
 
-# def init():
-#     # TODO: These should be encapsultated into a proper *context* type object.
-#     GALAXY_SERVER = None
-#     API_KEY = None
-#     KUBECONFIG = None
-
 
 def connect():
     """
@@ -47,7 +41,9 @@ def connect():
 
 
 def set_active_profile(profile_name: str):
+    print(f"Parsing profile for {profile_name}")
     lib.GALAXY_SERVER, lib.API_KEY, lib.KUBECONFIG = parse_profile(profile_name)
+    print(lib.KUBECONFIG)
     return lib.GALAXY_SERVER != None
 
 
@@ -66,6 +62,7 @@ def load_profiles():
                 profiles = yaml.safe_load(f)
             break
     return profiles
+
 
 def parse_profile(profile_name: str):
     '''
@@ -97,8 +94,9 @@ def run(command, env:dict=None):
     if lib.KUBECONFIG is not None:
         os.environ['KUBECONFIG'] = lib.KUBECONFIG
     result = subprocess.run(command.split(), capture_output=True, env=os.environ)
-    if result.returncode == 0:
-        raise RuntimeError(result.stdout.decode('utf-8').strip())
+    if result.returncode != 0:
+        raise RuntimeError(result.stderr.decode('utf-8').strip())
+    return result.stdout.decode('utf-8').strip()
 
 
 def find_executable(name):

@@ -1,6 +1,7 @@
 import io
 import os
 import time
+import lib
 import common
 from common import run, find_executable
 import subprocess
@@ -15,7 +16,7 @@ def update(args:list):
       *running* directory for examples.
     :return:
     """
-    if common.KUBECONFIG is None:
+    if lib.KUBECONFIG is None:
         print("ERROR: No kubeconfig is specified in the profile")
         return False
 
@@ -29,15 +30,12 @@ def update(args:list):
         print('ERROR: helm is not available on the $PATH')
         return False
 
-    rules_file = f"rules/rules_{rules}.yml"
-    if not os.path.exists(rules_file):
-        print(f"ERROR: Rules file not found: {rules_file}")
+    if not os.path.exists(rules):
+        print(f"ERROR: Rules file not found: {rules}")
         return False
 
-    print(f"Applying rules {rules_file}")
-    command = f"{helm} upgrade galaxy galaxy/galaxy -n galaxy --reuse-values --set-file jobs.rules.container_mapper_rules\.yml={rules_file}"
-    # print(command)
-    # print(run(f"{helm} repo update", {'KUBECONFIG': common.KUBECONFIG}))
+    print(f"Applying rules {rules}")
+    command = f"{helm} upgrade galaxy galaxy/galaxy -n galaxy --reuse-values --set-file jobs.rules.container_mapper_rules\.yml={rules}"
     try:
         result = run(command)
     except RuntimeError as e:
@@ -46,7 +44,7 @@ def update(args:list):
 
     if result is None:
         return False
-    print(result)
+
     print('Waiting for the new deployments to come online')
     wait_until_ready()
     return True
@@ -63,6 +61,7 @@ def wait_for(kubectl:str, name: str):
     print(f"Waiting for {name} to be in the Running state")
     waiting = True
     while waiting:
+        # TODO The namespace should be parameterized
         result = run(f"{kubectl} get pods -n galaxy")
         if result is None:
             waiting = False
@@ -73,7 +72,7 @@ def wait_for(kubectl:str, name: str):
             tokens = pods[0].split()
             waiting = tokens[2] != 'Running'
         if waiting:
-            print(f'{len(pods)} zzz...')
+            print(f'Pods: {len(pods)}')
             for pod in pods:
                 print(pod)
             time.sleep(30)
