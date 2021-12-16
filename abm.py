@@ -20,7 +20,7 @@ from lib import job, dataset, workflow, history, library, folder, benchmark, hel
 log = logging.getLogger('abm')
 log.setLevel(logging.ERROR)
 
-VERSION = '1.4.0'
+VERSION = '1.4.1-dev'
 
 BOLD = '\033[1m'
 CLEAR = '\033[0m'
