@@ -118,7 +118,7 @@ def alias(shortcut, fullname):
 
 def parse_menu():
     log.debug('parse_menu')
-    menu_config = f'{os.path.dirname(__file__)}/lib/menu.yml'
+    menu_config = f'{os.path.dirname(os.path.abspath(__file__))}/lib/menu.yml'
     if not os.path.exists(menu_config):
         print(f"ERROR: Unable to load the menu configuration from {menu_config}")
         sys.exit(1)
