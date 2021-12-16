@@ -1,0 +1,30 @@
+- workflow_id: d8beac5a0d816eee
+  output_history_base_name: DNA 29C 116G-MEM
+  runs:
+    - history_name: HG00171
+      inputs:
+      - name: FASTQ Dataset
+        dataset_id: 3ef6e7918b01e665
+    - history_name: HG00152
+      inputs:
+      - name: FASTQ Dataset
+        dataset_id: daf58ed87714bfc3
+    - history_name: HG00599
+      inputs:
+      - name: FASTQ Dataset
+        dataset_id: 1c8ebd93f5710bc6
+    - history_name: HG01167
+      inputs:
+      - name: FASTQ Dataset
+        dataset_id: c49cc12509f57ec1
+    - history_name: HG003
+      inputs:
+      - name: FASTQ Dataset
+        dataset_id: 845199e085d0abbe
+- workflow_id: b94314cb9cb46380
+  output_history_base_name: PairedDNA 29C 116G-MEM
+  runs:
+    - history_name: SRS9540951
+      inputs:
+      - name: FASTQ Dataset
+        dataset_id: 4b0ef3aaf341f57b
