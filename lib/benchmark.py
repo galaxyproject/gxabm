@@ -38,26 +38,48 @@ def run(args: list):
 
     profiles = load_profiles()
     num_runs = config['runs']
-    for n in range(num_runs):
+    for cloud in config['cloud']:
+        if cloud not in profiles:
+            print(f"WARNING: No profile found for {cloud}")
+            continue
+        if not set_active_profile(cloud):
+            print(f"ERROR: Unable to set the profile for {cloud}")
+            continue
+        if lib.KUBECONFIG is None:
+            print(f"ERROR: No kubeconfig set for {cloud}")
+            continue
         print("------------------------")
-        print(f"Benchmarking run #{n+1}")
-        for cloud in config['cloud']:
-            if cloud not in profiles:
-                print(f"WARNING: no profile for instance {cloud}")
+        print(f"Benchmarking: {cloud}")
+        for conf in config['job_configs']:
+            job_conf_path = f"rules/{conf}.yml"
+            if not helm.update([job_conf_path]):
+                print(f"WARNING: job conf not found {conf}")
                 continue
-            if not set_active_profile(cloud):
-                print(f"WARNING: unable to set {cloud} as the active profile")
-            if lib.KUBECONFIG is None:
-                print(f"WARNGING: no kubeconfig for instance {cloud}")
-                continue
-            for job_conf in config['job_configs']:
-                job_conf_path = f"rules/{job_conf}.yml"
-                if not helm.update([job_conf_path]):
-                    print(f"WARNING: job conf not found {job_conf}")
-                    continue
-                history_name_prefix = f"Run {n} {job_conf}"
+            for n in range(num_runs):
+                history_name_prefix = f"{n} {cloud} {conf}"
                 for workflow_conf in config['workflow_conf']:
                     workflow.run([workflow_conf, history_name_prefix])
+
+    # for n in range(num_runs):
+    #     print("------------------------")
+    #     print(f"Benchmarking run #{n+1}")
+    #     for cloud in config['cloud']:
+    #         if cloud not in profiles:
+    #             print(f"WARNING: no profile for instance {cloud}")
+    #             continue
+    #         if not set_active_profile(cloud):
+    #             print(f"WARNING: unable to set {cloud} as the active profile")
+    #         if lib.KUBECONFIG is None:
+    #             print(f"WARNGING: no kubeconfig for instance {cloud}")
+    #             continue
+    #         for job_conf in config['job_configs']:
+    #             job_conf_path = f"rules/{job_conf}.yml"
+    #             if not helm.update([job_conf_path]):
+    #                 print(f"WARNING: job conf not found {job_conf}")
+    #                 continue
+    #             history_name_prefix = f"Run {n} {job_conf}"
+    #             for workflow_conf in config['workflow_conf']:
+    #                 workflow.run([workflow_conf, history_name_prefix])
 
 
 def test(args: list):
@@ -73,15 +95,19 @@ def summarize(args: list):
     :return: None
     """
     row = [''] * 12
+    print("Workflow,History,Server,Tool ID,State,Slots,Memory,Runtime,CPU,Memory Limit,Memory Max usage,Memory Soft Limit")
     for file in os.listdir(METRICS_DIR):
         input_path = os.path.join(METRICS_DIR, file)
         with open(input_path, 'r') as f:
             data = json.load(f)
-        row[0] = data['workflow_id']
-        row[1] = data['history_id']
-        row[2] = data['server'] if data['server'] is not None else 'https://iu1.usegvl.org/galaxy'
-        row[3] = data['metrics']['tool_id']
-        row[4] = data['metrics']['state']
+        row[0] = data['run']
+        row[1] = data['cloud']
+        row[2] = data['conf']
+        row[3] = data['workflow_id']
+        row[4] = data['history_id']
+        row[5] = data['server'] if data['server'] is not None else 'https://iu1.usegvl.org/galaxy'
+        row[6] = data['metrics']['tool_id']
+        row[7] = data['metrics']['state']
         add_metrics_to_row(data['metrics']['job_metrics'], row)
         print(','.join(row))
 
@@ -91,7 +117,8 @@ def add_metrics_to_row(metrics_list: list, row: list):
     for job_metrics in metrics_list:
         if job_metrics['name'] in accept_metrics:
             index = accept_metrics.index(job_metrics['name'])
-            row[index + 5] = job_metrics['raw_value']
+            row[index + 8] = job_metrics['raw_value']
+            # row.append(job_metrics['raw_value'])
 
 
 
