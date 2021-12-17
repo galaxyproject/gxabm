@@ -1,4 +1,4 @@
-# Benchmarking Scripts
+# Automated Benchmarking
 An opinionated Python Bioblend script for automating benchmarking tasks in Galaxy.
 
 
@@ -7,8 +7,8 @@ An opinionated Python Bioblend script for automating benchmarking tasks in Galax
 
 1. Clone this repository.
    ```bash
-   git clone https://github.com/ksuderman/bioblend-scripts.git
-   cd bioblend-scripts
+   git clone https://github.com/galaxyproject/gxabm.git
+   cd gxabm
    ```
 1. Create a virtual env and install the required libraries
    ```bash
