@@ -1,7 +1,7 @@
 name: Benchmarking DNA
 runs: 3
-workflow_conf:
-  - config/dna-named.yml
+benchmark_confs:
+  - benchmarks/dna-named.yml
 cloud:
   - tacc1
   - tacc2
