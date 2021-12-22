@@ -14,6 +14,7 @@ import workflow
 INVOCATIONS_DIR = "invocations"
 METRICS_DIR = "metrics"
 
+
 def run(args: list):
     """
     Runs a single benchmark defined by *args[0]*
