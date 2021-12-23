@@ -58,7 +58,7 @@ def run(args: list):
                 continue
             for n in range(num_runs):
                 history_name_prefix = f"{n} {cloud} {conf}"
-                for workflow_conf in config['workflow_conf']:
+                for workflow_conf in config['benchmark_confs']:
                     workflow.run([workflow_conf, history_name_prefix])
 
     # for n in range(num_runs):
