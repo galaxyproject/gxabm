@@ -15,12 +15,12 @@ import lib.common
 
 # These imports are required because they need to be added to the symbol table
 # so the parse_menu method can find them in globals()
-from lib import job, dataset, workflow, history, library, folder, benchmark, helm, kubectl, config
+from lib import job, dataset, workflow, history, library, folder, benchmark, helm, kubectl, config, experiment
 
 log = logging.getLogger('abm')
 log.setLevel(logging.INFO)
 
-VERSION = '1.4.1'
+VERSION = '2.0.0-dev'
 
 BOLD = '\033[1m'
 CLEAR = '\033[0m'
@@ -120,7 +120,7 @@ def parse_menu():
     log.debug('parse_menu')
     menu_config = f'{os.path.dirname(os.path.abspath(__file__))}/lib/menu.yml'
     if not os.path.exists(menu_config):
-        print(f"ERROR: Unable to load the menu configuration from {menu_config}")
+        log.error(f"ERROR: Unable to load the menu configuration from {menu_config}")
         sys.exit(1)
     with open(menu_config) as f:
         menu_data = yaml.safe_load(f)
@@ -139,7 +139,7 @@ def parse_menu():
                     handler = handler.__dict__
                 handler = handler[part]
             if isinstance(handler, dict):
-                print(f"Handler not found {handler_name}")
+                log.error(f"Handler not found {handler_name}")
                 sys.exit(1)
             register_handler(name, submenu_item['name'], handler)
         for command_alias in main_menu_item['name'][1:]:

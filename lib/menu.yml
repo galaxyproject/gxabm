@@ -1,7 +1,24 @@
 - name: 
+    - benchmark
+    - bench
+  help: 'manage benchmarks'
+  menu:
+    - name: ['run']
+      handler: benchmark.run
+      help: run one of the workflow configurations.  If specified the prefix will be prepended to the new history name.
+      params: PATH [history_name_prefix]
+    - name: ['translate', 'tr']
+      handler: benchmark.translate
+      help: translate workflow and dataset ID values into names
+      params: PATH
+    - name: ['validate']
+      handler: benchmark.validate
+      help: validate that workflow and dataset names can be translated into IDs
+      params: PATH
+- name:
     - workflow
     - wf
-  help: 'manage workflows'
+  help: manage Galaxy workflows
   menu:
     - name: ['upload', 'up']
       handler: workflow.upload
@@ -26,18 +43,6 @@
       handler: workflow.delete
       help: 'delete a workflow from the server'
       params: ID
-    - name: ['run']
-      handler: workflow.run
-      help: run one of the workflow configurations.  If specified the prefix will be prepended to the new history name.
-      params: PATH [history_name_prefix]
-    - name: ['translate', 'tr']
-      handler: workflow.translate
-      help: translate workflow and dataset ID values into names
-      params: PATH
-    - name: ['validate']
-      handler: workflow.validate
-      help: validate that workflow and dataset names can be translated into IDs
-      params: PATH
     - name: ['pub', 'publish']
       handler: workflow.publish
       help: publish a workflow
@@ -145,20 +150,16 @@
       help: display runtime metrics for the job
       handler: job.metrics
       params: ID
-- name: [benchmark, bench, bm]
+- name: [experiment, exp, ex]
   help: execute benchmarking runs on various clouds
   menu:
     - name: [run]
-      help: run a benchmark
-      handler: benchmark.run
+      help: run all benchmarks in an experiment
+      handler: experiment.run
       params: PATH
     - name: [summarize, summary]
       help: summarize metrics
-      handler: benchmark.summarize
-    - name: [test]
-      help: entry point for test (experimental) code
-      handler: benchmark.test
-      params: VARIES
+      handler: experiment.summarize
 - name: [helm]
   help: execute a helm command
   menu:
