@@ -18,9 +18,9 @@ import lib.common
 from lib import job, dataset, workflow, history, library, folder, benchmark, helm, kubectl, config
 
 log = logging.getLogger('abm')
-log.setLevel(logging.ERROR)
+log.setLevel(logging.INFO)
 
-VERSION = '1.4.1-dev'
+VERSION = '1.4.1'
 
 BOLD = '\033[1m'
 CLEAR = '\033[0m'
