@@ -230,6 +230,11 @@ def run(args: list):
                 print(f"Wrote invocation data to {output_path}")
             invocations = gi.invocations.wait_for_invocation(id, 86400, 10, False)
             print("Waiting for jobs")
+            if len(args) > 1:
+                for parts in args[1].split():
+                    invocations['run'] = parts[0]
+                    invocations['cloud'] = parts[1]
+                    invocations['job_conf'] = parts[2]
             wait_for_jobs(gi, invocations)
     print("Benchmarking run complete")
     return True
@@ -387,20 +392,30 @@ def wait_for_jobs(gi: GalaxyInstance, invocations: dict):
     """
     wfid = invocations['workflow_id']
     hid = invocations['history_id']
+    run = invocations['run']
+    cloud = invocations['cloud']
+    conf = invocations['job_conf']
     for step in invocations['steps']:
         job_id = step['job_id']
         if job_id is not None:
             print(f"Waiting for job {job_id} on {lib.GALAXY_SERVER}")
-            status = gi.jobs.wait_for_job(job_id, 86400, 10, False)
-            data = gi.jobs.show_job(job_id, full_details=True)
-            metrics = {
-                'workflow_id': wfid,
-                'history_id': hid,
-                'metrics': data,
-                'status': status,
-                'server': lib.GALAXY_SERVER
-            }
-            output_path = os.path.join(METRICS_DIR, f"{job_id}.json")
-            with open(output_path, "w") as f:
-                json.dump(metrics, f, indent=4)
-                print(f"Wrote metrics to {output_path}")
+            try:
+                # TDOD Should retry if anything throws an exception.
+                status = gi.jobs.wait_for_job(job_id, 86400, 10, False)
+                data = gi.jobs.show_job(job_id, full_details=True)
+                metrics = {
+                    'run': run,
+                    'cloud': cloud,
+                    'job_conf': conf,
+                    'workflow_id': wfid,
+                    'history_id': hid,
+                    'metrics': data,
+                    'status': status,
+                    'server': lib.GALAXY_SERVER
+                }
+                output_path = os.path.join(METRICS_DIR, f"{job_id}.json")
+                with open(output_path, "w") as f:
+                    json.dump(metrics, f, indent=4)
+                    print(f"Wrote metrics to {output_path}")
+            except Exception as e:
+                print(f"ERROR: {e}")

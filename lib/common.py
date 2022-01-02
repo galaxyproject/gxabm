@@ -41,9 +41,8 @@ def connect():
 
 
 def set_active_profile(profile_name: str):
-    print(f"Parsing profile for {profile_name}")
+    # print(f"Parsing profile for {profile_name}")
     lib.GALAXY_SERVER, lib.API_KEY, lib.KUBECONFIG = parse_profile(profile_name)
-    print(lib.KUBECONFIG)
     return lib.GALAXY_SERVER != None
 
 
