@@ -18,7 +18,7 @@ import lib.common
 from lib import job, dataset, workflow, history, library, folder, benchmark, helm, kubectl, config, experiment
 
 log = logging.getLogger('abm')
-log.setLevel(logging.ERROR)
+log.setLevel(logging.INFO)
 
 VERSION = '2.0.0-dev'
 
