@@ -2,6 +2,7 @@ import os
 import sys
 import json
 import yaml
+import logging
 
 import lib
 
@@ -9,6 +10,7 @@ from lib import Keys, INVOCATIONS_DIR, METRICS_DIR
 from lib.common import connect, parse_profile
 from bioblend.galaxy import GalaxyInstance
 
+log = logging.getLogger('abm')
 
 def run(args: list):
     """
