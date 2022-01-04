@@ -51,13 +51,17 @@ When running a command (i.e. not just printing help) you will need to specify th
 > abm aws workflow run configs/paired-dna.yml
 ```
 
-## Terms and Definitions
+## New In 2.0.0
+
+Version 2.0.0 refactors the `workflow` and `benchmark` commands to eliminate any confusion between a Galaxy *workflow* and what `abm` referred to as a *workflow*.  
+
+### Terms and Definitions
 
 **workflow**<br/>
-A [Galaxy workflow](https://galaxyproject.org/learn/advanced-workflow/). Workflows in `abm` are mangaged with the `workflow` sub-command. Workflows can not be run directly via the `abm` command, but are run through either a *benchmark* or *experiment*.
+A [Galaxy workflow](https://galaxyproject.org/learn/advanced-workflow/). Workflows in `abm` are mangaged with the `workflow` sub-command. Workflows can **not** be run directly via the `abm` command, but are run through the *benchmark* or *experiment* commands.
 
 **benchmark**<br/>
-A *benchmark* consists of one or more *workflow* configurations with their defined inputs. Benchmarks in `abm` are managed with the `benchmark` sub-command.
+A *benchmark* consists of one or more *workflows* with their inputs and outputs defined in a YAML configuration file. See the [Benchmark Configuration](#benchmark-configuration) section for instructions on defining a *benchmark*.
 
 **experiment**<br/>
 An *experiment* consists of one or more benchmarks to be run on one or more cloud providers. Each experiment definition consists of:
@@ -66,9 +70,10 @@ An *experiment* consists of one or more benchmarks to be run on one or more clou
 1. The cloud providers the *benchmarks* should be executed on
 1. The job rule configurations to be used. The job rule configurations define the number of CPUs and amount of memory to be allocated to the tools being benchmarked.
 
-## New In 2.0.0
+See the [Experiment Configuration](#experiment-configuration) section for instructions on defining an *experiment*.
 
-The 2.0.0 version refactors the `workflow` and `benchmark` commands to eliminate any confusion between a Galaxy *workflow* and what `abm` referred to as a *workflow*.  While the functionality is the same, some functions have been moved to other commands.  In particular, the `workflow translate`, `workflow validate`, and `workflow run` command have been moved to the `benchmark` subcommand and the `benchmark run` and `benchmark summarize` commands have moved to the `experiment` subcommand.
+### Changes to Functionality
+While the functionality in `abm` is the same, some functions have been moved to other sub-commands.  In particular, the `workflow translate`, `workflow validate`, and `workflow run` command have been moved to the `benchmark` subcommand and the `benchmark run` and `benchmark summarize` commands have moved to the `experiment` subcommand.
 
 | 1.x | 2.x |
 |-----|-----|
@@ -171,6 +176,45 @@ Then use the `benchmark validate` command to ensure that the other Galaxy instan
 
 ```bash
 > abm gcp benchmark validate config/rna-seq-named.yml
+```
+
+## Moving Histories
+
+### Exporting Histories
+
+1. Ensure the history is publicly available (i.e. published) on the Galaxy instance.  You can do this through the Galaxy user interface or via the `abm history publish` command:
+```bash
+$> abm cloud history publish <history id>
+```
+If you do not know the `<history id>` you can find it with `abm cloud history list`.
+
+2. Export the history
+```bash
+$> abm cloud history export <history id>
+```
+Make note of the URL that is returned from the `histroy export` command as this is the URL to use to import the history to another Galaxy instance. Depending on the size of the datasets in the history it may take several hours for the history to be exported, during which time your computer terminal will be blocked.  Use the `[-n|--no-wait]` option if you do not want `history export` to block until the export is complete.
+```bash
+$> abm cloud history export <history id> --no-wait
+```
+The `history export` command will return immediately and print the job ID for the export job.  Use this job id to obtain the status of the job and determine when it has completed.
+```bash
+$> abm cloud job show <job id>
+```
+Once a history has been exported the first time, and as long it has not changed, running `abm history export` again simply print the URL and exit without re-exporting the history.  This is useful when the `--no-wait` option was specified and we need to determine the URL to use for importing.
+
+> :exclamation: A History should only be exported once and the URL re-used on new benchmarking instances as they are created. Use the `lib/histories.yml` file to record the URLs so they can be easily reused with the `history import` command.
+
+### Importing Histories
+To import a history use the URL returned from the `history export` command.
+```bash
+$> abm dest history import URL
+
+# For example
+$> abm dest history import https://usegalaxy.org/history/export_archive?id=9198b7907edea3fa&jeha_id=02700395dbc14520
+```
+We can easily import histories defined in `lib/histories.yml` by specifying the YAML dictionary key name. 
+```bash
+$> abm dest history import rna
 ```
 
 ## Troubleshooting
