@@ -142,7 +142,7 @@ def parse_menu():
             handler_name = submenu_item['handler']
             log.debug('Submenu item: %s', handler_name)
             for part in handler_name.split('.'):
-                log.debug("Part: %s", part)
+                # log.debug("Part: %s", part)
                 if type(handler) is not dict:
                     handler = handler.__dict__
                 handler = handler[part]
