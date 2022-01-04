@@ -66,6 +66,19 @@ An *experiment* consists of one or more benchmarks to be run on one or more clou
 1. The cloud providers the *benchmarks* should be executed on
 1. The job rule configurations to be used. The job rule configurations define the number of CPUs and amount of memory to be allocated to the tools being benchmarked.
 
+## New In 2.0.0
+
+The 2.0.0 version refactors the `workflow` and `benchmark` commands to eliminate any confusion between a Galaxy *workflow* and what `abm` referred to as a *workflow*.  While the functionality is the same, some functions have been moved to other commands.  In particular, the `workflow translate`, `workflow validate`, and `workflow run` command have been moved to the `benchmark` subcommand and the `benchmark run` and `benchmark summarize` commands have moved to the `experiment` subcommand.
+
+| 1.x | 2.x |
+|-----|-----|
+| workflow translate | benchmark translate |
+| workflow validate | benchmark validate |
+| workflow run | benchmark run |
+| benchmark run | experiment run |
+| benchmark summarize | experiment summarize |
+
+
 ## Benchmark Configuration
 
 The runtime parameters for benchmarking runs are specified in a YAML configuration file.  The configuration file can contain more than one runtime configuration specified as a YAML list. This file can be stored anywhere, but several examples are included in the `config` directory. 
