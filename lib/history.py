@@ -183,7 +183,7 @@ def himport(args: list):
                 error_message('The histories config file was not found.')
                 return
             with open(config, 'r') as f:
-                datasets = yaml.load(f)
+                datasets = yaml.safe_load(f)
             if not args[0] in datasets:
                 error_message('Please specify a URL or name of the history to import')
                 return
