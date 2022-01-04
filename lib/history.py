@@ -164,12 +164,21 @@ def himport(args: list):
         print(f"ERROR: {msg}")
         print(f"USAGE: {sys.argv[0]} history import SERVER HISTORY_ID JEHA_ID")
         print(f"       {sys.argv[0]} history import http://GALAXY_SERVER_URL")
+        print(f"       {sys.argv[0]} history import [dna|rna]")
+
+    wait = True
+    if '-n' in args:
+        args.remove('-n')
+        wait = False
+    if '--no-wait' in args:
+        args.remove('--no-wait')
+        wait = False
 
     if len(args) == 1:
         if 'http' in args[0]:
             url = args[0]
         else:
-            config = f'{os.path.dirname(__file__)}/histories.yml'
+            config = f'{os.path.dirname(os.path.abspath(__file__))}/histories.yml'
             if not os.path.exists(config):
                 error_message('The histories config file was not found.')
                 return
@@ -192,7 +201,17 @@ def himport(args: list):
     gi = connect()
     print(f"Importing history from {url}")
     result = gi.histories.import_history(url=url)
-    pprint(result)
+    if wait:
+        id = result['id']
+        print(f"Waiting for job {id}")
+        try:
+            gi.jobs.wait_for_job(id, 86400, 10, False)
+            print('Done')
+        except:
+            return False
+    else:
+        pprint(result)
+    return True
 
 
 def delete(args:list):
