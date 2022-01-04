@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 import yaml
@@ -210,7 +211,7 @@ def himport(args: list):
         except:
             return False
     else:
-        pprint(result)
+        print(json.dumps(result))
     return True
 
 
