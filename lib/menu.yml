@@ -51,6 +51,9 @@
       handler: workflow.rename
       params: "ID 'new workflow name'"
       help: "rename a workflow on the Galaxy server"
+    - name: ['test']
+      handler: workflow.test
+      help: run some test code
 - name:
     - dataset
     - ds
@@ -86,7 +89,7 @@
       help: list histories on the server.
       params: "[-a|--all]"
     - name: ['import', 'imp', 'im']
-      params: "CLOUD [HISTORY_ID JEHA_ID | URL"
+      params: "[CLOUD HISTORY_ID JEHA_ID | URL | [dna|rna]] [-n|--no-wait]"
       handler: history.himport
       help: import a history from another Galaxy server
     - name: ['export', 'exp', 'ex']
