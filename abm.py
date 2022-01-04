@@ -18,7 +18,14 @@ import lib.common
 from lib import job, dataset, workflow, history, library, folder, benchmark, helm, kubectl, config, experiment
 
 log = logging.getLogger('abm')
-log.setLevel(logging.INFO)
+handler = logging.StreamHandler()
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+
+log.setLevel(logging.ERROR)
+handler.setLevel(logging.ERROR)
+handler.setFormatter(formatter)
+log.addHandler(handler)
+
 
 VERSION = '2.0.0-dev'
 
@@ -121,6 +128,7 @@ def parse_menu():
     menu_config = f'{os.path.dirname(os.path.abspath(__file__))}/lib/menu.yml'
     if not os.path.exists(menu_config):
         log.error(f"ERROR: Unable to load the menu configuration from {menu_config}")
+        # TODO Throw an exception that can be caught at the appropriate level
         sys.exit(1)
     with open(menu_config) as f:
         menu_data = yaml.safe_load(f)
@@ -140,6 +148,7 @@ def parse_menu():
                 handler = handler[part]
             if isinstance(handler, dict):
                 log.error(f"Handler not found {handler_name}")
+                # TODO Throw and excpetion that can be caught at the appropriate level.
                 sys.exit(1)
             register_handler(name, submenu_item['name'], handler)
         for command_alias in main_menu_item['name'][1:]:
@@ -153,17 +162,39 @@ def version():
     print(f"    Copyright 2021 The Galaxy Project. All Rights Reserved.\n")
 
 
+def _get_logopt(args: list):
+    OPTS = ['-log', '--log', '-logging', '--logging']
+    for i in range(len(args)):
+        if args[i] in OPTS:
+            return i
+    return -1
+
+
 def entrypoint():
+    # Check if log level is being set
+    logopt = _get_logopt(sys.argv)
+    if logopt >= 0:
+        if logopt+1 >= len(sys.argv):
+            print("ERROR: no log level provided")
+            return
+
+        level = sys.argv[logopt + 1].upper()
+        if level not in ['DEBUG', 'INFO', 'WARN', 'WARNING', 'ERROR', 'FATAL', 'CRITICAL']:
+            print(f"ERROR: Invalid logging level {sys.argv[logopt + 1]}")
+            return
+        print(f"Setting the log level to {level}")
+        log.setLevel(level)
+        global handler
+        handler.setLevel(level)
+        del sys.argv[logopt]
+        del sys.argv[logopt]
+
     menu_data = parse_menu()
 
     if len(sys.argv) < 2 or sys.argv[1] in help_args:
         print_main_help(menu_data)
         return
 
-    if '--debug' in sys.argv:
-        print("Enable debugging")
-        log.setLevel(logging.DEBUG)
-        sys.argv.remove('--debug')
     program = sys.argv[0]
     profile = sys.argv[1]
     if profile in version_args:
