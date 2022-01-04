@@ -2,6 +2,7 @@ from common import connect
 from pprint import pprint
 import yaml
 
+
 def list(args: list):
     gi = connect()
     datasets = gi.datasets.get_datasets(limit=10000, offset=0)  # , deleted=True, purged=True)
@@ -14,6 +15,7 @@ def list(args: list):
         state = dataset['state'] if 'state' in dataset else 'unknown'
         print(f"{dataset['id']}\t{dataset['deleted']}\t{state}\t{dataset['name']}")
         # pprint(dataset)
+
 
 def clean(args: list):
     if len(args) == 0:
@@ -31,6 +33,7 @@ def clean(args: list):
             gi.histories.delete_dataset(dataset['history_id'], dataset['id'], True)
             print(f"Removed {dataset['id']}\t{state}\t{dataset['name']}")
 
+
 def show(args: list):
     if len(args) == 0:
         print("ERROR: no dataset ID provided")
@@ -38,9 +41,11 @@ def show(args: list):
     gi = connect()
     pprint(gi.datasets.show_dataset(args[0]))
 
+
 def delete(args: list):
     gi = connect()
     print("dataset delete not implemented")
+
 
 def upload(args: list):
     gi = connect()
