@@ -57,7 +57,7 @@ def show(args: list):
         return
     gi = connect()
     history = gi.histories.show_history(args[0], contents=contents)
-    pprint(history)
+    print(json.dumps(history, indent=4))
 
 
 def find(args: list):
@@ -211,7 +211,7 @@ def himport(args: list):
         except:
             return False
     else:
-        print(json.dumps(result))
+        print(json.dumps(result, indent=4))
     return True
 
 
