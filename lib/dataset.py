@@ -10,11 +10,11 @@ def list(args: list):
         print('No datasets found')
         return
     print(f'Found {len(datasets)} datasets')
-    print('ID\tDeleted\tState\tName')
+    print('ID\tHistory\tDeleted\tState\tName')
     for dataset in datasets:
         state = dataset['state'] if 'state' in dataset else 'unknown'
-        print(f"{dataset['id']}\t{dataset['deleted']}\t{state}\t{dataset['name']}")
-        # pprint(dataset)
+        print(f"{dataset['id']}\t{dataset['history_id']}\t{dataset['deleted']}\t{state}\t{dataset['name']}")
+        #pprint(dataset)
 
 
 def clean(args: list):
