@@ -21,7 +21,7 @@ An opinionated Python Bioblend script for automating benchmarking tasks in Galax
 
 You will need an [API key](https://training.galaxyproject.org/training-material/faqs/galaxy/preferences_admin_api_key.html) for every Galaxy instance you would like to intereact with. You will also need the *kubeconfig* file for each Kubernetes cluster.  The `abm` script loads the Galaxy server URLs, API keys, and the location of the *kubeconfig* files from a Yaml configuration file that it expects to find in `$HOME/.abm/profile.yml` or `.abm-profile.yml` in the current directory.  You can use the `profile-sample.yml` file as a starting point and it includes the URLs for all Galaxy instances we have used to date (December 22, 2021 as of this writing). 
 
-**NOTE** by default `kubectl` expects that all *kubeconfig*s to be stored in a single configuration file located at `$HOME/.kube/config`. However, this is a global, system wide, configuration file meaning two shells can not operate on different Kubernetes clusters at the same time.  Therefore the `abm` scripts expects each cluster to store it's configuration in its own *kubeconfig* file.  I store mine in a directory named `$HOME/.kube/configs`, although this is just a personal preference and they can be stored anywhere.
+> :exclamation: **NOTE** by default `kubectl` expects that all *kubeconfig*s to be stored in a single configuration file located at `$HOME/.kube/config`. However, this is a global, system wide, configuration file meaning two shells can not operate on different Kubernetes clusters at the same time.  Therefore the `abm` scripts expects each cluster to store it's configuration in its own *kubeconfig* file.  I store mine in a directory named `$HOME/.kube/configs`, although this is just a personal preference and they can be stored anywhere.
 
 ## Usage
 
@@ -202,7 +202,7 @@ $> abm cloud job show <job id>
 ```
 Once a history has been exported the first time, and as long it has not changed, running `abm history export` again simply print the URL and exit without re-exporting the history.  This is useful when the `--no-wait` option was specified and we need to determine the URL to use for importing.
 
-> :exclamation: A History should only be exported once and the URL re-used on new benchmarking instances as they are created. Use the `lib/histories.yml` file to record the URLs so they can be easily reused with the `history import` command.
+> :heart: A History should only be exported once and the URL re-used on new benchmarking instances as they are created. Use the `lib/histories.yml` file to record the URLs so they can be easily reused with the `history import` command.
 
 ### Importing Histories
 To import a history use the URL returned from the `history export` command.
