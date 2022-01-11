@@ -1,10 +1,10 @@
 name: Benchmarking DNA
-runs: 3
+runs: 1
 benchmark_confs:
-  - benchmarks/dna-named.yml
+  - benchmarks/dna-test-run.yml
 cloud:
-  - tacc1
-  - tacc2
+  - tex
 job_configs:
   - 4x8
   - 8x16
+  - 16x32
