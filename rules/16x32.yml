@@ -70,18 +70,18 @@ resources:
   resource_sets:
     small:
       requests:
-        cpu: 1
-        memory: 2G
+        cpu: 16
+        memory: 32G
       limits:
-        cpu: 2
-        memory: 5G
+        cpu: 16
+        memory: 32G
     medium:
       requests:
-        cpu: 2
-        memory: 4G
+        cpu: 16
+        memory: 32G
       limits:
-        cpu: 4
-        memory: 10G
+        cpu: 16
+        memory: 32G
     large:
       requests:
         cpu: 16
@@ -91,16 +91,16 @@ resources:
         memory: 32G
     2xlarge:
       requests:
-        cpu: 12
-        memory: 20G
+        cpu: 16
+        memory: 32G
       limits:
-        cpu: 12
-        memory: 24G
+        cpu: 16
+        memory: 32G
     mlarge:
       requests:
-        cpu: 2
-        memory: 16G
+        cpu: 16
+        memory: 32G
       limits:
-        cpu: 4
-        memory: 20G
+        cpu: 16
+        memory: 32G
   default_resource_set: small
