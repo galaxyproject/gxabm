@@ -1,14 +1,10 @@
-import io
 import os
-import sys
-import time
 
 import yaml
 import json
 import lib
 import helm
-import common
-from common import connect, parse_profile, load_profiles, set_active_profile
+from common import load_profiles, set_active_profile
 import benchmark
 
 INVOCATIONS_DIR = "invocations"
@@ -84,7 +80,11 @@ def run(args: list):
 
 
 def test(args: list):
-    print(common.GALAXY_SERVER)
+    print(lib.GALAXY_SERVER)
+    if os.path.exists(args[0]):
+        with open(args[0]) as f:
+            data = yaml.safe_load(f)
+        print(data)
 
 
 def parse_toolid(id:str) -> str:

@@ -163,6 +163,10 @@
     - name: [summarize, summary]
       help: summarize metrics
       handler: experiment.summarize
+    - name: [test]
+      help: playground code
+      handler: experiment.test
+      params: [VARIES]
 - name: [helm]
   help: execute a helm command
   menu:
