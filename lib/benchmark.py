@@ -100,10 +100,10 @@ def run(args: list):
             invocations = gi.invocations.wait_for_invocation(id, 86400, 10, False)
             print("Waiting for jobs")
             if len(args) > 1:
-                for parts in args[1].split():
-                    invocations['run'] = parts[0]
-                    invocations['cloud'] = parts[1]
-                    invocations['job_conf'] = parts[2]
+                parts = args[1].split()
+                invocations['run'] = parts[0]
+                invocations['cloud'] = parts[1]
+                invocations['job_conf'] = parts[2]
             wait_for_jobs(gi, invocations)
     print("Benchmarking run complete")
     return True
