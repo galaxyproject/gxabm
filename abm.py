@@ -159,7 +159,7 @@ def parse_menu():
 def version():
     print()
     print(f"    Galaxy Automated Benchmarking v{VERSION}")
-    print(f"    Copyright 2021 The Galaxy Project. All Rights Reserved.\n")
+    print(f"    Copyright 2022 The Galaxy Project. All Rights Reserved.\n")
 
 
 def _get_logopt(args: list):

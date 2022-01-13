@@ -1,15 +1,11 @@
-import io
 import os
-import sys
-import time
 
 import yaml
 import json
 import lib
 import helm
-import common
-from common import connect, parse_profile, load_profiles, set_active_profile
-import workflow
+from common import load_profiles, set_active_profile
+import benchmark
 
 INVOCATIONS_DIR = "invocations"
 METRICS_DIR = "metrics"
@@ -59,7 +55,7 @@ def run(args: list):
             for n in range(num_runs):
                 history_name_prefix = f"{n} {cloud} {conf}"
                 for workflow_conf in config['benchmark_confs']:
-                    workflow.run([workflow_conf, history_name_prefix])
+                    benchmark.run([workflow_conf, history_name_prefix])
 
     # for n in range(num_runs):
     #     print("------------------------")
@@ -84,7 +80,16 @@ def run(args: list):
 
 
 def test(args: list):
-    print(common.GALAXY_SERVER)
+    print(lib.GALAXY_SERVER)
+    if os.path.exists(args[0]):
+        with open(args[0]) as f:
+            data = yaml.safe_load(f)
+        print(data)
+
+
+def parse_toolid(id:str) -> str:
+    parts = id.split('/')
+    return f"{parts[-2]},{parts[-1]}"
 
 
 def summarize(args: list):
@@ -95,19 +100,19 @@ def summarize(args: list):
     :param args: Ignored
     :return: None
     """
-    row = [''] * 12
-    print("Workflow,History,Server,Tool ID,State,Slots,Memory,Runtime,CPU,Memory Limit,Memory Max usage,Memory Soft Limit")
+    row = [''] * 15
+    print("Run,Cloud,Job Conf,Workflow,History,Server,Tool,Tool Version,State,Slots,Memory,Runtime (Sec),CPU,Memory Limit (Bytes),Memory Max usage (Bytes),Memory Soft Limit")
     for file in os.listdir(METRICS_DIR):
         input_path = os.path.join(METRICS_DIR, file)
         with open(input_path, 'r') as f:
             data = json.load(f)
         row[0] = data['run']
         row[1] = data['cloud']
-        row[2] = data['conf']
+        row[2] = data['job_conf']
         row[3] = data['workflow_id']
         row[4] = data['history_id']
         row[5] = data['server'] if data['server'] is not None else 'https://iu1.usegvl.org/galaxy'
-        row[6] = data['metrics']['tool_id']
+        row[6] = parse_toolid(data['metrics']['tool_id'])
         row[7] = data['metrics']['state']
         add_metrics_to_row(data['metrics']['job_metrics'], row)
         print(','.join(row))
