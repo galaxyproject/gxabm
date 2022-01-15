@@ -4,8 +4,9 @@ import yaml
 import json
 import lib
 import helm
-from common import load_profiles, set_active_profile
 import benchmark
+from common import load_profiles, set_active_profile
+from threads.Latch import CountdownLatch
 
 INVOCATIONS_DIR = "invocations"
 METRICS_DIR = "metrics"
@@ -79,6 +80,10 @@ def run(args: list):
     #                 workflow.run([workflow_conf, history_name_prefix])
 
 
+def run_on_cloud():
+    pass
+
+
 def test(args: list):
     print(lib.GALAXY_SERVER)
     if os.path.exists(args[0]):
@@ -104,6 +109,7 @@ def summarize(args: list):
     print("Run,Cloud,Job Conf,Workflow,History,Server,Tool,Tool Version,State,Slots,Memory,Runtime (Sec),CPU,Memory Limit (Bytes),Memory Max usage (Bytes),Memory Soft Limit")
     for file in os.listdir(METRICS_DIR):
         input_path = os.path.join(METRICS_DIR, file)
+        print(f"Loading {input_path}")
         with open(input_path, 'r') as f:
             data = json.load(f)
         row[0] = data['run']
