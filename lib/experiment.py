@@ -4,8 +4,7 @@ import yaml
 import json
 import helm
 import benchmark
-from lib import Context
-from common import load_profiles
+from common import load_profiles, Context
 from threads.Latch import CountdownLatch
 
 INVOCATIONS_DIR = "invocations"

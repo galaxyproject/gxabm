@@ -6,8 +6,8 @@ import logging
 
 #import lib
 
-from lib import Context, Keys, INVOCATIONS_DIR, METRICS_DIR
-from lib.common import connect, parse_profile
+from lib import Keys, INVOCATIONS_DIR, METRICS_DIR
+from lib.common import connect, Context
 from bioblend.galaxy import GalaxyInstance
 
 log = logging.getLogger('abm')

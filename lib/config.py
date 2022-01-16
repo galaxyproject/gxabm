@@ -1,6 +1,4 @@
-from lib import Context
-from common import load_profiles
-from pprint import pprint
+from common import load_profiles, Context
 
 
 def list(context: Context, args: list):

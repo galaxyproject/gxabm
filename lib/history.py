@@ -3,8 +3,7 @@ import os
 import sys
 import yaml
 
-from lib import Context
-from lib.common import connect, parse_profile
+from lib.common import connect, parse_profile, Context
 from pprint import pprint
 
 #

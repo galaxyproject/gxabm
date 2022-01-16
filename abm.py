@@ -11,11 +11,11 @@ import yaml
 import sys
 import os
 import logging
-import lib.common
+from lib.common import Context
 
 # These imports are required because they need to be added to the symbol table
 # so the parse_menu method can find them in globals()
-from lib import Context, job, dataset, workflow, history, library, folder, benchmark, helm, kubectl, config, experiment
+from lib import job, dataset, workflow, history, library, folder, benchmark, helm, kubectl, config, experiment
 
 log = logging.getLogger('abm')
 handler = logging.StreamHandler()

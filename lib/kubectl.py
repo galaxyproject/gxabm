@@ -1,5 +1,4 @@
-from lib import Context
-from common import run, find_executable
+from common import run, find_executable, Context
 
 
 def pods(context: Context, args: list):

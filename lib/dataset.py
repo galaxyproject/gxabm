@@ -1,5 +1,4 @@
-from lib import Context
-from common import connect
+from common import connect, Context
 from pprint import pprint
 import yaml
 

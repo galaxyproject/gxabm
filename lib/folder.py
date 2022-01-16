@@ -1,6 +1,5 @@
 from pprint import pprint
-from .common import connect
-from lib import Context
+from .common import connect, Context
 
 def list(context: Context, args: list):
     if len(args) == 0:

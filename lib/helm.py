@@ -1,7 +1,6 @@
 import os
 import time
-from common import run, find_executable
-from lib import Context
+from common import run, find_executable, Context
 
 
 def update(context: Context, args:list):

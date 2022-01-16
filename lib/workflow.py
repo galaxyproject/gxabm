@@ -5,8 +5,7 @@ import logging
 from pprint import pprint
 from planemo.runnable import for_path
 from planemo.galaxy.workflows import install_shed_repos
-from common import connect
-from lib import Context
+from common import connect, Context
 
 log = logging.getLogger('abm')
 

@@ -5,7 +5,6 @@ import subprocess
 import bioblend.galaxy
 # from lib import GALAXY_SERVER, API_KEY, KUBECONFIG
 import lib
-from lib import Context
 
 # global GALAXY_SERVER, API_KEY, KUBECONFIG
 
@@ -23,6 +22,27 @@ datasets = {
     "rna": []
 }
 
+class Context:
+    def __init__(self, *args):
+        if len(args) == 1:
+            arg = args[0]
+            if type(arg) == str:
+                self.GALAXY_SERVER, self.API_KEY, self.KUBECONFIG = parse_profile(arg)
+            elif type(arg) == dict:
+                self.GALAXY_SERVER = arg['GALAXY_SERVER']
+                self.API_KEY = arg['API_KEY']
+                self.KUBECONFIG = arg['KUBECONFIG']
+            else:
+                raise Exception(f'Invalid arg for Context: {type(arg)}')
+        elif len(args) == 3:
+            self.GALAXY_SERVER = args[0]
+            self.API_KEY = args[1]
+            self.KUBECONFIG = args[2]
+        else:
+            raise Exception(f'Invalid args for Context. Expected one or three, found {len(args)}')
+
+
+
 
 def connect(context:Context):
     """
@@ -38,7 +58,7 @@ def connect(context:Context):
         print('ERROR: The Galaxy API key has not been set.  Please check your')
         print('       configuration in ~/.abm/profile.yml and try again.')
         sys.exit(1)
-    return bioblend.galaxy.GalaxyInstance(url=context.GALAXY_SERVER, context=lib.API_KEY)
+    return bioblend.galaxy.GalaxyInstance(url=context.GALAXY_SERVER, key=context.API_KEY)
 
 
 def _set_active_profile(profile_name: str):
