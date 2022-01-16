@@ -5,6 +5,7 @@ import subprocess
 import bioblend.galaxy
 # from lib import GALAXY_SERVER, API_KEY, KUBECONFIG
 import lib
+from lib import Context
 
 # global GALAXY_SERVER, API_KEY, KUBECONFIG
 
@@ -23,27 +24,31 @@ datasets = {
 }
 
 
-def connect():
+def connect(context:Context):
     """
     Create a connection to the Galaxy instance
 
     :return: a GalaxyInstance object
     """
-    if lib.GALAXY_SERVER is None:
+    if context.GALAXY_SERVER is None:
         print('ERROR: The Galaxy server URL has not been set.  Please check your')
         print('       configuration in ~/.abm/profile.yml and try again.')
         sys.exit(1)
-    if lib.API_KEY is None:
+    if context.API_KEY is None:
         print('ERROR: The Galaxy API key has not been set.  Please check your')
         print('       configuration in ~/.abm/profile.yml and try again.')
         sys.exit(1)
-    return bioblend.galaxy.GalaxyInstance(url=lib.GALAXY_SERVER, key=lib.API_KEY)
+    return bioblend.galaxy.GalaxyInstance(url=context.GALAXY_SERVER, context=lib.API_KEY)
 
 
-def set_active_profile(profile_name: str):
+def _set_active_profile(profile_name: str):
     # print(f"Parsing profile for {profile_name}")
     lib.GALAXY_SERVER, lib.API_KEY, lib.KUBECONFIG = parse_profile(profile_name)
     return lib.GALAXY_SERVER != None
+
+
+def get_context(profile_name: str):
+    return Context(profile_name)
 
 
 def load_profiles():

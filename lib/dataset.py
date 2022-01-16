@@ -1,10 +1,11 @@
+from lib import Context
 from common import connect
 from pprint import pprint
 import yaml
 
 
-def list(args: list):
-    gi = connect()
+def list(context: Context, args: list):
+    gi = connect(context)
     datasets = gi.datasets.get_datasets(limit=10000, offset=0)  # , deleted=True, purged=True)
     if len(datasets) == 0:
         print('No datasets found')
@@ -17,12 +18,12 @@ def list(args: list):
         #pprint(dataset)
 
 
-def clean(args: list):
+def clean(context: Context, args: list):
     if len(args) == 0:
         invalid_states = ['error', 'discarded', 'unknown']
     else:
         invalid_states = args
-    gi = connect()
+    gi = connect(context)
     datasets = gi.datasets.get_datasets(limit=10000, offset=0)  # , deleted=True, purged=True)
     if len(datasets) == 0:
         print('No datasets found')
@@ -34,42 +35,41 @@ def clean(args: list):
             print(f"Removed {dataset['id']}\t{state}\t{dataset['name']}")
 
 
-def show(args: list):
+def show(context: Context, args: list):
     if len(args) == 0:
         print("ERROR: no dataset ID provided")
         return
-    gi = connect()
+    gi = connect(context)
     pprint(gi.datasets.show_dataset(args[0]))
 
 
-def delete(args: list):
-    gi = connect()
+def delete(context: Context, args: list):
+    # gi = connect(context)
     print("dataset delete not implemented")
 
 
-def upload(args: list):
-    gi = connect()
+def upload(context: Context, args: list):
     if len(args) == 0:
         print('ERROR: no dataset file given')
         return
-    else:
-        index = 1
-        while index < len(args):
-            arg = args[index]
+    index = 1
+    while index < len(args):
+        arg = args[index]
+        index += 1
+        if arg == '-id':
+            history = args[index]
             index += 1
-            if arg == '-id':
-                history = args[index]
-                index += 1
-            elif arg == '-c':
-                history = gi.histories.create_history(args[index]).get('id')
-                index += 1
-            else:
-                print('ERROR: invalid option')
+        elif arg == '-c':
+            history = gi.histories.create_history(args[index]).get('id')
+            index += 1
+        else:
+            print('ERROR: invalid option')
+    gi = connect(context)
     pprint(gi.tools.put_url(args[0], history))
 
 
-def download(args: list):
-    gi = connect()
+def download(context: Context, args: list):
+    gi = connect(context)
     if len(args) == 0:
         print('ERROR: no dataset ID given')
         return
@@ -79,11 +79,11 @@ def download(args: list):
         pprint(gi.datasets.download_dataset(args[0]))
 
 
-def find(args: list):
+def find(context: Context, args: list):
     if len(args) == 0:
         print('ERROR: now dataset name given.')
         return
-    gi = connect()
+    gi = connect(context)
     datasets = gi.datasets.get_datasets(name=args[0])
     if len(datasets) == 0:
         print('WARNING: no datasets found with that name')
@@ -96,11 +96,11 @@ def find(args: list):
     pprint(ds)
 
 
-def test(args: list):
+def test(context: Context, args: list):
     if len(args) == 0:
         print("ERROR: no dataset ID provided")
         return
-    gi = connect()
+    gi = connect(context)
     dataset = gi.datasets.show_dataset(args[0])
     if dataset is None:
         print(f"ERROR: no dataset with ID {args[0]}")

@@ -1,13 +1,10 @@
-import io
 import os
 import time
-import lib
-import common
 from common import run, find_executable
-import subprocess
+from lib import Context
 
 
-def update(args:list):
+def update(context: Context, args:list):
     """
     Runs the ``helm upgrade`` command on the cluster to update the
     *jobs.rules.container_mapper_rules* configuration.
@@ -16,7 +13,7 @@ def update(args:list):
       *running* directory for examples.
     :return:
     """
-    if lib.KUBECONFIG is None:
+    if context.KUBECONFIG is None:
         print("ERROR: No kubeconfig is specified in the profile")
         return False
 
@@ -57,6 +54,7 @@ def filter(lines:list, item:str):
             result.append(line)
     return result
 
+
 def wait_for(kubectl:str, name: str):
     print(f"Waiting for {name} to be in the Running state")
     waiting = True
@@ -89,6 +87,6 @@ def wait_until_ready():
     wait_for(kubectl, 'galaxy-workflow')
 
 
-def list(args: list):
+def list(context: Context, args: list):
     print("Not implemented")
 

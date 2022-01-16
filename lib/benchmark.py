@@ -4,15 +4,15 @@ import json
 import yaml
 import logging
 
-import lib
+#import lib
 
-from lib import Keys, INVOCATIONS_DIR, METRICS_DIR
+from lib import Context, Keys, INVOCATIONS_DIR, METRICS_DIR
 from lib.common import connect, parse_profile
 from bioblend.galaxy import GalaxyInstance
 
 log = logging.getLogger('abm')
 
-def run(args: list):
+def run(context: Context, args: list):
     """
     Runs a single workflow defined by *args[0]*
 
@@ -104,13 +104,13 @@ def run(args: list):
                 invocations['run'] = parts[0]
                 invocations['cloud'] = parts[1]
                 invocations['job_conf'] = parts[2]
-            wait_for_jobs(gi, invocations)
+            wait_for_jobs(context, gi, invocations)
     print("Benchmarking run complete")
     return True
 
 
 
-def translate(args: list):
+def translate(context: Context, args: list):
     if len(args) == 0:
         print('ERROR: no workflow configuration specified')
         return
@@ -152,7 +152,7 @@ def translate(args: list):
     print(yaml.dump(workflows))
 
 
-def validate(args: list):
+def validate(context: Context, args: list):
     if len(args) == 0:
         print('ERROR: no workflow configuration specified')
         return
@@ -161,7 +161,7 @@ def validate(args: list):
     if not os.path.exists(workflow_path):
         print(f'ERROR: can not find workflow configuration {workflow_path}')
         return
-    print(f"Validating workflow on {lib.GALAXY_SERVER}")
+    print(f"Validating workflow on {context.GALAXY_SERVER}")
     workflows = parse_workflow(workflow_path)
     gi = connect()
     total_errors = 0
@@ -228,7 +228,7 @@ def validate(args: list):
     return total_errors == 0
 
 
-def wait_for_jobs(gi: GalaxyInstance, invocations: dict):
+def wait_for_jobs(context, gi: GalaxyInstance, invocations: dict):
     """ Blocks until all jobs defined in the *invocations* to complete.
 
     :param gi: The *GalaxyInstance** running the jobs
@@ -243,7 +243,7 @@ def wait_for_jobs(gi: GalaxyInstance, invocations: dict):
     for step in invocations['steps']:
         job_id = step['job_id']
         if job_id is not None:
-            print(f"Waiting for job {job_id} on {lib.GALAXY_SERVER}")
+            print(f"Waiting for job {job_id} on {context.GALAXY_SERVER}")
             try:
                 # TDOD Should retry if anything throws an exception.
                 status = gi.jobs.wait_for_job(job_id, 86400, 10, False)
@@ -256,7 +256,7 @@ def wait_for_jobs(gi: GalaxyInstance, invocations: dict):
                     'history_id': hid,
                     'metrics': data,
                     'status': status,
-                    'server': lib.GALAXY_SERVER
+                    'server': context.GALAXY_SERVER
                 }
                 output_path = os.path.join(METRICS_DIR, f"{job_id}.json")
                 with open(output_path, "w") as f:

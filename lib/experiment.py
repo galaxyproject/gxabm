@@ -2,17 +2,17 @@ import os
 
 import yaml
 import json
-import lib
 import helm
 import benchmark
-from common import load_profiles, set_active_profile
+from lib import Context
+from common import load_profiles
 from threads.Latch import CountdownLatch
 
 INVOCATIONS_DIR = "invocations"
 METRICS_DIR = "metrics"
 
 
-def run(args: list):
+def run(context: Context, args: list):
     """
     Runs a single benchmark defined by *args[0]*
 
@@ -84,8 +84,8 @@ def run_on_cloud():
     pass
 
 
-def test(args: list):
-    print(lib.GALAXY_SERVER)
+def test(context: Context, args: list):
+    print(context.GALAXY_SERVER)
     if os.path.exists(args[0]):
         with open(args[0]) as f:
             data = yaml.safe_load(f)
@@ -97,7 +97,7 @@ def parse_toolid(id:str) -> str:
     return f"{parts[-2]},{parts[-1]}"
 
 
-def summarize(args: list):
+def summarize(context: Context, args: list):
     """
     Parses all the files in the **METRICS_DIR** directory and prints metrics
     as CSV to stdout

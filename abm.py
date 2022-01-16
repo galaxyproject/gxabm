@@ -15,7 +15,7 @@ import lib.common
 
 # These imports are required because they need to be added to the symbol table
 # so the parse_menu method can find them in globals()
-from lib import job, dataset, workflow, history, library, folder, benchmark, helm, kubectl, config, experiment
+from lib import Context, job, dataset, workflow, history, library, folder, benchmark, helm, kubectl, config, experiment
 
 log = logging.getLogger('abm')
 handler = logging.StreamHandler()
@@ -44,6 +44,7 @@ def bold(text: str):
 
 help_args = ['help', '-h', '--help']
 version_args = ['-v', '--version', 'version']
+
 
 def head(text):
     print(bold(text))
@@ -232,12 +233,10 @@ def entrypoint():
         print_help(menu_data, command)
         return
 
+    context = None
     if profile is not None:
-        # common.GALAXY_SERVER, common.API_KEY, common.KUBECONFIG = parse_profile(profile)
-        if not lib.common.set_active_profile(profile):
-            print(f"ERROR: Unable to set the active profile. No GALAXY_SERVER defined.")
-            return
-        if lib.GALAXY_SERVER is None:
+        context = Context(profile)
+        if context.GALAXY_SERVER is None:
             print("ERROR: GALAXY_SERVER was not set in the profile.")
             return
     if command in all_commands:
@@ -247,7 +246,7 @@ def entrypoint():
             print(f'Type "{program} {command} help" for more help.')
             return
         handler = subcommands[subcommand]
-        handler(params)
+        handler(context, params)
     else:
         print(f'\n{bold("ERROR:")} Unknown command {bold({command})}')
         print_main_help(menu_data)
