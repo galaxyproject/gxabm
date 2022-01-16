@@ -1,5 +1,5 @@
 # The name of the experiment.  Used for display purposes only.
-name: Test Benchmarking DNA
+name: X-Large Benchmarking DNA
 # The number of times each benchmark will be executed.
 runs: 1
 # The benchmarks that will be run as part of the experiment. Each benchmark
@@ -13,6 +13,4 @@ cloud:
 # resources allocated to tools. List the file names without the .yml extension.
 # These files are expected to be found in the rules directory.
 job_configs:
-  - 4x8
-  - 8x16
   - 16x32

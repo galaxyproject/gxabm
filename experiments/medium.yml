@@ -1,5 +1,5 @@
 # The name of the experiment.  Used for display purposes only.
-name: Test Benchmarking DNA
+name: Medium Benchmarking DNA
 # The number of times each benchmark will be executed.
 runs: 1
 # The benchmarks that will be run as part of the experiment. Each benchmark
@@ -9,6 +9,8 @@ benchmark_confs:
 # The cloud provider, as defined in the $HOME/.abm/profile.yml file.
 cloud:
   - medium
+  - large
+  - xlarge
 # The Galaxy container_mapper_rules.yml files that defined the CPU and memory
 # resources allocated to tools. List the file names without the .yml extension.
 # These files are expected to be found in the rules directory.
