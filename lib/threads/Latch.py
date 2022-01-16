@@ -7,11 +7,11 @@ class CountdownLatch:
 
 
     def count_down(self, count = 1):
+        self.lock.acquire(True)
         self.count -= count
         if self.count <= 0:
-            self.lock.acquire(True)
             self.lock.notifyAll()
-            self.lock.release()
+        self.lock.release()
 
 
     def wait(self):
