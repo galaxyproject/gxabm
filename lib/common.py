@@ -128,7 +128,9 @@ def run(command, env:dict= None):
 
 
 def get_env(context: Context):
-    return os.environ.copy().update(context.__dict__)
+    copy = os.environ.copy()
+    copy.update(context.__dict__)
+    return copy
 
 
 def find_executable(name):
