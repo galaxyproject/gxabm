@@ -3,6 +3,21 @@ import time
 from common import run, find_executable, get_env, Context
 
 
+def rollback(context: Context, args: list):
+    helm = find_executable('helm')
+    #helm = 'helm'
+    if helm is None:
+        print('ERROR: helm is not available on the $PATH')
+        return
+
+    print(f"Rolling back deployment on {context.GALAXY_SERVER} KUBECONFIG: {context.KUBECONFIG}")
+    if len(args) > 0:
+        command = f"{helm} rollback " + ' '.join(args)
+    else:
+        command = f"{helm} rollback galaxy -n galaxy"
+    run(command, get_env(context))
+
+
 def update(context: Context, args:list):
     """
     Runs the ``helm upgrade`` command on the cluster to update the
@@ -48,6 +63,11 @@ def update(context: Context, args:list):
     return True
 
 
+def wait(context: Context, args: list):
+    env = get_env(context)
+    wait_until_ready(get_env(context))
+
+
 def filter(lines:list, item:str):
     result = []
     for line in lines:
@@ -57,7 +77,7 @@ def filter(lines:list, item:str):
 
 
 def wait_for(kubectl:str, name: str, env: dict):
-    print(f"Waiting for {name} to be in the Running state")
+    print(f"Waiting for {name} on {env['GALAXY_SERVER']} to be in the Running state")
     waiting = True
     while waiting:
         # TODO The namespace should be parameterized
@@ -85,7 +105,7 @@ def wait_until_ready(env: dict):
         return
     wait_for(kubectl, 'galaxy-job', env)
     wait_for(kubectl, 'galaxy-web', env)
-    wait_for(kubectl, 'galaxy-workflow'. env)
+    wait_for(kubectl, 'galaxy-workflow', env)
 
 
 def list(context: Context, args: list):
