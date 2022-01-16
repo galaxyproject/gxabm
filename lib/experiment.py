@@ -131,7 +131,8 @@ def summarize(context: Context, args: list):
     print("Run,Cloud,Job Conf,Workflow,History,Server,Tool,Tool Version,State,Slots,Memory,Runtime (Sec),CPU,Memory Limit (Bytes),Memory Max usage (Bytes),Memory Soft Limit")
     for file in os.listdir(METRICS_DIR):
         input_path = os.path.join(METRICS_DIR, file)
-        print(f"Loading {input_path}")
+        if not os.path.isfile(input_path):
+            continue
         with open(input_path, 'r') as f:
             data = json.load(f)
         row[0] = data['run']
