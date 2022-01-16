@@ -44,7 +44,7 @@ def run(context: Context, args: list):
     else:
         os.mkdir(METRICS_DIR)
 
-    gi = connect()
+    gi = connect(context)
     workflows = parse_workflow(workflow_path)
 
     print(f"Found {len(workflows)} workflow definitions")
@@ -119,7 +119,7 @@ def translate(context: Context, args: list):
         print(f'ERROR: can not find workflow configuration {workflow_path}')
         return
 
-    gi = connect()
+    gi = connect(context)
     # wf_index,ds_index = create_rev_index(gi)
     workflows = parse_workflow(args[0])
     for workflow in workflows:
@@ -163,7 +163,7 @@ def validate(context: Context, args: list):
         return
     print(f"Validating workflow on {context.GALAXY_SERVER}")
     workflows = parse_workflow(workflow_path)
-    gi = connect()
+    gi = connect(context)
     total_errors = 0
     for workflow in workflows:
         wfid = workflow[Keys.WORKFLOW_ID]

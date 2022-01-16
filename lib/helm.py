@@ -1,6 +1,6 @@
 import os
 import time
-from common import run, find_executable, Context
+from common import run, find_executable, get_env, Context
 
 
 def update(context: Context, args:list):
@@ -30,11 +30,13 @@ def update(context: Context, args:list):
         print(f"ERROR: Rules file not found: {rules}")
         return False
 
-    print(f"Applying rules {rules}")
+    print(f"Applying rules {rules} to {context.GALAXY_SERVER}")
     command = f"{helm} upgrade galaxy galaxy/galaxy -n galaxy --reuse-values --set-file jobs.rules.container_mapper_rules\.yml={rules}"
+    env = get_env(context)
     try:
-        result = run(command)
+        result = run(command, env)
     except RuntimeError as e:
+        print(f"Unable to helm upgrade {context.GALAXY_SERVER}")
         print(e)
         return False
 
@@ -42,7 +44,7 @@ def update(context: Context, args:list):
         return False
 
     print('Waiting for the new deployments to come online')
-    wait_until_ready()
+    wait_until_ready(env)
     return True
 
 
@@ -54,12 +56,12 @@ def filter(lines:list, item:str):
     return result
 
 
-def wait_for(kubectl:str, name: str):
+def wait_for(kubectl:str, name: str, env: dict):
     print(f"Waiting for {name} to be in the Running state")
     waiting = True
     while waiting:
         # TODO The namespace should be parameterized
-        result = run(f"{kubectl} get pods -n galaxy")
+        result = run(f"{kubectl} get pods -n galaxy", env)
         if result is None:
             waiting = False
             break
@@ -76,14 +78,14 @@ def wait_for(kubectl:str, name: str):
     print(f"{name} is running")
 
 
-def wait_until_ready():
+def wait_until_ready(env: dict):
     kubectl = find_executable('kubectl')
     if kubectl is None:
         print('ERROR: kubectl is not available on the $PATH')
         return
-    wait_for(kubectl, 'galaxy-job')
-    wait_for(kubectl, 'galaxy-web')
-    wait_for(kubectl, 'galaxy-workflow')
+    wait_for(kubectl, 'galaxy-job', env)
+    wait_for(kubectl, 'galaxy-web', env)
+    wait_for(kubectl, 'galaxy-workflow'. env)
 
 
 def list(context: Context, args: list):

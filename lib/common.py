@@ -111,16 +111,24 @@ def parse_profile(profile_name: str):
     return (profile['url'], profile['key'], None)
 
 
-def run(command, env:dict=None):
-    if env is not None:
-        for name,value in env.items():
-            os.environ[name] = value
-    if lib.KUBECONFIG is not None:
-        os.environ['KUBECONFIG'] = lib.KUBECONFIG
-    result = subprocess.run(command.split(), capture_output=True, env=os.environ)
+def run(command, env:dict= None):
+    if env is None:
+        env = os.environ
+    # if env is not None:
+    #     for name,value in env.items():
+    #         os.environ[name] = value
+    # if lib.KUBECONFIG is not None:
+    #     os.environ['KUBECONFIG'] = lib.KUBECONFIG
+    # local_env = os.environ.copy()
+    # local_env.update(env)
+    result = subprocess.run(command.split(), capture_output=True, env=env)
     if result.returncode != 0:
         raise RuntimeError(result.stderr.decode('utf-8').strip())
     return result.stdout.decode('utf-8').strip()
+
+
+def get_env(context: Context):
+    return os.environ.copy().update(context.__dict__)
 
 
 def find_executable(name):
