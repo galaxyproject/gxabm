@@ -1,9 +1,9 @@
 from pprint import pprint
-from .common import connect
+from .common import connect, datasets, Context
 
 
-def list(args: list):
-    gi = connect()
+def list(context: Context, args: list):
+    gi = connect(context)
     if len(args) == 0:
         for library in gi.libraries.get_libraries():
             print(f"{library['id']}\t{library['name']}\t{library['description']}")
@@ -13,7 +13,7 @@ def list(args: list):
         print(f"{folder['id']}\t{folder['type']}\t{folder['name']}")
 
 
-def create(args: list):
+def create(context: Context, args: list):
     if len(args) != 2:
         print("ERROR: Invalid parameters, at least the name must be specified")
         return
@@ -21,20 +21,20 @@ def create(args: list):
     description = None
     if len(args) == 2:
         description = args[1]
-    gi = connect()
+    gi = connect(context)
     result = gi.libraries.create_library(name, description=description)
     pprint(result)
 
 
-def delete(args: list):
+def delete(context: Context, args: list):
     print("library delete not implemented")
 
 
-def upload(args: list):
+def upload(context: Context, args: list):
     if len(args) != 3:
         print("ERROR: Invalid parameters. Specify the library and folder names and the dataset to upload")
         return
-    gi = connect()
+    gi = connect(context)
     libraries = gi.libraries.get_libraries(name=args[0])
     if len(libraries) == 0:
         print(f"ERROR: No such library found: {args[0]}")
@@ -66,10 +66,10 @@ def upload(args: list):
     # pprint(result)
 
 
-def download(args: list):
+def download(context: Context, args: list):
     print("library download not implemented")
 
 
-def show(args: list):
+def show(context: Context, args: list):
     print("library show not implemented")
 

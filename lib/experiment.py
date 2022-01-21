@@ -1,17 +1,20 @@
 import os
+import threading
 
 import yaml
 import json
-import lib
 import helm
-from common import load_profiles, set_active_profile
 import benchmark
+import logging
+from common import load_profiles, Context
+from threads.Latch import CountdownLatch
 
 INVOCATIONS_DIR = "invocations"
 METRICS_DIR = "metrics"
 
+log = logging.getLogger('abm')
 
-def run(args: list):
+def run(context: Context, args: list):
     """
     Runs a single benchmark defined by *args[0]*
 
@@ -34,28 +37,38 @@ def run(args: list):
         config = yaml.safe_load(f)
 
     profiles = load_profiles()
-    num_runs = config['runs']
+    # latch = CountdownLatch(len(config['cloud']))
+    threads = []
     for cloud in config['cloud']:
         if cloud not in profiles:
             print(f"WARNING: No profile found for {cloud}")
             continue
-        if not set_active_profile(cloud):
-            print(f"ERROR: Unable to set the profile for {cloud}")
-            continue
-        if lib.KUBECONFIG is None:
-            print(f"ERROR: No kubeconfig set for {cloud}")
-            continue
-        print("------------------------")
-        print(f"Benchmarking: {cloud}")
-        for conf in config['job_configs']:
-            job_conf_path = f"rules/{conf}.yml"
-            if not helm.update([job_conf_path]):
-                print(f"WARNING: job conf not found {conf}")
-                continue
-            for n in range(num_runs):
-                history_name_prefix = f"{n} {cloud} {conf}"
-                for workflow_conf in config['benchmark_confs']:
-                    benchmark.run([workflow_conf, history_name_prefix])
+        t = threading.Thread(target=run_on_cloud, args=(cloud, config))
+        threads.append(t)
+        print(f"Starting thread for {cloud}")
+        t.start()
+    print('Waiting for threads')
+    for t in threads:
+        t.join()
+    print('All threads have terminated.')
+
+        # if not set_active_profile(cloud):
+        #     print(f"ERROR: Unable to set the profile for {cloud}")
+        #     continue
+        # if lib.KUBECONFIG is None:
+        #     print(f"ERROR: No kubeconfig set for {cloud}")
+        #     continue
+        # print("------------------------")
+        # print(f"Benchmarking: {cloud}")
+        # for conf in config['job_configs']:
+        #     job_conf_path = f"rules/{conf}.yml"
+        #     if not helm.update([job_conf_path]):
+        #         print(f"WARNING: job conf not found {conf}")
+        #         continue
+        #     for n in range(num_runs):
+        #         history_name_prefix = f"{n} {cloud} {conf}"
+        #         for workflow_conf in config['benchmark_confs']:
+        #             benchmark.run([workflow_conf, history_name_prefix])
 
     # for n in range(num_runs):
     #     print("------------------------")
@@ -79,8 +92,27 @@ def run(args: list):
     #                 workflow.run([workflow_conf, history_name_prefix])
 
 
-def test(args: list):
-    print(lib.GALAXY_SERVER)
+def run_on_cloud(cloud: str, config: dict):
+    print("------------------------")
+    print(f"Benchmarking: {cloud}")
+    context = Context(cloud)
+    namespace = 'galaxy'
+    chart = 'anvil/galaxykubeman'
+    if 'galaxy' in config:
+        namespace = config['galaxy']['namespace']
+        chart = config['galaxy']['chart']
+    for conf in config['job_configs']:
+        if not helm.update(context, [f"rules/{conf}.yml", namespace, chart]):
+            log.warning(f"job configuration not found: rules/{conf}.yml")
+            continue
+        for n in range(config['runs']):
+            history_name_prefix = f"{n} {cloud} {conf}"
+            for workflow_conf in config['benchmark_confs']:
+                benchmark.run(context, [workflow_conf, history_name_prefix])
+
+
+def test(context: Context, args: list):
+    print(context.GALAXY_SERVER)
     if os.path.exists(args[0]):
         with open(args[0]) as f:
             data = yaml.safe_load(f)
@@ -92,7 +124,7 @@ def parse_toolid(id:str) -> str:
     return f"{parts[-2]},{parts[-1]}"
 
 
-def summarize(args: list):
+def summarize(context: Context, args: list):
     """
     Parses all the files in the **METRICS_DIR** directory and prints metrics
     as CSV to stdout
@@ -104,18 +136,23 @@ def summarize(args: list):
     print("Run,Cloud,Job Conf,Workflow,History,Server,Tool,Tool Version,State,Slots,Memory,Runtime (Sec),CPU,Memory Limit (Bytes),Memory Max usage (Bytes),Memory Soft Limit")
     for file in os.listdir(METRICS_DIR):
         input_path = os.path.join(METRICS_DIR, file)
-        with open(input_path, 'r') as f:
-            data = json.load(f)
-        row[0] = data['run']
-        row[1] = data['cloud']
-        row[2] = data['job_conf']
-        row[3] = data['workflow_id']
-        row[4] = data['history_id']
-        row[5] = data['server'] if data['server'] is not None else 'https://iu1.usegvl.org/galaxy'
-        row[6] = parse_toolid(data['metrics']['tool_id'])
-        row[7] = data['metrics']['state']
-        add_metrics_to_row(data['metrics']['job_metrics'], row)
-        print(','.join(row))
+        if not os.path.isfile(input_path) or not input_path.endswith('.json'):
+            continue
+        try:
+            with open(input_path, 'r') as f:
+                data = json.load(f)
+            row[0] = data['run']
+            row[1] = data['cloud']
+            row[2] = data['job_conf']
+            row[3] = data['workflow_id']
+            row[4] = data['history_id']
+            row[5] = data['server'] if data['server'] is not None else 'https://iu1.usegvl.org/galaxy'
+            row[6] = parse_toolid(data['metrics']['tool_id'])
+            row[7] = data['metrics']['state']
+            add_metrics_to_row(data['metrics']['job_metrics'], row)
+            print(','.join(row))
+        except:
+            print(f"ERROR: Unable to parse {input_path}")
 
 
 def add_metrics_to_row(metrics_list: list, row: list):

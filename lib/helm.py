@@ -1,13 +1,24 @@
-import io
 import os
 import time
-import lib
-import common
-from common import run, find_executable
-import subprocess
+from common import run, find_executable, get_env, Context
 
 
-def update(args:list):
+def rollback(context: Context, args: list):
+    helm = find_executable('helm')
+    #helm = 'helm'
+    if helm is None:
+        print('ERROR: helm is not available on the $PATH')
+        return
+
+    print(f"Rolling back deployment on {context.GALAXY_SERVER} KUBECONFIG: {context.KUBECONFIG}")
+    if len(args) > 0:
+        command = f"{helm} rollback " + ' '.join(args)
+    else:
+        command = f"{helm} rollback galaxy -n galaxy"
+    run(command, get_env(context))
+
+
+def update(context: Context, args:list):
     """
     Runs the ``helm upgrade`` command on the cluster to update the
     *jobs.rules.container_mapper_rules* configuration.
@@ -16,7 +27,7 @@ def update(args:list):
       *running* directory for examples.
     :return:
     """
-    if lib.KUBECONFIG is None:
+    if context.KUBECONFIG is None:
         print("ERROR: No kubeconfig is specified in the profile")
         return False
 
@@ -24,7 +35,12 @@ def update(args:list):
         print("ERROR: No rules specified.")
         return False
     rules = args[0]
-
+    namespace = 'galaxy'
+    chart = 'galaxy/galaxy'
+    if len(args) > 1:
+        namespace = args[1]
+    if len(args) > 2:
+        chart = args[2]
     helm = find_executable('helm')
     if helm is None:
         print('ERROR: helm is not available on the $PATH')
@@ -34,11 +50,13 @@ def update(args:list):
         print(f"ERROR: Rules file not found: {rules}")
         return False
 
-    print(f"Applying rules {rules}")
-    command = f"{helm} upgrade galaxy galaxy/galaxy -n galaxy --reuse-values --set-file jobs.rules.container_mapper_rules\.yml={rules}"
+    print(f"Applying rules {rules} to {context.GALAXY_SERVER}")
+    command = f"{helm} upgrade galaxy {chart} -n {namespace} --reuse-values --set-file jobs.rules.container_mapper_rules\.yml={rules}"
+    env = get_env(context)
     try:
-        result = run(command)
+        result = run(command, env)
     except RuntimeError as e:
+        print(f"Unable to helm upgrade {context.GALAXY_SERVER}")
         print(e)
         return False
 
@@ -46,8 +64,13 @@ def update(args:list):
         return False
 
     print('Waiting for the new deployments to come online')
-    wait_until_ready()
+    wait_until_ready(env)
     return True
+
+
+def wait(context: Context, args: list):
+    env = get_env(context)
+    wait_until_ready(get_env(context))
 
 
 def filter(lines:list, item:str):
@@ -57,12 +80,13 @@ def filter(lines:list, item:str):
             result.append(line)
     return result
 
-def wait_for(kubectl:str, name: str):
-    print(f"Waiting for {name} to be in the Running state")
+
+def wait_for(kubectl:str, name: str, env: dict):
+    print(f"Waiting for {name} on {env['GALAXY_SERVER']} to be in the Running state")
     waiting = True
     while waiting:
         # TODO The namespace should be parameterized
-        result = run(f"{kubectl} get pods -n galaxy")
+        result = run(f"{kubectl} get pods -n galaxy", env)
         if result is None:
             waiting = False
             break
@@ -79,16 +103,16 @@ def wait_for(kubectl:str, name: str):
     print(f"{name} is running")
 
 
-def wait_until_ready():
+def wait_until_ready(env: dict):
     kubectl = find_executable('kubectl')
     if kubectl is None:
         print('ERROR: kubectl is not available on the $PATH')
         return
-    wait_for(kubectl, 'galaxy-job')
-    wait_for(kubectl, 'galaxy-web')
-    wait_for(kubectl, 'galaxy-workflow')
+    wait_for(kubectl, 'galaxy-job', env)
+    wait_for(kubectl, 'galaxy-web', env)
+    wait_for(kubectl, 'galaxy-workflow', env)
 
 
-def list(args: list):
+def list(context: Context, args: list):
     print("Not implemented")
 

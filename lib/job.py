@@ -1,11 +1,12 @@
-from .common import connect
 import json
+from .common import connect, Context
 from pprint import pprint
 import logging
 
 log = logging.getLogger('abm')
 
-def list(args: list):
+
+def list(context: Context, args: list):
     state = ''
     log.debug('Processing args')
     log_state = False
@@ -19,7 +20,7 @@ def list(args: list):
             log_state = True
 
     log.debug('Connecting to the Galaxy server')
-    gi = connect()
+    gi = connect(context)
     if log_state:
         log.debug(f"Getting jobs with state {state}")
     else:
@@ -30,11 +31,11 @@ def list(args: list):
         print(f"{job['id']}\t{job['state']}\t{job['update_time']}\t{job['tool_id']}")
 
 
-def show(args: list):
+def show(context: Context, args: list):
     if len(args) != 1:
         print("ERROR: Invalid parameters. Job ID is required")
         return
-    gi = connect()
+    gi = connect(context)
     job = gi.jobs.show_job(args[0], full_details=True)
     print(json.dumps(job, indent=4))
 
@@ -45,11 +46,11 @@ def get_value(metric: dict):
     return metric['value']
 
 
-def metrics(args: list):
+def metrics(context: Context, args: list):
     if len(args) == 0:
         print("ERROR: no job ID provided")
         return
-    gi = connect()
+    gi = connect(context)
     metrics = gi.jobs.get_metrics(args[0])
     print(json.dumps(metrics, indent=4))
     # metrics = {}
@@ -61,20 +62,20 @@ def metrics(args: list):
     #     print(',,')
 
 
-def cancel(args: list):
+def cancel(context: Context, args: list):
     if len(args) == 0:
         print('ERROR: no job ID provided.')
         return
-    gi = connect()
+    gi = connect(context)
     if gi.jobs.cancel_job(args[0]):
         print("Job canceled")
     else:
         print("ERROR: Unable to cancel job or job was already in a terminal state.")
 
 
-def problems(args: list):
+def problems(context: Context, args: list):
     if len(args) == 0:
         print('ERROR: no job ID provided.')
         return
-    gi = connect()
+    gi = connect(context)
     pprint(gi.jobs.get_common_problems(args[0]))

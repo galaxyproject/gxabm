@@ -174,6 +174,13 @@
       help: update the container mapper rules for memory and cpu limits
       handler: helm.update
       params: RULES
+    - name: [rollback]
+      handler: helm.rollback
+      help: rollback the latest deployment
+      params: "[deployment] [-n NAMESPACE]"
+    - name: [wait]
+      handler: helm.wait
+      help: wait for the deployment to come online
     - name: [list, ls]
       help: list some things...
       handler: helm.list

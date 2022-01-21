@@ -1,8 +1,7 @@
-import common
-from common import run, find_executable
+from common import run, find_executable, Context
 
 
-def pods(args: list):
+def pods(context: Context, args: list):
     namespace = '-n galaxy'
     if len(args) > 0:
         if args[0] == 'all':

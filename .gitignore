@@ -3,6 +3,7 @@ __pycache__/
 .idea
 .ktx
 .kube/
+results/
 invocations/
 workflows/
 data/
