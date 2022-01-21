@@ -35,7 +35,12 @@ def update(context: Context, args:list):
         print("ERROR: No rules specified.")
         return False
     rules = args[0]
-
+    namespace = 'galaxy'
+    chart = 'galaxy/galaxy'
+    if len(args) > 1:
+        namespace = args[1]
+    if len(args) > 2:
+        chart = args[2]
     helm = find_executable('helm')
     if helm is None:
         print('ERROR: helm is not available on the $PATH')
@@ -46,7 +51,7 @@ def update(context: Context, args:list):
         return False
 
     print(f"Applying rules {rules} to {context.GALAXY_SERVER}")
-    command = f"{helm} upgrade galaxy galaxy/galaxy -n galaxy --reuse-values --set-file jobs.rules.container_mapper_rules\.yml={rules}"
+    command = f"{helm} upgrade galaxy {chart} -n {namespace} --reuse-values --set-file jobs.rules.container_mapper_rules\.yml={rules}"
     env = get_env(context)
     try:
         result = run(command, env)
