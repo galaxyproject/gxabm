@@ -96,8 +96,13 @@ def run_on_cloud(cloud: str, config: dict):
     print("------------------------")
     print(f"Benchmarking: {cloud}")
     context = Context(cloud)
+    namespace = 'galaxy'
+    chart = 'anvil/galaxykubeman'
+    if 'galaxy' in config:
+        namespace = config['galaxy']['namespace']
+        chart = config['galaxy']['chart']
     for conf in config['job_configs']:
-        if not helm.update(context, [f"rules/{conf}.yml"]):
+        if not helm.update(context, [f"rules/{conf}.yml", namespace, chart]):
             log.warning(f"job configuration not found: rules/{conf}.yml")
             continue
         for n in range(config['runs']):
@@ -131,20 +136,23 @@ def summarize(context: Context, args: list):
     print("Run,Cloud,Job Conf,Workflow,History,Server,Tool,Tool Version,State,Slots,Memory,Runtime (Sec),CPU,Memory Limit (Bytes),Memory Max usage (Bytes),Memory Soft Limit")
     for file in os.listdir(METRICS_DIR):
         input_path = os.path.join(METRICS_DIR, file)
-        if not os.path.isfile(input_path):
+        if not os.path.isfile(input_path) or not input_path.endswith('.json'):
             continue
-        with open(input_path, 'r') as f:
-            data = json.load(f)
-        row[0] = data['run']
-        row[1] = data['cloud']
-        row[2] = data['job_conf']
-        row[3] = data['workflow_id']
-        row[4] = data['history_id']
-        row[5] = data['server'] if data['server'] is not None else 'https://iu1.usegvl.org/galaxy'
-        row[6] = parse_toolid(data['metrics']['tool_id'])
-        row[7] = data['metrics']['state']
-        add_metrics_to_row(data['metrics']['job_metrics'], row)
-        print(','.join(row))
+        try:
+            with open(input_path, 'r') as f:
+                data = json.load(f)
+            row[0] = data['run']
+            row[1] = data['cloud']
+            row[2] = data['job_conf']
+            row[3] = data['workflow_id']
+            row[4] = data['history_id']
+            row[5] = data['server'] if data['server'] is not None else 'https://iu1.usegvl.org/galaxy'
+            row[6] = parse_toolid(data['metrics']['tool_id'])
+            row[7] = data['metrics']['state']
+            add_metrics_to_row(data['metrics']['job_metrics'], row)
+            print(','.join(row))
+        except:
+            print(f"ERROR: Unable to parse {input_path}")
 
 
 def add_metrics_to_row(metrics_list: list, row: list):
