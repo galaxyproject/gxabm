@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 set -eu
 
-if [[ ! $(alias | grep abm) ]] ; then
-    source setup.sh
-fi
+#if [[ ! $(alias | grep abm) ]] ; then
+#    source setup.sh
+#fi
 #alias
 #abm help
-alias abm="python3 abm.py"
+#alias abm="python3 abm.py"
 source .venv/bin/activate
 
 while [[ $# > 0 ]] ; do
