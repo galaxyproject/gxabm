@@ -153,6 +153,20 @@
       help: display runtime metrics for the job
       handler: job.metrics
       params: ID
+- name: [users, user]
+  help: manage users on the Galaxy instance
+  menu:
+    - name: [list, ls]
+      help: list all users on the Galaxy instance
+      handler: users.list
+    - name: [api_key, apikey, key]
+      help: obtain the API key for the specified user
+      handler: users.api_key
+      params: EMAIL
+    - name: [create, new]
+      help: create a new user on the Galaxy instance
+      handler: users.create
+      params: NAME EMAIL PASSWORD
 - name: [experiment, exp, ex]
   help: execute benchmarking runs on various clouds
   menu:
