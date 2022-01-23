@@ -129,7 +129,9 @@ def run(command, env:dict= None):
 
 def get_env(context: Context):
     copy = os.environ.copy()
-    copy.update(context.__dict__)
+    for key,value in context.__dict__.items():
+        if value is not None:
+            copy[key] = value
     return copy
 
 

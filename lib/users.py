@@ -13,6 +13,10 @@ def list(context: Context, args: list):
 
 
 def api_key(context: Context, args: list):
+    print(get_api_key(context, args))
+
+
+def get_api_key(context: Context, args: list):
     if len(args) == 0:
         print("ERROR: no user email given")
         return
@@ -30,7 +34,7 @@ def api_key(context: Context, args: list):
     id = user_list[0]['id']
     key = gi.users.get_user_apikey(id)
     if key is None or key == 'Not available.':
-        print(f"Creating API key for {args[0]}")
+        # print(f"Creating API key for {args[0]}")
         key = gi.users.create_user_apikey(id)
     print(key)
 

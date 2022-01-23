@@ -236,9 +236,9 @@ def entrypoint():
     context = None
     if profile is not None:
         context = Context(profile)
-        if context.GALAXY_SERVER is None:
-            print("ERROR: GALAXY_SERVER was not set in the profile.")
-            return
+#        if context.GALAXY_SERVER is None:
+#            print("ERROR: GALAXY_SERVER was not set in the profile.")
+#            return
     if command in all_commands:
         subcommands = all_commands[command]
         if subcommand not in subcommands:
