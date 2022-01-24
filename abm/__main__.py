@@ -45,6 +45,9 @@ def bold(text: str):
 help_args = ['help', '-h', '--help']
 version_args = ['-v', '--version', 'version']
 
+# TODO Parse this from the menu.yml file.
+# Commands that do not depend on a cloud instance
+stand_alone_commands = ['config', 'experiment', 'exp', 'ex']
 
 def head(text):
     print(bold(text))
@@ -75,7 +78,7 @@ def print_main_help(menu_data):
     print(f"    Available SUBCOMMANDS and OPTIONS depend on the command. Use the {bold('help')} subcommand")
     print(f"    to learn more about each of the commands. For example:\n")
     print(f"    $> abm workflow help\n")
-    print("    Copyright 2021 The Galaxy Project\n")
+    print("    Copyright 2022 The Galaxy Project\n")
 
 
 def print_help(menu_data, command):
@@ -99,7 +102,7 @@ def print_help(menu_data, command):
     print(f"    {bold('help')}")
     print("        print this help screen and exit")
     print()
-    print("    Copyright 2021 The Galaxy Project\n")
+    print("    Copyright 2022 The Galaxy Project\n")
 
 
 all_commands = {}
@@ -202,7 +205,7 @@ def entrypoint():
         version()
         return
 
-    if profile == 'config':
+    if profile in stand_alone_commands:
         command = profile
         profile = None
         if len(sys.argv) < 3:
