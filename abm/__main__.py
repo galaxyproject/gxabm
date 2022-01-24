@@ -27,7 +27,7 @@ handler.setFormatter(formatter)
 log.addHandler(handler)
 
 
-VERSION = '2.0.0-dev'
+#VERSION = '2.0.0-dev'
 
 BOLD = '\033[1m'
 CLEAR = '\033[0m'
@@ -161,8 +161,9 @@ def parse_menu():
 
 
 def version():
+    from abm import __version__
     print()
-    print(f"    Galaxy Automated Benchmarking v{VERSION}")
+    print(f"    Galaxy Automated Benchmarking v{__version__}")
     print(f"    Copyright 2022 The Galaxy Project. All Rights Reserved.\n")
 
 
