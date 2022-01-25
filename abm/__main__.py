@@ -12,6 +12,7 @@ import sys
 import os
 import logging
 from lib.common import Context
+from abm import getVersion
 
 # These imports are required because they need to be added to the symbol table
 # so the parse_menu method can find them in globals()
@@ -161,9 +162,9 @@ def parse_menu():
 
 
 def version():
-    from abm import __version__
+    version = getVersion()
     print()
-    print(f"    Galaxy Automated Benchmarking v{__version__}")
+    print(f"    Galaxy Automated Benchmarking v{version}")
     print(f"    Copyright 2022 The Galaxy Project. All Rights Reserved.\n")
 
 

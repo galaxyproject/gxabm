@@ -1,0 +1,82 @@
+#!/usr/bin/env python3
+
+# A simple replacement for the bumpversion Python package that doesn't screw with version control.
+
+import os
+import sys
+
+VERSION_FILE = 'abm/VERSION'
+
+
+def main():
+	if len(sys.argv) != 2 and len(sys.argv) != 3:
+		print("USAGE: bump [major|minor|revision|build|release]")
+		return
+	
+	if not sys.argv[1] in ['major', 'minor', 'revision', 'build', 'release']:
+		print("ERROR: Invalid command. Must be one of major, minor, revision, build, or release")
+		return
+		
+	with open(VERSION_FILE, 'r') as f:
+		version_string = f.read().strip()
+	
+	parts = version_string.split('.')
+	major = int(parts[0])
+	minor = int(parts[1])
+	if '-' in parts[2]:
+		revs = parts[2].split('-')
+		revision = int(revs[0])
+		if 'dev' in revs[1]:
+			release = 'dev'
+			build = int(revs[1].replace('dev', ''))
+		elif 'rc' in revs[1]:
+			release = 'rc'
+			build = int(revs[1].replace('rc', ''))
+	else:
+		revision = int(parts[2])
+		build = None
+
+	if len(sys.argv) == 3:
+		if build is not None:
+			print("ERROR: This is already a development build")
+			return
+		release = sys.argv[2]
+		build = 1
+
+	type = sys.argv[1]
+	if type == 'major':	
+		major += 1
+		minor = 0
+		revision = 0
+	elif type == 'minor':
+		minor += 1
+		revision = 0
+	elif type == 'revision':
+		revision += 1
+	elif type == 'build':
+		if build is None:
+			print(f"ERROR: version {version_string} is not a development build")
+			return
+		build += 1
+	elif type == 'release':
+		if build is None:
+			print(f"ERROR: version {version_string} is not a development build")
+			return
+		build = None
+	else:
+		print(f"BUG: Invalid command {type}")
+		return
+		
+	if build is None:
+		version_string = f"{major}.{minor}.{revision}"
+	else:
+		version_string = f"{major}.{minor}.{revision}-{release}{build}"
+
+	with open(VERSION_FILE, 'w') as f:
+		f.write(version_string)
+	print(version_string)
+
+		
+
+if __name__ == '__main__':
+	main()

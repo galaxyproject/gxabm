@@ -1,6 +1,6 @@
 import pathlib
 from setuptools import setup, find_packages
-from abm import __version__
+from abm import getVersion
 
 # The directory containing this file
 HERE = pathlib.Path(__file__).parent
@@ -10,8 +10,8 @@ README = (HERE / "README.md").read_text()
 
 # This call to setup() does all the work
 setup(
-    name="galaxyproject-gxabm",
-    version=__version__,
+    name="gxabm",
+    version=getVersion(),
     description="Opinionated Benchmarking Automatation in Galaxy",
     long_description=README,
     long_description_content_type="text/markdown",
