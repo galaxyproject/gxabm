@@ -1,11 +1,17 @@
+#Benchmarking workflow with DNA datasets with simultaneous runs
 - output_history_base_name: BenchMarkTest
+  #Workflow located at: 
   workflow_id: Benchmarking DNA Cloud Costs
   runs:
   - history_name: HG00171
     inputs:
+    #Dataset size: 2.6 GB / 108bp / 40% GC
+    #Source: https://www.internationalgenome.org/data-portal/sample/HG00171 
     - dataset_id: ERR013101_1.fastq.gz
       name: FASTQ Dataset
   - history_name: HG00152
     inputs:
+     #Dataset size: 5.1 GB / 108bp / 48% GC
+     #Source: https://www.internationalgenome.org/data-portal/sample/HG00152
     - dataset_id: ERR015526_2.fastq.gz
       name: FASTQ Dataset
