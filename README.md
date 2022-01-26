@@ -3,7 +3,19 @@ An opinionated Python Bioblend script for automating benchmarking tasks in Galax
 
 ## Installation
 
-1. Clone this repository.
+It is recommended to install `abm` into its own virtual environment.
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip
+pip install gxabm
+```
+
+
+### From Source
+
+1. Clone the GitHub repository.
    ```bash
    git clone https://github.com/galaxyproject/gxabm.git
    cd gxabm
@@ -16,31 +28,50 @@ An opinionated Python Bioblend script for automating benchmarking tasks in Galax
    pip install -r requirements.txt
    ```
 
+> :bulb: The included `setup.sh` file can be *sourced* to both activate the virtual environment and create an alias so you do not need to type `python3 abm.py` or `python3 -m abm` all the time.  The remainder of this document assumes that the `setup.sh` file has been *sourced* or `abm` has been installed from PyPI.
+
+```bash
+> source setup.sh
+> abm workflow help
+```
+
+## Setup
+
+### Prerequisites
+
+To make full use of the `abm` program users will need to install:
+
+1. [kubectl](https://kubernetes.io/docs/tasks/tools/#kubectl) (optional)
+1. [helm](https://helm.sh/docs/intro/install/)
+
+The `kubectl` program is only required when bootstrapping a new Galaxy instance, in particular to obtain the Galaxy URL from the Kubernetes cluster (`abm <cloud> kube url`). Helm is used to update Galaxy's job configuration settings and is **required** to run any experiments.
 
 ### Credentials
 
 You will need an [API key](https://training.galaxyproject.org/training-material/faqs/galaxy/preferences_admin_api_key.html) for every Galaxy instance you would like to intereact with. You will also need the *kubeconfig* file for each Kubernetes cluster.  The `abm` script loads the Galaxy server URLs, API keys, and the location of the *kubeconfig* files from a Yaml configuration file that it expects to find in `$HOME/.abm/profile.yml` or `.abm-profile.yml` in the current directory.  You can use the `profile-sample.yml` file as a starting point and it includes the URLs for all Galaxy instances we have used to date (December 22, 2021 as of this writing). 
 
-> :exclamation: **NOTE** by default `kubectl` expects that all *kubeconfig*s to be stored in a single configuration file located at `$HOME/.kube/config`. However, this is a global, system wide, configuration file meaning two shells can not operate on different Kubernetes clusters at the same time.  Therefore the `abm` scripts expects each cluster to store it's configuration in its own *kubeconfig* file.  I store mine in a directory named `$HOME/.kube/configs`, although this is just a personal preference and they can be stored anywhere.
+:bulb: It is now possible (>=2.0.0) to create Galaxy users and their API keys directly with `abm`.
+
+```bash
+abm <cloud> user create username email@example.org password
+abm <cloud> user key email@example.org
+```
+
+Users will also need the *kubeconfig* files for each Kubernetes cluster.  By default `kubectl` expects that all *kubeconfig*s are stored in a single configuration file located at `$HOME/.kube/config`. However, this is a system wide configuration making it difficult for two processes to operate on different Kubernetes clusters at the same time.  Therefore the `abm` scripts expects each cluster to store it's configuration in its own *kubeconfig* file in a directory named `$HOME/.kube/configs`.
+
+> :warning: Creating users and their API keys requires that a *master api key* has been configured for Galaxy.
 
 ## Usage
 
 To get general usage information run the command:
 
 ```bash
-> python3 abm.py help
+> abm help
 ```
 
 You can get information about a specific `abm` command with:
 
 ```bash
-> python3 abm.py workflow help
-```
-
-> The included `setup.sh` file can be *sourced* to both activate the virtual environment and create an alias so you do not need to type `python3 abm.py` all the time.  The remainder of this document assumes that the `setup.sh` file has been *sourced*
-
-```bash
-> source setup.sh
 > abm workflow help
 ```
 
@@ -202,7 +233,7 @@ $> abm cloud job show <job id>
 ```
 Once a history has been exported the first time, and as long it has not changed, running `abm history export` again simply print the URL and exit without re-exporting the history.  This is useful when the `--no-wait` option was specified and we need to determine the URL to use for importing.
 
-> :heart: A History should only be exported once and the URL re-used on new benchmarking instances as they are created. Use the `lib/histories.yml` file to record the URLs so they can be easily reused with the `history import` command.
+> :bulb: A History should only be exported once and the URL re-used on new benchmarking instances as they are created. Use the `lib/histories.yml` file to record the URLs so they can be easily reused with the `history import` command.
 
 ### Importing Histories
 To import a history use the URL returned from the `history export` command.
@@ -242,4 +273,31 @@ git checkout -b my-branch
 ```
 
 If you decide to work on one of the [issues](gxabm/issues) be sure to assign yourself to that issue to let others know the issue is taken.
+
+## Versioning
+
+Use the included `bump` Python script to update the version number.  The `bump` script behaves similarily to the `bumpversion` Python package without the version control integration.
+
+``` bash
+bump major
+bump minor
+bump revision
+bump build  
+```
+
+The `bump build` command is only valid for *development* versions, that is, a version number followed by a dash, followed some characters, followed some digits. For example `2.0.0-rc1` or `2.1.0-dev8`.  Use `bump release` to move from a *development* build to a *release* build.
+
+## Building and Deploying
+
+```bash
+make clean
+make
+make test-deploy
+make deploy
+```
+
+The `make test-deploy` deploys artifacts to TestPyPI server and is intended for deploying and testing *development* builds.  Development build **should not** be deployed to PyPI.
+
+
+
 
