@@ -7,7 +7,6 @@ import helm
 import benchmark
 import logging
 from common import load_profiles, Context
-from threads.Latch import CountdownLatch
 
 INVOCATIONS_DIR = "invocations"
 METRICS_DIR = "metrics"
