@@ -23,6 +23,7 @@ def main():
 	parts = version_string.split('.')
 	major = int(parts[0])
 	minor = int(parts[1])
+	release = None
 	if '-' in parts[2]:
 		revs = parts[2].split('-')
 		revision = int(revs[0])
@@ -35,6 +36,10 @@ def main():
 	else:
 		revision = int(parts[2])
 		build = None
+
+	if sys.argv[1] in ['major', 'minor', 'revision'] and release is not None:
+		print(f"ERROR: Cannot bump the {sys.argv[1]} version for a development build")
+		return
 
 	if len(sys.argv) == 3:
 		if build is not None:
