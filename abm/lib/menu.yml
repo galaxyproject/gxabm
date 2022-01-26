@@ -175,8 +175,9 @@
       handler: experiment.run
       params: PATH
     - name: [summarize, summary]
-      help: summarize metrics
+      help: summarize metrics to a CSV or TSV file.
       handler: experiment.summarize
+      params: "[-c, --csv, -t, --tsv]"
     - name: [test]
       help: playground code
       handler: experiment.test
