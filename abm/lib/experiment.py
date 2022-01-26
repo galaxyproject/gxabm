@@ -131,6 +131,22 @@ def summarize(context: Context, args: list):
     :param args: Ignored
     :return: None
     """
+    separator = None
+    for arg in args:
+        if separator is not None:
+            print("ERROR: Unexpected parameters. The separator type has already been specified.")
+            return
+        if arg in ['-t', '--tsv']:
+            separator = '\t'
+        elif arg in ['-c', '--csv']:
+            separator = ','
+        else:
+            print("ERROR: Invalid option must be one of -c, --csv, -t, or --tsv")
+            return
+
+    if separator is None:
+        separator = ','
+
     row = [''] * 15
     print("Run,Cloud,Job Conf,Workflow,History,Server,Tool,Tool Version,State,Slots,Memory,Runtime (Sec),CPU,Memory Limit (Bytes),Memory Max usage (Bytes),Memory Soft Limit")
     for file in os.listdir(METRICS_DIR):
@@ -149,7 +165,7 @@ def summarize(context: Context, args: list):
             row[6] = parse_toolid(data['metrics']['tool_id'])
             row[7] = data['metrics']['state']
             add_metrics_to_row(data['metrics']['job_metrics'], row)
-            print(','.join(row))
+            print(separator.join(row))
         except:
             print(f"ERROR: Unable to parse {input_path}")
 
