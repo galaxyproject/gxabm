@@ -107,7 +107,7 @@ def run_on_cloud(cloud: str, config: dict):
         for n in range(config['runs']):
             history_name_prefix = f"{n} {cloud} {conf}"
             for workflow_conf in config['benchmark_confs']:
-                benchmark.run(context, [workflow_conf, history_name_prefix])
+                benchmark.run(context, [workflow_conf, history_name_prefix, config['name']])
 
 
 def test(context: Context, args: list):
@@ -125,10 +125,10 @@ def parse_toolid(id:str) -> str:
 
 def summarize(context: Context, args: list):
     """
-    Parses all the files in the **METRICS_DIR** directory and prints metrics
+    Parses all the files in the specified directory and prints metrics
     as CSV to stdout
 
-    :param args: Ignored
+    :param args[0]: The path to the directory containing metrics filees
     :return: None
     """
     separator = None
@@ -149,8 +149,9 @@ def summarize(context: Context, args: list):
 
     row = [''] * 15
     print("Run,Cloud,Job Conf,Workflow,History,Server,Tool,Tool Version,State,Slots,Memory,Runtime (Sec),CPU,Memory Limit (Bytes),Memory Max usage (Bytes),Memory Soft Limit")
-    for file in os.listdir(METRICS_DIR):
-        input_path = os.path.join(METRICS_DIR, file)
+    input_dir = args[0]
+    for file in os.listdir(input_dir):
+        input_path = os.path.join(input_dir, file)
         if not os.path.isfile(input_path) or not input_path.endswith('.json'):
             continue
         try:
