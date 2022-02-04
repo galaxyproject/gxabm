@@ -295,14 +295,15 @@ def parse_workflow(workflow_path: str):
         return None
 
     with open(workflow_path, 'r') as stream:
-        try:
-            config = yaml.safe_load(stream)
-            # print(f"Loaded {name}")
-        except yaml.YAMLError as exc:
-            print('Error encountered parsing the YAML input file')
-            print(exc)
-            #TODO Don't do this...
-            sys.exit(1)
+        config = yaml.safe_load(stream)
+        # try:
+        #     config = yaml.safe_load(stream)
+        #     # print(f"Loaded {name}")
+        # except yaml.YAMLError as exc:
+        #     print('Error encountered parsing the YAML input file')
+        #     print(exc)
+        #     #TODO Don't do this...
+        #     sys.exit(1)
     return config
 
 
