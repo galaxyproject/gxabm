@@ -215,6 +215,17 @@
     - name: [list, ls]
       help: list configured servers
       handler: config.list
+    - name: [key]
+      help: Set the Galaxy API key for the provided cloud instance
+      handler: config.key
+      params: CLOUD API_KEY
+    - name: [create]
+      help: Create a new cloud configuration.
+      handler: config.create
+    - name: [url]
+      help: Set the URL for the Galaxy server.
+      params: CLOUD URL
+      handler: config.url
 - name: [library, lib]
   help: manage data libraries on the server
   menu:
