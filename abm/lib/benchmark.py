@@ -4,8 +4,6 @@ import json
 import yaml
 import logging
 
-#import lib
-
 from lib import Keys, INVOCATIONS_DIR, METRICS_DIR
 from lib.common import connect, Context
 from bioblend.galaxy import GalaxyInstance
@@ -16,8 +14,11 @@ def run(context: Context, args: list):
     """
     Runs a single workflow defined by *args[0]*
 
-    :param args: a list that contains a single element, the path to a workflow
-      configuration file.
+    :param args: a list that contains:
+    args[0] - the path to the benchmark configuration file
+    args[1] - the prefix to use when creating the new history in Galaxy
+    args[2] - the name of the experiment, if part of one. This is used to
+              generate output folder names.
 
     :return: True if the workflows completed sucessfully. False otherwise.
     """
@@ -29,12 +30,21 @@ def run(context: Context, args: list):
         print(f'ERROR: can not find workflow configuration {workflow_path}')
         return
 
+    history_prefix = None
+    experiment = None
+    if len(args) > 1:
+        history_prefix = args[1]
+        if len(args) > 2:
+            experiment = args[2].replace(' ', '_').lower()
+
+
     if os.path.exists(INVOCATIONS_DIR):
         if not os.path.isdir(INVOCATIONS_DIR):
             print('ERROR: Can not save invocation status, directory name in use.')
             sys.exit(1)
     else:
         os.mkdir(INVOCATIONS_DIR)
+
 
     if os.path.exists(METRICS_DIR):
         if not os.path.isdir(METRICS_DIR):
@@ -43,6 +53,16 @@ def run(context: Context, args: list):
             return False
     else:
         os.mkdir(METRICS_DIR)
+
+    invocations_dir = INVOCATIONS_DIR
+    metrics_dir = METRICS_DIR
+    if experiment is not None:
+        invocations_dir = os.path.join(INVOCATIONS_DIR, experiment)
+        if not os.path.exists(invocations_dir):
+            os.makedirs(invocations_dir, exist_ok=True)
+        metrics_dir = os.path.join(METRICS_DIR, experiment)
+        if not os.path.exists(metrics_dir):
+            os.makedirs(metrics_dir, exist_ok=True)
 
     gi = connect(context)
     workflows = parse_workflow(workflow_path)
@@ -89,21 +109,23 @@ def run(context: Context, args: list):
 
             print(f"Running workflow {wfid}")
             new_history_name = output_history_name
-            if len(args) > 1:
-                new_history_name = f"{args[1]} {output_history_name}"
+            if history_prefix is not None:
+                new_history_name = f"{history_prefix} {output_history_name}"
             invocation = gi.workflows.invoke_workflow(wfid, inputs=inputs, history_name=new_history_name)
             id = invocation['id']
-            output_path = os.path.join(INVOCATIONS_DIR, id + '.json')
+            #TODO Change this output path.
+            output_path = os.path.join(invocations_dir, id + '.json')
             with open(output_path, 'w') as f:
                 json.dump(invocation, f, indent=4)
                 print(f"Wrote invocation data to {output_path}")
             invocations = gi.invocations.wait_for_invocation(id, 86400, 10, False)
             print("Waiting for jobs")
-            if len(args) > 1:
+            if history_prefix is not None:
                 parts = args[1].split()
                 invocations['run'] = parts[0]
                 invocations['cloud'] = parts[1]
                 invocations['job_conf'] = parts[2]
+                invocations['output_dir'] = metrics_dir
             wait_for_jobs(context, gi, invocations)
     print("Benchmarking run complete")
     return True
@@ -240,6 +262,7 @@ def wait_for_jobs(context, gi: GalaxyInstance, invocations: dict):
     run = invocations['run']
     cloud = invocations['cloud']
     conf = invocations['job_conf']
+    output_dir = invocations['output_dir']
     for step in invocations['steps']:
         job_id = step['job_id']
         if job_id is not None:
@@ -258,7 +281,7 @@ def wait_for_jobs(context, gi: GalaxyInstance, invocations: dict):
                     'status': status,
                     'server': context.GALAXY_SERVER
                 }
-                output_path = os.path.join(METRICS_DIR, f"{job_id}.json")
+                output_path = os.path.join(output_dir, f"{job_id}.json")
                 with open(output_path, "w") as f:
                     json.dump(metrics, f, indent=4)
                     print(f"Wrote metrics to {output_path}")
@@ -272,14 +295,15 @@ def parse_workflow(workflow_path: str):
         return None
 
     with open(workflow_path, 'r') as stream:
-        try:
-            config = yaml.safe_load(stream)
-            # print(f"Loaded {name}")
-        except yaml.YAMLError as exc:
-            print('Error encountered parsing the YAML input file')
-            print(exc)
-            #TODO Don't do this...
-            sys.exit(1)
+        config = yaml.safe_load(stream)
+        # try:
+        #     config = yaml.safe_load(stream)
+        #     # print(f"Loaded {name}")
+        # except yaml.YAMLError as exc:
+        #     print('Error encountered parsing the YAML input file')
+        #     print(exc)
+        #     #TODO Don't do this...
+        #     sys.exit(1)
     return config
 
 
