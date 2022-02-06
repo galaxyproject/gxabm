@@ -1,6 +1,6 @@
 from common import connect, Context
 from pprint import pprint
-import yaml
+# import yaml
 
 
 def list(context: Context, args: list):
@@ -59,11 +59,13 @@ def upload(context: Context, args: list):
             history = args[index]
             index += 1
         elif arg == '-c':
+            gi = connect(context)
             history = gi.histories.create_history(args[index]).get('id')
             index += 1
         else:
             print('ERROR: invalid option')
-    gi = connect(context)
+    if gi is None:
+        gi = connect(context)
     pprint(gi.tools.put_url(args[0], history))
 
 
