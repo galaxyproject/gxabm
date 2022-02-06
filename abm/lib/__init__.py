@@ -1,4 +1,4 @@
-import os, sys
+import os, sys, json
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 
 #from common import parse_profile
@@ -6,6 +6,7 @@ sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 INVOCATIONS_DIR = "invocations"
 METRICS_DIR = "metrics"
 
+parser = None
 
 class Keys:
     NAME = 'name'
@@ -16,6 +17,5 @@ class Keys:
     DATASET_ID = 'dataset_id'
     HISTORY_BASE_NAME = 'output_history_base_name'
     HISTORY_NAME = 'history_name'
-
 
 

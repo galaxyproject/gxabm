@@ -1,12 +1,10 @@
 import os
 import sys
-from ruamel.yaml import YAML
 import subprocess
+from ruamel.yaml import YAML
+import json
 import bioblend.galaxy
-# from lib import GALAXY_SERVER, API_KEY, KUBECONFIG
 import lib
-
-# global GALAXY_SERVER, API_KEY, KUBECONFIG
 
 PROFILE_SEARCH_PATH = ['~/.abm/profile.yml', '.abm-profile.yml']
 
@@ -43,6 +41,13 @@ class Context:
 
 
 
+def print_json(obj):
+    print(json.dumps(obj, indent=2))
+
+
+def print_yaml(obj):
+    print(get_yaml_parser().dump(obj, sys.stdout))
+
 
 def connect(context:Context):
     """
@@ -71,16 +76,10 @@ def get_context(profile_name: str):
     return Context(profile_name)
 
 
-def create_parser():
-    print('Creating a YAML parser')
-    return YAML()
-
-
-def get_yaml_parser(parser = create_parser()):
-    if parser is None:
-        print('No parser provided.')
-        parser = create_parser()
-    return parser
+def get_yaml_parser():
+    if lib.parser is None:
+        lib.parser = YAML()
+    return lib.parser
 
 
 def load_profiles():
@@ -102,7 +101,7 @@ def load_profiles():
 
 
 def save_profiles(profiles: dict):
-    yaml = YAML()
+    yaml = get_yaml_parser()
     for profile_path in PROFILE_SEARCH_PATH:
         path = os.path.expanduser(profile_path)
         if os.path.exists(path):

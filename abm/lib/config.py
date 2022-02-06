@@ -1,10 +1,10 @@
 from common import load_profiles, save_profiles, get_yaml_parser, Context
-from ruamel.yaml import YAML
-from pprint import pprint
 
-import kubectl
-import users
 import sys
+import json
+import lib
+
+from common import print_json, print_yaml
 
 def list(context: Context, args: list):
     profiles = load_profiles()
@@ -22,8 +22,10 @@ def create(context: Context, args: list):
     if profile_name in profiles:
         print("ERROR: a cloud configuration with that name already exists.")
         return
-    profiles[profile_name] = { 'url': "", 'key': '', 'kube': args[1]}
-    print(get_yaml_parser().dump(profiles, sys.stdout))
+    profile = { 'url': "", 'key': '', 'kube': args[1]}
+    profiles[profile_name] = profile
+    save_profiles(profiles)
+    print_json(profile)
 
 
 def key(context: Context, args: list):
@@ -39,6 +41,7 @@ def key(context: Context, args: list):
     profile = profiles[profile_name]
     profile['key'] = key
     save_profiles(profiles)
+    print_json(profile)
 
 
 def url(context: Context, args: list):
@@ -54,3 +57,15 @@ def url(context: Context, args: list):
     profile = profiles[profile_name]
     profile['url'] = url
     save_profiles(profiles)
+    print_json(profile)
+
+
+def show(context: Context, args: list):
+    if len(args) != 1:
+        print("USAGE: abm config show <cloud>")
+        return
+    profiles = load_profiles()
+    if args[0] not in profiles:
+        print(f"ERROR: No such cloud {args[0]}")
+        return
+    print_json(profiles[args[0]])
