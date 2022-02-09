@@ -34,11 +34,12 @@ def get_url(context: Context, args: list):
 
     namespace = 'galaxy'
     name = 'galaxy'
-    if len(args) > 1:
+    if len(args) > 0:
         namespace = args[0]
-    if len(args) > 2:
+    if len(args) > 1:
         name = args[1]
     command = f"{kubectl} get svc -n {namespace} {name}-nginx -o json"
+    print(command)
     result = run(command, get_env(context))
     data = json.loads(result)
     ports = data['spec']['ports'][0]
