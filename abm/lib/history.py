@@ -214,6 +214,15 @@ def himport(context: Context, args: list):
     return True
 
 
+def create(context: Context, args: list):
+    if len(args) != 1:
+        print("ERROR: Please provide a history name")
+        return
+    gi = connect(context)
+    id = gi.histories.create_history(args[0])
+    print(id)
+
+
 def delete(context: Context, args:list):
     if len(args) != 1:
         print('ERROR: please provide the history ID')

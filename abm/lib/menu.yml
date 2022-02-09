@@ -92,6 +92,10 @@
       params: "[CLOUD HISTORY_ID JEHA_ID | URL | [dna|rna]] [-n|--no-wait]"
       handler: history.himport
       help: import a history from another Galaxy server
+    - name: [create, new]
+      params: NAME
+      handler: history.create
+      help: create a new history and return its ID
     - name: ['export', 'exp', 'ex']
       handler: history.export
       params: "ID [-n|--no-wait]"
