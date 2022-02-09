@@ -36,7 +36,7 @@ def get_api_key(context: Context, args: list):
     if key is None or key == 'Not available.':
         # print(f"Creating API key for {args[0]}")
         key = gi.users.create_user_apikey(id)
-    print(key)
+    return key
 
 
 def create(context: Context, args:list):
