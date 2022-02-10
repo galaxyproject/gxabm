@@ -1,5 +1,6 @@
 import os
 import threading
+import traceback
 
 import yaml
 import json
@@ -165,8 +166,9 @@ def summarize(context: Context, args: list):
             row[7] = data['metrics']['state']
             add_metrics_to_row(data['metrics']['job_metrics'], row)
             print(separator.join(row))
-        except:
-            print(f"ERROR: Unable to parse {input_path}")
+        except Exception as e:
+            # Silently fail to allow the remainder of the table to be generated.
+            pass
 
 
 def add_metrics_to_row(metrics_list: list, row: list):

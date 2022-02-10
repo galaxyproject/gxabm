@@ -52,6 +52,7 @@ def upload(context: Context, args: list):
         print('ERROR: no dataset file given')
         return
     index = 1
+    gi = None
     while index < len(args):
         arg = args[index]
         index += 1
@@ -63,10 +64,11 @@ def upload(context: Context, args: list):
             history = gi.histories.create_history(args[index]).get('id')
             index += 1
         else:
-            print('ERROR: invalid option')
+            print(f'ERROR: invalid option {arg}')
     if gi is None:
         gi = connect(context)
     pprint(gi.tools.put_url(args[0], history))
+
 
 
 def download(context: Context, args: list):
