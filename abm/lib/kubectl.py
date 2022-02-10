@@ -39,7 +39,6 @@ def get_url(context: Context, args: list):
     if len(args) > 1:
         name = args[1]
     command = f"{kubectl} get svc -n {namespace} {name}-nginx -o json"
-    print(command)
     result = run(command, get_env(context))
     data = json.loads(result)
     ports = data['spec']['ports'][0]
