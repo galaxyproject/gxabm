@@ -46,7 +46,7 @@ def print_json(obj):
 
 
 def print_yaml(obj):
-    print(get_yaml_parser().dump(obj, sys.stdout))
+    get_yaml_parser().dump(obj, sys.stdout)
 
 
 def connect(context:Context):
