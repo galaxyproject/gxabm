@@ -224,9 +224,13 @@
       handler: config.show
       params: CLOUD
     - name: [create]
-      help: Create a new cloud configuration.
+      help: create a new cloud configuration.
       handler: config.create
       params: "CLOUD KUBECONFIG"
+    - name: [remove, rm, del]
+      help: emove a cloud configuration entry from the profile.yml
+      handler: config.remove
+      params: CLOUD
     - name: [key]
       help: Set the Galaxy API key for the provided cloud instance
       handler: config.key
