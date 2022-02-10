@@ -51,7 +51,7 @@ def update(context: Context, args:list):
         return False
 
     print(f"Applying rules {rules} to {context.GALAXY_SERVER}")
-    command = f"{helm} upgrade galaxy {chart} -n {namespace} --reuse-values --set-file jobs.rules.container_mapper_rules\.yml={rules}"
+    command = f"{helm} upgrade galaxy {chart} -n {namespace} --reuse-values --set-file jobs.rules.container_mapper_rules\.yml.content={rules}"
     env = get_env(context)
     try:
         result = run(command, env)
@@ -64,13 +64,14 @@ def update(context: Context, args:list):
         return False
 
     print('Waiting for the new deployments to come online')
-    wait_until_ready(env)
+    wait_until_ready(namespace, env)
     return True
 
 
 def wait(context: Context, args: list):
+    namespace = args[0] if len(args) > 0 else 'galaxy'
     env = get_env(context)
-    wait_until_ready(get_env(context))
+    wait_until_ready(namespace, get_env(context))
 
 
 def filter(lines:list, item:str):
@@ -81,17 +82,18 @@ def filter(lines:list, item:str):
     return result
 
 
-def wait_for(kubectl:str, name: str, env: dict):
+def wait_for(kubectl:str, namespace:str, name: str, env: dict):
     print(f"Waiting for {name} on {env['GALAXY_SERVER']} to be in the Running state")
     waiting = True
     while waiting:
         # TODO The namespace should be parameterized
-        result = run(f"{kubectl} get pods -n galaxy", env)
+        result = run(f"{kubectl} get pods -n {namespace}", env)
         if result is None:
-            waiting = False
             break
         lines = result.split('\n')
         pods = filter(lines, name)
+        if len(pods) == 0:
+            print(f"ERROR: there are no pods named {name} in namespace {namespace}")
         if len(pods) == 1:
             tokens = pods[0].split()
             waiting = tokens[2] != 'Running'
@@ -103,14 +105,14 @@ def wait_for(kubectl:str, name: str, env: dict):
     print(f"{name} is running")
 
 
-def wait_until_ready(env: dict):
+def wait_until_ready(namespace: str, env: dict):
     kubectl = find_executable('kubectl')
     if kubectl is None:
         print('ERROR: kubectl is not available on the $PATH')
         return
-    wait_for(kubectl, 'galaxy-job', env)
-    wait_for(kubectl, 'galaxy-web', env)
-    wait_for(kubectl, 'galaxy-workflow', env)
+    wait_for(kubectl, namespace, 'galaxy-job', env)
+    wait_for(kubectl, namespace, 'galaxy-web', env)
+    wait_for(kubectl, namespace, 'galaxy-workflow', env)
 
 
 def list(context: Context, args: list):
