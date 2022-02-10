@@ -266,27 +266,32 @@ def wait_for_jobs(context, gi: GalaxyInstance, invocations: dict):
     for step in invocations['steps']:
         job_id = step['job_id']
         if job_id is not None:
-            print(f"Waiting for job {job_id} on {context.GALAXY_SERVER}")
-            try:
-                # TDOD Should retry if anything throws an exception.
-                status = gi.jobs.wait_for_job(job_id, 86400, 10, False)
-                data = gi.jobs.show_job(job_id, full_details=True)
-                metrics = {
-                    'run': run,
-                    'cloud': cloud,
-                    'job_conf': conf,
-                    'workflow_id': wfid,
-                    'history_id': hid,
-                    'metrics': data,
-                    'status': status,
-                    'server': context.GALAXY_SERVER
-                }
-                output_path = os.path.join(output_dir, f"{job_id}.json")
-                with open(output_path, "w") as f:
-                    json.dump(metrics, f, indent=4)
-                    print(f"Wrote metrics to {output_path}")
-            except Exception as e:
-                print(f"ERROR: {e}")
+            retries = 3
+            while retries >= 0:
+                print(f"Waiting for job {job_id} on {context.GALAXY_SERVER}")
+                try:
+                    # TDOD Should retry if anything throws an exception.
+                    status = gi.jobs.wait_for_job(job_id, 86400, 10, False)
+                    data = gi.jobs.show_job(job_id, full_details=True)
+                    metrics = {
+                        'run': run,
+                        'cloud': cloud,
+                        'job_conf': conf,
+                        'workflow_id': wfid,
+                        'history_id': hid,
+                        'metrics': data,
+                        'status': status,
+                        'server': context.GALAXY_SERVER
+                    }
+                    output_path = os.path.join(output_dir, f"{job_id}.json")
+                    with open(output_path, "w") as f:
+                        json.dump(metrics, f, indent=4)
+                        print(f"Wrote metrics to {output_path}")
+                except ConnectionError as e:
+                    print(f"ERROR: connection dropped while waiting for {job_id}")
+                    retries -= 1
+                except Exception as e:
+                    print(f"ERROR: {e}")
 
 
 def parse_workflow(workflow_path: str):
