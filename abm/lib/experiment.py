@@ -132,24 +132,22 @@ def summarize(context: Context, args: list):
     :return: None
     """
     separator = None
+    input_dir = None
     for arg in args:
-        if separator is not None:
-            print("ERROR: Unexpected parameters. The separator type has already been specified.")
-            return
         if arg in ['-t', '--tsv']:
             separator = '\t'
         elif arg in ['-c', '--csv']:
             separator = ','
         else:
-            print("ERROR: Invalid option must be one of -c, --csv, -t, or --tsv")
-            return
+            input_dir = arg
+
+    if input_dir is None:
+        input_dir = 'metrics'
 
     if separator is None:
         separator = ','
-
     row = [''] * 15
     print("Run,Cloud,Job Conf,Workflow,History,Server,Tool,Tool Version,State,Slots,Memory,Runtime (Sec),CPU,Memory Limit (Bytes),Memory Max usage (Bytes),Memory Soft Limit")
-    input_dir = args[0]
     for file in os.listdir(input_dir):
         input_path = os.path.join(input_dir, file)
         if not os.path.isfile(input_path) or not input_path.endswith('.json'):
