@@ -77,6 +77,7 @@ def run(context: Context, args: list):
         else:
             print(f"Found workflow id {wfid}")
         inputs = {}
+        input_names = []
         history_base_name = wfid
         if Keys.HISTORY_BASE_NAME in workflow:
             history_base_name = workflow[Keys.HISTORY_BASE_NAME]
@@ -87,9 +88,11 @@ def run(context: Context, args: list):
                 if input is None or len(input) == 0:
                     print(f'ERROR: Invalid input specification for {spec[Keys.NAME]}')
                     return False
-                dsid = find_dataset_id(gi, spec[Keys.DATASET_ID])
+                dsname = spec[Keys.NAME]
+                dsid = find_dataset_id(gi, dsname)
                 print(f"Reference input dataset {dsid}")
                 inputs[input[0]] = {'id': dsid, 'src': 'hda'}
+                input_names.append(dsname)
 
         count = 0
         for run in workflow[Keys.RUNS]:
@@ -98,13 +101,18 @@ def run(context: Context, args: list):
                 output_history_name = f"{history_base_name} {run[Keys.HISTORY_NAME]}"
             else:
                 output_history_name = f"{history_base_name} run {count}"
+            #inputs = []
             for spec in run[Keys.INPUTS]:
                 input = gi.workflows.get_workflow_inputs(wfid, spec[Keys.NAME])
                 if input is None or len(input) == 0:
                     print(f'ERROR: Invalid input specification for {spec[Keys.NAME]}')
                     return False
-                dsid = find_dataset_id(gi, spec[Keys.DATASET_ID])
-                print(f"Input dataset ID: {dsid}")
+
+                dsname = spec[Keys.DATASET_ID]
+                input_names.append(dsname)
+                #inputs.append(dsname)
+                dsid = find_dataset_id(gi, dsname)
+                print(f"Input dataset ID: {dsname} [{dsid}]")
                 inputs[input[0]] = {'id': dsid, 'src': 'hda'}
 
             print(f"Running workflow {wfid}")
@@ -113,7 +121,7 @@ def run(context: Context, args: list):
                 new_history_name = f"{history_prefix} {output_history_name}"
             invocation = gi.workflows.invoke_workflow(wfid, inputs=inputs, history_name=new_history_name)
             id = invocation['id']
-            #TODO Change this output path.
+            #TODO Change this output path. (Change it to what? KS)
             output_path = os.path.join(invocations_dir, id + '.json')
             with open(output_path, 'w') as f:
                 json.dump(invocation, f, indent=4)
@@ -126,6 +134,7 @@ def run(context: Context, args: list):
                 invocations['cloud'] = parts[1]
                 invocations['job_conf'] = parts[2]
                 invocations['output_dir'] = metrics_dir
+            invocations['inputs'] = ' '.join(input_names)
             wait_for_jobs(context, gi, invocations)
     print("Benchmarking run complete")
     return True
@@ -262,6 +271,7 @@ def wait_for_jobs(context, gi: GalaxyInstance, invocations: dict):
     run = invocations['run']
     cloud = invocations['cloud']
     conf = invocations['job_conf']
+    inputs = invocations['inputs']
     output_dir = invocations['output_dir']
     for step in invocations['steps']:
         job_id = step['job_id']
@@ -280,6 +290,7 @@ def wait_for_jobs(context, gi: GalaxyInstance, invocations: dict):
                         'job_conf': conf,
                         'workflow_id': wfid,
                         'history_id': hid,
+                        'inputs': inputs,
                         'metrics': data,
                         'status': status,
                         'server': context.GALAXY_SERVER

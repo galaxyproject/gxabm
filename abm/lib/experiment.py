@@ -148,7 +148,7 @@ def summarize(context: Context, args: list):
     if separator is None:
         separator = ','
     row = [''] * 15
-    print("Run,Cloud,Job Conf,Workflow,History,Server,Tool,Tool Version,State,Slots,Memory,Runtime (Sec),CPU,Memory Limit (Bytes),Memory Max usage (Bytes),Memory Soft Limit")
+    print("Run,Cloud,Job Conf,Workflow,History,Inputs,Server,Tool,Tool Version,State,Slots,Memory,Runtime (Sec),CPU,Memory Limit (Bytes),Memory Max usage (Bytes),Memory Soft Limit")
     for file in os.listdir(input_dir):
         input_path = os.path.join(input_dir, file)
         if not os.path.isfile(input_path) or not input_path.endswith('.json'):
@@ -161,9 +161,10 @@ def summarize(context: Context, args: list):
             row[2] = data['job_conf']
             row[3] = data['workflow_id']
             row[4] = data['history_id']
-            row[5] = data['server'] if data['server'] is not None else 'https://iu1.usegvl.org/galaxy'
-            row[6] = parse_toolid(data['metrics']['tool_id'])
-            row[7] = data['metrics']['state']
+            row[5] = data['inputs']
+            row[6] = data['server'] if data['server'] is not None else 'https://iu1.usegvl.org/galaxy'
+            row[7] = parse_toolid(data['metrics']['tool_id'])
+            row[8] = data['metrics']['state']
             add_metrics_to_row(data['metrics']['job_metrics'], row)
             print(separator.join(row))
         except Exception as e:
@@ -176,7 +177,7 @@ def add_metrics_to_row(metrics_list: list, row: list):
     for job_metrics in metrics_list:
         if job_metrics['name'] in accept_metrics:
             index = accept_metrics.index(job_metrics['name'])
-            row[index + 8] = job_metrics['raw_value']
+            row[index + 9] = job_metrics['raw_value']
             # row.append(job_metrics['raw_value'])
 
 
