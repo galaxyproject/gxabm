@@ -51,7 +51,8 @@ def update(context: Context, args:list):
         return False
 
     print(f"Applying rules {rules} to {context.GALAXY_SERVER}")
-    command = f"{helm} upgrade galaxy {chart} -n {namespace} --reuse-values --set-file jobs.rules.container_mapper_rules\.yml.content={rules}"
+    #command = f'{helm} upgrade galaxy {chart} -n {namespace} --reuse-values --set-file jobs.rules."container_mapper_rules\.yml".content={rules}'
+    command = f'{helm} upgrade galaxy {chart} -n {namespace} --reuse-values -f {rules}'
     env = get_env(context)
     try:
         result = run(command, env)

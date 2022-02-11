@@ -189,7 +189,7 @@
 - name: [helm]
   help: execute a helm command
   menu:
-    - name: [update, up]
+    - name: [update, upgrade, up]
       help: update the container mapper rules for memory and cpu limits
       handler: helm.update
       params: RULES
