@@ -267,7 +267,8 @@ def wait_for_jobs(context, gi: GalaxyInstance, invocations: dict):
         job_id = step['job_id']
         if job_id is not None:
             retries = 3
-            while retries >= 0:
+            done = False
+            while not done and retries >= 0:
                 print(f"Waiting for job {job_id} on {context.GALAXY_SERVER}")
                 try:
                     # TDOD Should retry if anything throws an exception.
@@ -287,6 +288,7 @@ def wait_for_jobs(context, gi: GalaxyInstance, invocations: dict):
                     with open(output_path, "w") as f:
                         json.dump(metrics, f, indent=4)
                         print(f"Wrote metrics to {output_path}")
+                    done = True
                 except ConnectionError as e:
                     print(f"ERROR: connection dropped while waiting for {job_id}")
                     retries -= 1
