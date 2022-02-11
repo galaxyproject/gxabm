@@ -147,7 +147,8 @@ def summarize(context: Context, args: list):
 
     if separator is None:
         separator = ','
-    row = [''] * 15
+
+    row = [''] * 16
     print("Run,Cloud,Job Conf,Workflow,History,Inputs,Server,Tool,Tool Version,State,Slots,Memory,Runtime (Sec),CPU,Memory Limit (Bytes),Memory Max usage (Bytes),Memory Soft Limit")
     for file in os.listdir(input_dir):
         input_path = os.path.join(input_dir, file)

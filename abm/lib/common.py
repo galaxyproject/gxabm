@@ -63,7 +63,11 @@ def connect(context:Context):
         print('ERROR: The Galaxy API key has not been set.  Please check your')
         print('       configuration in ~/.abm/profile.yml and try again.')
         sys.exit(1)
-    return bioblend.galaxy.GalaxyInstance(url=context.GALAXY_SERVER, key=context.API_KEY)
+    gi = bioblend.galaxy.GalaxyInstance(url=context.GALAXY_SERVER, key=context.API_KEY)
+    gi.max_get_attempts = 3
+    gi.get_retry_delay = 1
+    return gi
+
 
 
 def _set_active_profile(profile_name: str):
