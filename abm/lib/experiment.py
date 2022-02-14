@@ -108,7 +108,7 @@ def run_on_cloud(cloud: str, config: dict):
         for n in range(config['runs']):
             history_name_prefix = f"{n} {cloud} {conf}"
             for workflow_conf in config['benchmark_confs']:
-                benchmark.run(context, [workflow_conf, history_name_prefix, config['name']])
+                benchmark.run(context, workflow_conf, history_name_prefix, config['name'])
 
 
 def test(context: Context, args: list):

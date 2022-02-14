@@ -3,14 +3,14 @@ import sys
 import json
 import yaml
 import logging
-
+import argparse
 from lib import Keys, INVOCATIONS_DIR, METRICS_DIR
 from lib.common import connect, Context
 from bioblend.galaxy import GalaxyInstance
 
 log = logging.getLogger('abm')
 
-def run(context: Context, args: list):
+def run_cli(context: Context, args: list):
     """
     Runs a single workflow defined by *args[0]*
 
@@ -25,17 +25,24 @@ def run(context: Context, args: list):
     if len(args) == 0:
         print('ERROR: no workflow configuration specified')
         return
-    workflow_path = args[0]
-    if not os.path.exists(workflow_path):
-        print(f'ERROR: can not find workflow configuration {workflow_path}')
-        return
 
-    history_prefix = None
-    experiment = None
-    if len(args) > 1:
-        history_prefix = args[1]
-        if len(args) > 2:
-            experiment = args[2].replace(' ', '_').lower()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('workflow_path')
+    parser.add_argument('-p', '--prefix')
+    parser.add_argument('-e', '--experiment')
+    a = parser.parse_args(args)
+    #workflow_path = args[0]
+    if not os.path.exists(a.workflow_path):
+        print(f'ERROR: can not find workflow configuration {a.workflow_path}')
+        return
+    run(context, a.workflow_path, a.prefix, a.experiment)
+
+
+def run(context: Context, workflow_path, history_prefix: str, experiment: str):
+    # if len(args) > 1:
+    #     history_prefix = args[1]
+    #     if len(args) > 2:
+    #         experiment = args[2].replace(' ', '_').lower()
 
 
     if os.path.exists(INVOCATIONS_DIR):
@@ -121,20 +128,20 @@ def run(context: Context, args: list):
                 new_history_name = f"{history_prefix} {output_history_name}"
             invocation = gi.workflows.invoke_workflow(wfid, inputs=inputs, history_name=new_history_name)
             id = invocation['id']
-            #TODO Change this output path. (Change it to what? KS)
-            output_path = os.path.join(invocations_dir, id + '.json')
-            with open(output_path, 'w') as f:
-                json.dump(invocation, f, indent=4)
-                print(f"Wrote invocation data to {output_path}")
             invocations = gi.invocations.wait_for_invocation(id, 86400, 10, False)
             print("Waiting for jobs")
             if history_prefix is not None:
-                parts = args[1].split()
+                parts = history_prefix.split()
                 invocations['run'] = parts[0]
                 invocations['cloud'] = parts[1]
                 invocations['job_conf'] = parts[2]
                 invocations['output_dir'] = metrics_dir
             invocations['inputs'] = ' '.join(input_names)
+            #TODO Change this output path. (Change it to what? KS)
+            output_path = os.path.join(invocations_dir, id + '.json')
+            with open(output_path, 'w') as f:
+                json.dump(invocations, f, indent=4)
+                print(f"Wrote invocation data to {output_path}")
             wait_for_jobs(context, gi, invocations)
     print("Benchmarking run complete")
     return True
