@@ -4,7 +4,7 @@
   help: 'manage benchmarks'
   menu:
     - name: ['run']
-      handler: benchmark.run
+      handler: benchmark.run_cli
       help: run one of the workflow configurations.  If specified the prefix will be prepended to the new history name.
       params: PATH [history_name_prefix]
     - name: ['translate', 'tr']
@@ -191,7 +191,7 @@
   menu:
     - name: [update, upgrade, up]
       help: update the container mapper rules for memory and cpu limits
-      handler: helm.update
+      handler: helm.update_cli
       params: RULES
     - name: [rollback]
       handler: helm.rollback
