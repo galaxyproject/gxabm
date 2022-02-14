@@ -312,6 +312,7 @@ def wait_for_jobs(context, gi: GalaxyInstance, invocations: dict):
                     retries -= 1
                 except Exception as e:
                     print(f"ERROR: {e}")
+                    retries -= 1
 
 
 def parse_workflow(workflow_path: str):
