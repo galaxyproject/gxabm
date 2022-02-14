@@ -1,5 +1,6 @@
 import os
 import time
+import argparse
 from common import run, find_executable, get_env, Context
 
 
@@ -18,7 +19,43 @@ def rollback(context: Context, args: list):
     run(command, get_env(context))
 
 
-def update(context: Context, args:list):
+def update(context: Context, args: list):
+    if len(args) == 0:
+        print(f'USAGE: abm <cloud> helm update <values> <namespace> <chart>')
+        return
+    values = args[0]
+    namespace = 'galaxy' if args[1] is None else args[1]
+    chart = 'galaxy/galaxy' if args[2] is None else args[2]
+
+    helm = find_executable('helm')
+    if helm is None:
+        print('ERROR: helm is not available on the $PATH')
+        return False
+
+    if not os.path.exists(values):
+        print(f"ERROR: Rules file not found: {values}")
+        return False
+
+    print(f"Applying rules {values} to {context.GALAXY_SERVER}")
+    #command = f'{helm} upgrade galaxy {chart} -n {namespace} --reuse-values --set-file jobs.rules."container_mapper_rules\.yml".content={rules}'
+    command = f'{helm} upgrade galaxy {chart} -n {namespace} --reuse-values -f {values}'
+    env = get_env(context)
+    try:
+        result = run(command, env)
+    except RuntimeError as e:
+        print(f"Unable to helm upgrade {context.GALAXY_SERVER}")
+        print(e)
+        return False
+
+    if result is None:
+        return False
+
+    print('Waiting for the new deployments to come online')
+    wait_until_ready(namespace, env)
+    return True
+
+
+def update_cli(context: Context, args: list):
     """
     Runs the ``helm upgrade`` command on the cluster to update the
     *jobs.rules.container_mapper_rules* configuration.
@@ -34,39 +71,14 @@ def update(context: Context, args:list):
     if len(args) == 0:
         print("ERROR: No rules specified.")
         return False
-    rules = args[0]
-    namespace = 'galaxy'
-    chart = 'galaxy/galaxy'
-    if len(args) > 1:
-        namespace = args[1]
-    if len(args) > 2:
-        chart = args[2]
-    helm = find_executable('helm')
-    if helm is None:
-        print('ERROR: helm is not available on the $PATH')
-        return False
 
-    if not os.path.exists(rules):
-        print(f"ERROR: Rules file not found: {rules}")
-        return False
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-f', '--values')
+    parser.add_argument('-n', '--namespace', default='galaxy')
+    parser.add_argument('chart', default='galaxy/galaxy')
 
-    print(f"Applying rules {rules} to {context.GALAXY_SERVER}")
-    #command = f'{helm} upgrade galaxy {chart} -n {namespace} --reuse-values --set-file jobs.rules."container_mapper_rules\.yml".content={rules}'
-    command = f'{helm} upgrade galaxy {chart} -n {namespace} --reuse-values -f {rules}'
-    env = get_env(context)
-    try:
-        result = run(command, env)
-    except RuntimeError as e:
-        print(f"Unable to helm upgrade {context.GALAXY_SERVER}")
-        print(e)
-        return False
-
-    if result is None:
-        return False
-
-    print('Waiting for the new deployments to come online')
-    wait_until_ready(namespace, env)
-    return True
+    params = parser.parse_args(args)
+    update(context, [params.values, params.namespace, params.chart])
 
 
 def wait(context: Context, args: list):
