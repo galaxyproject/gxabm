@@ -1,0 +1,49 @@
+image:
+  repository: galaxyproject/galaxy-min
+  tag: 22.01
+postgresql:
+  galaxyDatabasePassword: galaxydbpassword
+  persistence:
+    storageClass: nfs
+ingress:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+  path: "/"
+  canary:
+    enabled: false
+  hosts:
+    - host: ~
+      paths:
+        - path: "/"
+cvmfs:
+  enabled: true
+  deploy: true
+  cache:
+    alienCache:
+      storageClass: nfs
+persistence:
+  accessMode: ReadWriteMany
+  storageClass: nfs
+  size: 470Gi
+initJob:
+  downloadToolConfs:
+    enabled: true
+webHandlers:
+  startupDelay: 10
+jobHandlers:
+  startupDelay: 5
+workflowHandlers:
+  startupDelay: 0
+configs:
+  galaxy.yml:
+    galaxy:
+      job_metrics_config_file: job_metrics_conf.yml
+      admin_users: "afgane@gmail.com,suderman@jhu.edu"
+      master_api_key: galaxypassword
+      brand: EKS
+  job_metrics_conf.yml:
+    - type: core
+    - type: cgroup
+    - type: cpuinfo
+    - type: meminfo
+    - type: uname
