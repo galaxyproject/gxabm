@@ -25,6 +25,10 @@ def pad(value: bool):
 
 
 def print_histories(histories: list):
+    if len(histories) == 0:
+        print("There are no available histories.")
+        return
+    
     id_width = len(histories[0]['id'])
     name_width = longest_name(histories)
 
