@@ -1,7 +1,7 @@
 ---
 # This playbook will set up an (eksctl) cluster with Galaxy
-# Run with:
-#   eksctl create cluster -f build_aws_cluster.yaml --profile profileName
+# Make sure you have galaxy_values.yaml file in the same dir and run with:
+#   ansible-playbook setup_galaxy_on_cluster.yaml
 
 - name: Set up Galaxy
   hosts: localhost
