@@ -5,6 +5,7 @@ import yaml
 
 from lib.common import connect, parse_profile, Context
 from pprint import pprint
+from pathlib import Path
 
 #
 # History related functions
@@ -182,12 +183,24 @@ def himport(context: Context, args: list):
         if 'http' in args[0]:
             url = args[0]
         else:
+            datasets = None
             config = f'{os.path.dirname(os.path.abspath(__file__))}/histories.yml'
-            if not os.path.exists(config):
-                error_message('The histories config file was not found.')
+            # First load the histories.yml file that is pacakged with abm
+            if os.path.exists(config):
+                with open(config, 'r') as f:
+                    datasets = yaml.safe_load(f)
+            # Then load the user histories.yml, if any
+            userfile = os.path.join(Path.home(),".abm", "histories.yml")
+            if os.path.exists(userfile):
+                if datasets is None:
+                    datasets = {}
+                with open(userfile, 'r') as f:
+                    userdata = yaml.safe_load(f)
+                    for key in userdata.items():
+                        datasets[key] = userdata[key]
+            if datasets is None:
+                error_message("No history URLs have been configured.")
                 return
-            with open(config, 'r') as f:
-                datasets = yaml.safe_load(f)
             if not args[0] in datasets:
                 error_message('Please specify a URL or name of the history to import')
                 return
