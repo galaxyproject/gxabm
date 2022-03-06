@@ -115,6 +115,26 @@ While the functionality in `abm` is the same, some functions have been moved to 
 | benchmark summarize | experiment summarize |
 
 
+## Instance Configuration
+
+Before ABM can interact with the Galaxy cluster an entry for that cluster needs to be created in ABM's `~/.abm/profile.yml` configuration file.  Since the profile is just a YAML file it can be edited in any text editor to add the entry with the URL, API key, and KUBECONFIG location. Or we can use `abm` commands to create the entry.
+
+```bash
+abm config create cloud /path/to/kubeconfig                          (1)
+abm config url cloud https://galaxy.url                              (2)
+abm cloud user create username user_email@example.org userpassword   (3)
+key=$(abm cloud user apikey user_email@example.org)                  (4)
+abm config key cloud $key                                            (5)
+abm config show cloud
+```
+
+1. Creates a new entry for *cloud* in the `~/.abm/profile.yml` file.  The `config create` expects two parameters: the name of the cloud instance and the path to the *kubeconfig* file used by *kubectl* to intereact with the cluster.  The name can be anything you want, and long as that name has not already been used.  The *kubeconfig* will have been generated when the cluster was provisioned and how it is obtained will depend on the cloud provider and is beyond the scope of this document.
+1. Sets the `url` field in the profile. The `abm cloud kube url` command can be used to determine Galaxy's URL, but see the [caveats](#caveats_and_known_problems) section for known problems. If the `kube url` command does not work you can also use `kubectl get svc -n galaxy` to find the ingress service name and `kubectl describe svc -n galaxy service-name` to find the ingress URL.
+1. Creates a new user in the Galaxy instance.  The email address should be specified in the Galaxy `admin_users` sections of the `values.yml` file used when installing Galaxy to the cluster.  If the user is not an admin user then installing tools will fail.
+1. Fetch the user's API key for that Galaxy instance and saves it to an environment variable
+1. Save the API key to the profile configuration.
+
+
 ## Benchmark Configuration
 
 The runtime parameters for benchmarking runs are specified in a YAML configuration file.  The configuration file can contain more than one runtime configuration specified as a YAML list. This file can be stored anywhere, but several examples are included in the `config` directory. 
@@ -254,7 +274,7 @@ Generate SSL/TLS certificates used by `kubeadm`.  Use the `--apiserver-cert-extr
 
 ```bash
 > kubeadm init phase certs all --apiserver-advertise-address=0.0.0.0 --apiserver-cert-extra-sans=10.161.233.80,114.215.201.87
-````
+```
 
 ## Future Work
 
@@ -297,6 +317,14 @@ make deploy
 ```
 
 The `make test-deploy` deploys artifacts to TestPyPI server and is intended for deploying and testing *development* builds.  Development build **should not** be deployed to PyPI.
+
+## Caveats and Known Problems
+
+The `abm kube url` command is intended to retrieve the URL needed to access the Galaxy instance on the Kubernetes cluster.  However, there are a few issues that make this not so straight-forward:
+
+- the name of the ingress controller is not consistant.  Sometimes it is `ingress-nginx-controller` (AWS) and sometimes it is simply `ingress-nginx` (GCP)
+- sometimes the instance is accessed via the `hostname` field (AWS) and sometimes the `ip` field
+- the URL for the Galaxy instance may have an arbitrary path included, i.e. `https://hostname` or `https://hostname/galaxy` or `https://hostname/something/galaxy`
 
 
 
