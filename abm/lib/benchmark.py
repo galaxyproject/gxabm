@@ -1,164 +1,49 @@
 import os
 import sys
-import yaml
 import json
-from pprint import pprint
-from planemo.runnable import for_path
-from planemo.galaxy.workflows import install_shed_repos
-import lib
-import common
+import yaml
+import logging
+import argparse
+from lib import Keys, INVOCATIONS_DIR, METRICS_DIR
+from lib.common import connect, Context
 from bioblend.galaxy import GalaxyInstance
-from common import connect
 
-INVOCATIONS_DIR = "invocations"
-METRICS_DIR = "metrics"
+log = logging.getLogger('abm')
 
-class Keys:
-    NAME = 'name'
-    RUNS = 'runs'
-    INPUTS = 'inputs'
-    REFERENCE_DATA = 'reference_data'
-    WORKFLOW_ID = 'workflow_id'
-    DATASET_ID = 'dataset_id'
-    HISTORY_BASE_NAME = 'output_history_base_name'
-    HISTORY_NAME = 'history_name'
-
-
-def find_workflow_id(gi, name_or_id):
-    try:
-        wf = gi.workflows.show_workflow(name_or_id)
-        return wf['id']
-    except:
-        pass
-
-    try:
-        wf = gi.workflows.get_workflows(name=name_or_id, published=True)
-        return wf[0]['id']
-    except:
-        pass
-    #print(f"Warning: unable to find workflow {name_or_id}")
-    return None
-
-
-def find_dataset_id(gi, name_or_id):
-    # print(f"Finding dataset {name_or_id}")
-    try:
-        ds = gi.datasets.show_dataset(name_or_id)
-        return ds['id']
-    except:
-        pass
-
-    try:
-        # print('Trying by name')
-        ds = gi.datasets.get_datasets(name=name_or_id)  # , deleted=True, purged=True)
-        if len(ds) > 0:
-            return ds[0]['id']
-    except:
-        print('Caught an exception')
-        print(sys.exc_info())
-    #print(f"Warning: unable to find dataset {name_or_id}")
-    return None
-
-
-def parse_workflow(workflow_path: str):
-    if not os.path.exists(workflow_path):
-        print(f'ERROR: could not find workflow file {workflow_path}')
-        return None
-
-    with open(workflow_path, 'r') as stream:
-        try:
-            config = yaml.safe_load(stream)
-            # print(f"Loaded {name}")
-        except yaml.YAMLError as exc:
-            print('Error encountered parsing the YAML input file')
-            print(exc)
-            #TODO Don't do this...
-            sys.exit(1)
-    return config
-
-
-def list(args: list):
-    gi = connect()
-    workflows = gi.workflows.get_workflows(published=True)
-    if len(workflows) == 0:
-        print('No workflows found')
-        return
-    print(f'Found {len(workflows)} workflows')
-    for workflow in workflows:
-        print(f"{workflow['id']}\t{workflow['name']}")
-
-
-def delete(args: list):
-    if len(args) == 0:
-        print(f'ERROR: no workflow ID given.')
-        return
-    gi = connect()
-    print(gi.workflows.delete_workflow(args[0]))
-
-
-def upload(args: list):
-    if len(args) == 0:
-        print('ERROR: no workflow file given')
-        return
-    path = args[0]
-    if not os.path.exists(path):
-        print(f'ERROR: file not found: {path}')
-        return
-    gi = connect()
-    print("Importing the workflow")
-    pprint(gi.workflows.import_workflow_from_local_path(path, publish=True))
-    runnable = for_path(path)
-    print("Installing tools")
-    result = install_shed_repos(runnable, gi, False)
-    pprint(result)
-
-
-def download(args: list):
-    if len(args) == 0:
-        print('ERROR: no workflow ID given')
-        return
-    gi = connect()
-    workflow = json.dumps(gi.workflows.export_workflow_dict(args[0]), indent=4)
-    if len(args) == 2:
-        with open(args[1], 'w') as f:
-            f.write(workflow)
-            print(f'Wrote {args[1]}')
-    else:
-        print(workflow)
-
-
-def show(args: list):
-    if len(args) == 0:
-        print('ERROR: no workflow ID given')
-        return
-    gi = connect()
-    pprint(gi.workflows.show_workflow(args[0]))
-
-
-def find(args: list):
-    if len(args) == 0:
-        print("ERROR: no workflow name given")
-        return
-    gi = connect()
-    pprint(gi.workflows.get_workflows(name=args[0]))
-
-
-def run(args: list):
+def run_cli(context: Context, args: list):
     """
     Runs a single workflow defined by *args[0]*
 
-    :param args: a list that contains a single element, the path to a workflow
-      configuration file.
+    :param args: a list that contains:
+    args[0] - the path to the benchmark configuration file
+    args[1] - the prefix to use when creating the new history in Galaxy
+    args[2] - the name of the experiment, if part of one. This is used to
+              generate output folder names.
 
     :return: True if the workflows completed sucessfully. False otherwise.
     """
     if len(args) == 0:
         print('ERROR: no workflow configuration specified')
         return
-    workflow_path = args[0]
-    if not os.path.exists(workflow_path):
-        print(f'ERROR: can not find workflow configuration {workflow_path}')
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('workflow_path')
+    parser.add_argument('-p', '--prefix')
+    parser.add_argument('-e', '--experiment')
+    a = parser.parse_args(args)
+    #workflow_path = args[0]
+    if not os.path.exists(a.workflow_path):
+        print(f'ERROR: can not find workflow configuration {a.workflow_path}')
         return
+    run(context, a.workflow_path, a.prefix, a.experiment)
+
+
+def run(context: Context, workflow_path, history_prefix: str, experiment: str):
+    # if len(args) > 1:
+    #     history_prefix = args[1]
+    #     if len(args) > 2:
+    #         experiment = args[2].replace(' ', '_').lower()
+
 
     if os.path.exists(INVOCATIONS_DIR):
         if not os.path.isdir(INVOCATIONS_DIR):
@@ -166,6 +51,7 @@ def run(args: list):
             sys.exit(1)
     else:
         os.mkdir(INVOCATIONS_DIR)
+
 
     if os.path.exists(METRICS_DIR):
         if not os.path.isdir(METRICS_DIR):
@@ -175,7 +61,17 @@ def run(args: list):
     else:
         os.mkdir(METRICS_DIR)
 
-    gi = connect()
+    invocations_dir = INVOCATIONS_DIR
+    metrics_dir = METRICS_DIR
+    if experiment is not None:
+        invocations_dir = os.path.join(INVOCATIONS_DIR, experiment)
+        if not os.path.exists(invocations_dir):
+            os.makedirs(invocations_dir, exist_ok=True)
+        metrics_dir = os.path.join(METRICS_DIR, experiment)
+        if not os.path.exists(metrics_dir):
+            os.makedirs(metrics_dir, exist_ok=True)
+
+    gi = connect(context)
     workflows = parse_workflow(workflow_path)
 
     print(f"Found {len(workflows)} workflow definitions")
@@ -188,6 +84,7 @@ def run(args: list):
         else:
             print(f"Found workflow id {wfid}")
         inputs = {}
+        input_names = []
         history_base_name = wfid
         if Keys.HISTORY_BASE_NAME in workflow:
             history_base_name = workflow[Keys.HISTORY_BASE_NAME]
@@ -198,9 +95,11 @@ def run(args: list):
                 if input is None or len(input) == 0:
                     print(f'ERROR: Invalid input specification for {spec[Keys.NAME]}')
                     return False
-                dsid = find_dataset_id(gi, spec[Keys.DATASET_ID])
+                dsname = spec[Keys.NAME]
+                dsid = find_dataset_id(gi, dsname)
                 print(f"Reference input dataset {dsid}")
                 inputs[input[0]] = {'id': dsid, 'src': 'hda'}
+                input_names.append(dsname)
 
         count = 0
         for run in workflow[Keys.RUNS]:
@@ -209,63 +108,47 @@ def run(args: list):
                 output_history_name = f"{history_base_name} {run[Keys.HISTORY_NAME]}"
             else:
                 output_history_name = f"{history_base_name} run {count}"
+            #inputs = []
             for spec in run[Keys.INPUTS]:
                 input = gi.workflows.get_workflow_inputs(wfid, spec[Keys.NAME])
                 if input is None or len(input) == 0:
                     print(f'ERROR: Invalid input specification for {spec[Keys.NAME]}')
                     return False
-                dsid = find_dataset_id(gi, spec[Keys.DATASET_ID])
-                print(f"Input dataset ID: {dsid}")
+
+                dsname = spec[Keys.DATASET_ID]
+                input_names.append(dsname)
+                #inputs.append(dsname)
+                dsid = find_dataset_id(gi, dsname)
+                print(f"Input dataset ID: {dsname} [{dsid}]")
                 inputs[input[0]] = {'id': dsid, 'src': 'hda'}
 
             print(f"Running workflow {wfid}")
             new_history_name = output_history_name
-            if len(args) > 1:
-                new_history_name = f"{args[1]} {output_history_name}"
+            if history_prefix is not None:
+                new_history_name = f"{history_prefix} {output_history_name}"
             invocation = gi.workflows.invoke_workflow(wfid, inputs=inputs, history_name=new_history_name)
             id = invocation['id']
-            output_path = os.path.join(INVOCATIONS_DIR, id + '.json')
-            with open(output_path, 'w') as f:
-                json.dump(invocation, f, indent=4)
-                print(f"Wrote invocation data to {output_path}")
             invocations = gi.invocations.wait_for_invocation(id, 86400, 10, False)
             print("Waiting for jobs")
-            if len(args) > 1:
-                for parts in args[1].split():
-                    invocations['run'] = parts[0]
-                    invocations['cloud'] = parts[1]
-                    invocations['job_conf'] = parts[2]
-            wait_for_jobs(gi, invocations)
+            if history_prefix is not None:
+                parts = history_prefix.split()
+                invocations['run'] = parts[0]
+                invocations['cloud'] = parts[1]
+                invocations['job_conf'] = parts[2]
+                invocations['output_dir'] = metrics_dir
+            invocations['inputs'] = ' '.join(input_names)
+            #TODO Change this output path. (Change it to what? KS)
+            output_path = os.path.join(invocations_dir, id + '.json')
+            with open(output_path, 'w') as f:
+                json.dump(invocations, f, indent=4)
+                print(f"Wrote invocation data to {output_path}")
+            wait_for_jobs(context, gi, invocations)
     print("Benchmarking run complete")
     return True
 
 
-def test(args: list):
-    # gi = connect()
-    # print(f"Searching for workflow {args[0]}")
-    # flows = gi.workflows.get_workflows(name=args[0], published=True)
-    # pprint(flows)
-    print(__name__)
 
-def publish(args: list):
-    if len(args) != 1:
-        print("USAGE: publish ID" )
-        return
-    gi = connect()
-    result = gi.workflows.update_workflow(args[0], published=True)
-    print(f"Published: {result['published']}")
-
-
-def rename(args: list):
-    if len(args) != 2:
-        print("USAGE: rename ID 'new workflow name'")
-        return
-    gi = connect()
-    result = gi.workflows.update_workflow(args[0], name=args[1])
-    print(f"Renamed workflow to {result['name']}")
-
-
-def translate(args: list):
+def translate(context: Context, args: list):
     if len(args) == 0:
         print('ERROR: no workflow configuration specified')
         return
@@ -274,7 +157,7 @@ def translate(args: list):
         print(f'ERROR: can not find workflow configuration {workflow_path}')
         return
 
-    gi = connect()
+    gi = connect(context)
     # wf_index,ds_index = create_rev_index(gi)
     workflows = parse_workflow(args[0])
     for workflow in workflows:
@@ -307,7 +190,7 @@ def translate(args: list):
     print(yaml.dump(workflows))
 
 
-def validate(args: list):
+def validate(context: Context, args: list):
     if len(args) == 0:
         print('ERROR: no workflow configuration specified')
         return
@@ -316,9 +199,9 @@ def validate(args: list):
     if not os.path.exists(workflow_path):
         print(f'ERROR: can not find workflow configuration {workflow_path}')
         return
-    print(f"Validating workflow on {lib.GALAXY_SERVER}")
+    print(f"Validating workflow on {context.GALAXY_SERVER}")
     workflows = parse_workflow(workflow_path)
-    gi = connect()
+    gi = connect(context)
     total_errors = 0
     for workflow in workflows:
         wfid = workflow[Keys.WORKFLOW_ID]
@@ -383,7 +266,7 @@ def validate(args: list):
     return total_errors == 0
 
 
-def wait_for_jobs(gi: GalaxyInstance, invocations: dict):
+def wait_for_jobs(context, gi: GalaxyInstance, invocations: dict):
     """ Blocks until all jobs defined in the *invocations* to complete.
 
     :param gi: The *GalaxyInstance** running the jobs
@@ -395,27 +278,95 @@ def wait_for_jobs(gi: GalaxyInstance, invocations: dict):
     run = invocations['run']
     cloud = invocations['cloud']
     conf = invocations['job_conf']
+    inputs = invocations['inputs']
+    output_dir = invocations['output_dir']
     for step in invocations['steps']:
         job_id = step['job_id']
         if job_id is not None:
-            print(f"Waiting for job {job_id} on {lib.GALAXY_SERVER}")
-            try:
-                # TDOD Should retry if anything throws an exception.
-                status = gi.jobs.wait_for_job(job_id, 86400, 10, False)
-                data = gi.jobs.show_job(job_id, full_details=True)
-                metrics = {
-                    'run': run,
-                    'cloud': cloud,
-                    'job_conf': conf,
-                    'workflow_id': wfid,
-                    'history_id': hid,
-                    'metrics': data,
-                    'status': status,
-                    'server': lib.GALAXY_SERVER
-                }
-                output_path = os.path.join(METRICS_DIR, f"{job_id}.json")
-                with open(output_path, "w") as f:
-                    json.dump(metrics, f, indent=4)
-                    print(f"Wrote metrics to {output_path}")
-            except Exception as e:
-                print(f"ERROR: {e}")
+            retries = 3
+            done = False
+            while not done and retries >= 0:
+                print(f"Waiting for job {job_id} on {context.GALAXY_SERVER}")
+                try:
+                    # TDOD Should retry if anything throws an exception.
+                    status = gi.jobs.wait_for_job(job_id, 86400, 10, False)
+                    data = gi.jobs.show_job(job_id, full_details=True)
+                    metrics = {
+                        'run': run,
+                        'cloud': cloud,
+                        'job_conf': conf,
+                        'workflow_id': wfid,
+                        'history_id': hid,
+                        'inputs': inputs,
+                        'metrics': data,
+                        'status': status,
+                        'server': context.GALAXY_SERVER
+                    }
+                    output_path = os.path.join(output_dir, f"{job_id}.json")
+                    with open(output_path, "w") as f:
+                        json.dump(metrics, f, indent=4)
+                        print(f"Wrote metrics to {output_path}")
+                    done = True
+                except ConnectionError as e:
+                    print(f"ERROR: connection dropped while waiting for {job_id}")
+                    retries -= 1
+                except Exception as e:
+                    print(f"ERROR: {e}")
+                    retries -= 1
+
+
+def parse_workflow(workflow_path: str):
+    if not os.path.exists(workflow_path):
+        print(f'ERROR: could not find workflow file {workflow_path}')
+        return None
+
+    with open(workflow_path, 'r') as stream:
+        config = yaml.safe_load(stream)
+        # try:
+        #     config = yaml.safe_load(stream)
+        #     # print(f"Loaded {name}")
+        # except yaml.YAMLError as exc:
+        #     print('Error encountered parsing the YAML input file')
+        #     print(exc)
+        #     #TODO Don't do this...
+        #     sys.exit(1)
+    return config
+
+
+def find_workflow_id(gi, name_or_id):
+    try:
+        wf = gi.workflows.show_workflow(name_or_id)
+        return wf['id']
+    except:
+        pass
+
+    try:
+        wf = gi.workflows.get_workflows(name=name_or_id, published=True)
+        return wf[0]['id']
+    except:
+        pass
+    #print(f"Warning: unable to find workflow {name_or_id}")
+    return None
+
+
+def find_dataset_id(gi, name_or_id):
+    # print(f"Finding dataset {name_or_id}")
+    try:
+        ds = gi.datasets.show_dataset(name_or_id)
+        return ds['id']
+    except:
+        pass
+
+    try:
+        # print('Trying by name')
+        ds = gi.datasets.get_datasets(name=name_or_id)  # , deleted=True, purged=True)
+        if len(ds) > 0:
+            return ds[0]['id']
+    except:
+        print('Caught an exception')
+        print(sys.exc_info())
+    #print(f"Warning: unable to find dataset {name_or_id}")
+    return None
+
+
+

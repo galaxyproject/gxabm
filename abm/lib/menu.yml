@@ -1,7 +1,24 @@
 - name: 
+    - benchmark
+    - bench
+  help: 'manage benchmarks'
+  menu:
+    - name: ['run']
+      handler: benchmark.run_cli
+      help: run one of the workflow configurations.  If specified the prefix will be prepended to the new history name.
+      params: PATH [history_name_prefix]
+    - name: ['translate', 'tr']
+      handler: benchmark.translate
+      help: translate workflow and dataset ID values into names
+      params: PATH
+    - name: ['validate']
+      handler: benchmark.validate
+      help: validate that workflow and dataset names can be translated into IDs
+      params: PATH
+- name:
     - workflow
     - wf
-  help: 'manage workflows'
+  help: manage Galaxy workflows
   menu:
     - name: ['upload', 'up']
       handler: workflow.upload
@@ -26,18 +43,6 @@
       handler: workflow.delete
       help: 'delete a workflow from the server'
       params: ID
-    - name: ['run']
-      handler: workflow.run
-      help: run one of the workflow configurations.  If specified the prefix will be prepended to the new history name.
-      params: PATH [history_name_prefix]
-    - name: ['translate', 'tr']
-      handler: workflow.translate
-      help: translate workflow and dataset ID values into names
-      params: PATH
-    - name: ['validate']
-      handler: workflow.validate
-      help: validate that workflow and dataset names can be translated into IDs
-      params: PATH
     - name: ['pub', 'publish']
       handler: workflow.publish
       help: publish a workflow
@@ -46,6 +51,9 @@
       handler: workflow.rename
       params: "ID 'new workflow name'"
       help: "rename a workflow on the Galaxy server"
+    - name: ['test']
+      handler: workflow.test
+      help: run some test code
 - name:
     - dataset
     - ds
@@ -81,9 +89,13 @@
       help: list histories on the server.
       params: "[-a|--all]"
     - name: ['import', 'imp', 'im']
-      params: "CLOUD [HISTORY_ID JEHA_ID | URL"
+      params: "[CLOUD HISTORY_ID JEHA_ID | URL | [dna|rna]] [-n|--no-wait]"
       handler: history.himport
       help: import a history from another Galaxy server
+    - name: [create, new]
+      params: NAME
+      handler: history.create
+      help: create a new history and return its ID
     - name: ['export', 'exp', 'ex']
       handler: history.export
       params: "ID [-n|--no-wait]"
@@ -145,27 +157,49 @@
       help: display runtime metrics for the job
       handler: job.metrics
       params: ID
-- name: [benchmark, bench, bm]
+- name: [users, user]
+  help: manage users on the Galaxy instance
+  menu:
+    - name: [list, ls]
+      help: list all users on the Galaxy instance
+      handler: users.list
+    - name: [api_key, apikey, key]
+      help: obtain the API key for the specified user
+      handler: users.api_key
+      params: EMAIL
+    - name: [create, new]
+      help: create a new user on the Galaxy instance
+      handler: users.create
+      params: NAME EMAIL PASSWORD
+- name: [experiment, exp, ex]
   help: execute benchmarking runs on various clouds
   menu:
     - name: [run]
-      help: run a benchmark
-      handler: benchmark.run
+      help: run all benchmarks in an experiment
+      handler: experiment.run
       params: PATH
     - name: [summarize, summary]
-      help: summarize metrics
-      handler: benchmark.summarize
+      help: summarize metrics to a CSV or TSV file.
+      handler: experiment.summarize
+      params: "[-c, --csv, -t, --tsv]"
     - name: [test]
-      help: entry point for test (experimental) code
-      handler: benchmark.test
-      params: VARIES
+      help: playground code
+      handler: experiment.test
+      params: [VARIES]
 - name: [helm]
   help: execute a helm command
   menu:
-    - name: [update, up]
+    - name: [update, upgrade, up]
       help: update the container mapper rules for memory and cpu limits
-      handler: helm.update
+      handler: helm.update_cli
       params: RULES
+    - name: [rollback]
+      handler: helm.rollback
+      help: rollback the latest deployment
+      params: "[deployment] [-n NAMESPACE]"
+    - name: [wait]
+      handler: helm.wait
+      help: wait for the deployment to come online
     - name: [list, ls]
       help: list some things...
       handler: helm.list
@@ -176,12 +210,35 @@
       help: display the pods. If no namespace is provided galaxy is assumed
       handler: kubectl.pods
       params: NAMESPACE
+    - name: [url]
+      help: derive the URL to access this Galaxy instance
+      handler: kubectl.url
 - name: [config, conf, cfg]
   help: manage configuration profiles
   menu:
     - name: [list, ls]
       help: list configured servers
       handler: config.list
+    - name: [show, sh]
+      help: disply URL, API key, and kube config for a specific cloud.
+      handler: config.show
+      params: CLOUD
+    - name: [create]
+      help: create a new cloud configuration.
+      handler: config.create
+      params: "CLOUD KUBECONFIG"
+    - name: [remove, rm, del]
+      help: emove a cloud configuration entry from the profile.yml
+      handler: config.remove
+      params: CLOUD
+    - name: [key]
+      help: Set the Galaxy API key for the provided cloud instance
+      handler: config.key
+      params: CLOUD API_KEY
+    - name: [url]
+      help: Set the URL for the Galaxy server.
+      params: CLOUD URL
+      handler: config.url
 - name: [library, lib]
   help: manage data libraries on the server
   menu:

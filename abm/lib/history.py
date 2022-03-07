@@ -1,10 +1,11 @@
+import json
 import os
 import sys
 import yaml
 
-import lib
-from lib.common import connect, parse_profile
+from lib.common import connect, parse_profile, Context
 from pprint import pprint
+from pathlib import Path
 
 #
 # History related functions
@@ -25,6 +26,10 @@ def pad(value: bool):
 
 
 def print_histories(histories: list):
+    if len(histories) == 0:
+        print("There are no available histories.")
+        return
+    
     id_width = len(histories[0]['id'])
     name_width = longest_name(histories)
 
@@ -33,8 +38,8 @@ def print_histories(histories: list):
         print(f"{history['id']:<{id_width}} {history['name']:<{name_width}} {pad(history['deleted'])} {pad(history['published'])} {', '.join(history['tags'])}")
 
 
-def list(args: list):
-    gi = connect()
+def list(context: Context, args: list):
+    gi = connect(context)
     print_histories(gi.histories.get_histories())
 
     if len(args) > 0:
@@ -43,7 +48,7 @@ def list(args: list):
             print_histories(gi.histories.get_published_histories())
 
 
-def show(args: list):
+def show(context: Context, args: list):
     contents = False
     if '-c' in args:
         contents = True
@@ -54,22 +59,22 @@ def show(args: list):
     if len(args) == 0:
         print("ERROR: No history ID provided.")
         return
-    gi = connect()
+    gi = connect(context)
     history = gi.histories.show_history(args[0], contents=contents)
-    pprint(history)
+    print(json.dumps(history, indent=4))
 
 
-def find(args: list):
+def find(context: Context, args: list):
     if len(args) == 0:
         print("ERROR: No history ID provided")
         return
-    gi = connect()
+    gi = connect(context)
     for history in gi.histories.get_histories(name=args[0]):
         print(f"{history['id']}\t{history['name']}")
 
 
-def clean(args: list):
-    gi = connect()
+def clean(context: Context, args: list):
+    gi = connect(context)
     print("Empty histories")
     for history in gi.histories.get_histories():
         info = gi.histories.show_history(history['id'])
@@ -83,20 +88,20 @@ def clean(args: list):
             return
 
 
-def download(args: list):
+def download(context: Context, args: list):
     print('history download not implemented')
 
 
-def upload(args: list):
+def upload(context: Context, args: list):
     print('history upload not implemented')
 
 
-def test(args: list):
-    gi = connect()
+def test(context: Context, args: list):
+    gi = connect(context)
     gi.datasets.publish_dataset('bbd44e69cb8906b5a5560acb9ce77faa', published=True)
 
 
-def export(args: list):
+def export(context: Context, args: list):
     wait = True
     if '--no-wait' in args:
         wait = False
@@ -108,12 +113,12 @@ def export(args: list):
         print("ERROR: no history ID specified")
         return
     hid = args[0]
-    gi = connect()
+    gi = connect(context)
     jeha_id = gi.histories.export_history(hid, gzip=True, wait=wait)
     # global GALAXY_SERVER
     export_url = "unknown"
     if wait:
-        export_url = f"{lib.GALAXY_SERVER}/history/export_archive?id={args[0]}&jeha_id={jeha_id}"
+        export_url = f"{context.GALAXY_SERVER}/history/export_archive?id={args[0]}&jeha_id={jeha_id}"
         print(f"The history can be imported from {export_url}")
         history = gi.histories.show_history(hid, contents=False)
         tags = history['tags']
@@ -129,27 +134,27 @@ def export(args: list):
     return export_url
 
 
-def publish(args: list):
+def publish(context: Context, args: list):
     if len(args) == 0:
         print("ERROR: No history ID provided.")
         return
-    gi = connect()
+    gi = connect(context)
     result = gi.histories.update_history(args[0], published=True)
     print(f"Published: {result['published']}")
 
 
-def rename(args: list):
+def rename(context: Context, args: list):
     if len(args) != 2:
         print("ERROR: Invalid command")
         print("USAGE: rename ID 'new history name'")
         return
-    gi = connect()
+    gi = connect(context)
     result = gi.histories.update_history(args[0], name=args[1])
     print(f"History renamed to {result['name']}")
 
 
-def _import(args: list):
-    gi = connect()
+def _import(context: Context, args: list):
+    gi = connect(context)
     result = gi.histories.import_history(url=args[0])
     id = result['id']
     try:
@@ -159,22 +164,43 @@ def _import(args: list):
     return True
 
 
-def himport(args: list):
+def himport(context: Context, args: list):
     def error_message(msg = 'Invalid command'):
         print(f"ERROR: {msg}")
         print(f"USAGE: {sys.argv[0]} history import SERVER HISTORY_ID JEHA_ID")
         print(f"       {sys.argv[0]} history import http://GALAXY_SERVER_URL")
+        print(f"       {sys.argv[0]} history import [dna|rna]")
+
+    wait = True
+    if '-n' in args:
+        args.remove('-n')
+        wait = False
+    if '--no-wait' in args:
+        args.remove('--no-wait')
+        wait = False
 
     if len(args) == 1:
         if 'http' in args[0]:
             url = args[0]
         else:
-            config = f'{os.path.dirname(__file__)}/histories.yml'
-            if not os.path.exists(config):
-                error_message('The histories config file was not found.')
+            datasets = None
+            config = f'{os.path.dirname(os.path.abspath(__file__))}/histories.yml'
+            # First load the histories.yml file that is pacakged with abm
+            if os.path.exists(config):
+                with open(config, 'r') as f:
+                    datasets = yaml.safe_load(f)
+            # Then load the user histories.yml, if any
+            userfile = os.path.join(Path.home(),".abm", "histories.yml")
+            if os.path.exists(userfile):
+                if datasets is None:
+                    datasets = {}
+                with open(userfile, 'r') as f:
+                    userdata = yaml.safe_load(f)
+                    for key in userdata.items():
+                        datasets[key] = userdata[key]
+            if datasets is None:
+                error_message("No history URLs have been configured.")
                 return
-            with open(config, 'r') as f:
-                datasets = yaml.load(f)
             if not args[0] in datasets:
                 error_message('Please specify a URL or name of the history to import')
                 return
@@ -189,28 +215,47 @@ def himport(args: list):
         error_message()
         return
 
-    gi = connect()
+    gi = connect(context)
     print(f"Importing history from {url}")
     result = gi.histories.import_history(url=url)
-    pprint(result)
+    if wait:
+        id = result['id']
+        print(f"Waiting for job {id}")
+        try:
+            gi.jobs.wait_for_job(id, 86400, 10, False)
+            print('Done')
+        except:
+            return False
+    else:
+        print(json.dumps(result, indent=4))
+    return True
 
 
-def delete(args:list):
+def create(context: Context, args: list):
+    if len(args) != 1:
+        print("ERROR: Please provide a history name")
+        return
+    gi = connect(context)
+    id = gi.histories.create_history(args[0])
+    print(id)
+
+
+def delete(context: Context, args:list):
     if len(args) != 1:
         print('ERROR: please provide the history ID')
         return
-    gi = connect()
+    gi = connect(context)
     gi.histories.delete_history(args[0], True)
     print(f"Deleted history {args[0]}")
 
 
-def purge(args:list):
+def purge(context: Context, args:list):
     if len(args) != 1:
         print("ERROR: Please pass a string used to filter histories to be deleted.")
         print("Use 'abm <cloud> history purge *' to remove ALL histories.")
         return
     all = args[0] == '0'
-    gi = connect()
+    gi = connect(context)
     print('Purging histories')
     count = 0
     for history in gi.histories.get_histories():
@@ -226,7 +271,7 @@ def purge(args:list):
     print(f'Purged {count} histories')
 
 
-def tag(args: list):
+def tag(context: Context, args: list):
     replace = False
     if '--replace' in args:
         replace = True
@@ -238,7 +283,7 @@ def tag(args: list):
         print("ERROR: Invalid command. Please provide the history ID and one or more tags.")
         return
 
-    gi = connect()
+    gi = connect(context)
     hid = args.pop(0)
     if not replace:
         history = gi.histories.show_history(hid, contents=False)

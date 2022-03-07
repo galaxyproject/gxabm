@@ -1,12 +1,10 @@
 import os
 import sys
-import yaml
 import subprocess
+from ruamel.yaml import YAML
+import json
 import bioblend.galaxy
-# from lib import GALAXY_SERVER, API_KEY, KUBECONFIG
 import lib
-
-# global GALAXY_SERVER, API_KEY, KUBECONFIG
 
 PROFILE_SEARCH_PATH = ['~/.abm/profile.yml', '.abm-profile.yml']
 
@@ -22,28 +20,70 @@ datasets = {
     "rna": []
 }
 
+class Context:
+    def __init__(self, *args):
+        if len(args) == 1:
+            arg = args[0]
+            if type(arg) == str:
+                self.GALAXY_SERVER, self.API_KEY, self.KUBECONFIG = parse_profile(arg)
+            elif type(arg) == dict:
+                self.GALAXY_SERVER = arg['GALAXY_SERVER']
+                self.API_KEY = arg['API_KEY']
+                self.KUBECONFIG = arg['KUBECONFIG']
+            else:
+                raise Exception(f'Invalid arg for Context: {type(arg)}')
+        elif len(args) == 3:
+            self.GALAXY_SERVER = args[0]
+            self.API_KEY = args[1]
+            self.KUBECONFIG = args[2]
+        else:
+            raise Exception(f'Invalid args for Context. Expected one or three, found {len(args)}')
 
-def connect():
+
+
+def print_json(obj):
+    print(json.dumps(obj, indent=2))
+
+
+def print_yaml(obj):
+    get_yaml_parser().dump(obj, sys.stdout)
+
+
+def connect(context:Context):
     """
     Create a connection to the Galaxy instance
 
     :return: a GalaxyInstance object
     """
-    if lib.GALAXY_SERVER is None:
+    if context.GALAXY_SERVER is None:
         print('ERROR: The Galaxy server URL has not been set.  Please check your')
         print('       configuration in ~/.abm/profile.yml and try again.')
         sys.exit(1)
-    if lib.API_KEY is None:
+    if context.API_KEY is None:
         print('ERROR: The Galaxy API key has not been set.  Please check your')
         print('       configuration in ~/.abm/profile.yml and try again.')
         sys.exit(1)
-    return bioblend.galaxy.GalaxyInstance(url=lib.GALAXY_SERVER, key=lib.API_KEY)
+    gi = bioblend.galaxy.GalaxyInstance(url=context.GALAXY_SERVER, key=context.API_KEY)
+    gi.max_get_attempts = 3
+    gi.get_retry_delay = 1
+    return gi
 
 
-def set_active_profile(profile_name: str):
+
+def _set_active_profile(profile_name: str):
     # print(f"Parsing profile for {profile_name}")
     lib.GALAXY_SERVER, lib.API_KEY, lib.KUBECONFIG = parse_profile(profile_name)
     return lib.GALAXY_SERVER != None
+
+
+def get_context(profile_name: str):
+    return Context(profile_name)
+
+
+def get_yaml_parser():
+    if lib.parser is None:
+        lib.parser = YAML()
+    return lib.parser
 
 
 def load_profiles():
@@ -52,15 +92,27 @@ def load_profiles():
 
     :return: a dictionary containing the YAML content of the configuration.
     '''
+    yaml = get_yaml_parser()
     profiles = None
     for profile_path in PROFILE_SEARCH_PATH:
         profile_path = os.path.expanduser(profile_path)
         if os.path.exists(profile_path):
             with open(profile_path, 'r') as f:
                 # print(f'Loading profile from {profile_path}')
-                profiles = yaml.safe_load(f)
+                profiles = yaml.load(f)
             break
     return profiles
+
+
+def save_profiles(profiles: dict):
+    yaml = get_yaml_parser()
+    for profile_path in PROFILE_SEARCH_PATH:
+        path = os.path.expanduser(profile_path)
+        if os.path.exists(path):
+            with open(path, 'w') as f:
+                yaml.dump(profiles, f)
+            print(f"Saved profiles to {path}")
+            return
 
 
 def parse_profile(profile_name: str):
@@ -86,16 +138,28 @@ def parse_profile(profile_name: str):
     return (profile['url'], profile['key'], None)
 
 
-def run(command, env:dict=None):
-    if env is not None:
-        for name,value in env.items():
-            os.environ[name] = value
-    if lib.KUBECONFIG is not None:
-        os.environ['KUBECONFIG'] = lib.KUBECONFIG
-    result = subprocess.run(command.split(), capture_output=True, env=os.environ)
+def run(command, env:dict= None):
+    if env is None:
+        env = os.environ
+    # if env is not None:
+    #     for name,value in env.items():
+    #         os.environ[name] = value
+    # if lib.KUBECONFIG is not None:
+    #     os.environ['KUBECONFIG'] = lib.KUBECONFIG
+    # local_env = os.environ.copy()
+    # local_env.update(env)
+    result = subprocess.run(command.split(), capture_output=True, env=env)
     if result.returncode != 0:
         raise RuntimeError(result.stderr.decode('utf-8').strip())
     return result.stdout.decode('utf-8').strip()
+
+
+def get_env(context: Context):
+    copy = os.environ.copy()
+    for key,value in context.__dict__.items():
+        if value is not None:
+            copy[key] = value
+    return copy
 
 
 def find_executable(name):

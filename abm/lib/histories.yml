@@ -1,0 +1,3 @@
+dna: https://galaxy-benchmark-data.s3.amazonaws.com/Galaxy-History-DNA-Single-Benchmarking.tar.gz
+rna: https://galaxy-benchmark-data.s3.amazonaws.com/Galaxy-History-RNA-dataset.tar.gz
+oldrna: https://usegalaxy.org/history/export_archive?id=9198b7907edea3fa&jeha_id=02700395dbc14520

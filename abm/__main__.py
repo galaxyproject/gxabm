@@ -11,16 +11,24 @@ import yaml
 import sys
 import os
 import logging
-import lib.common
+from lib.common import Context
+from abm import getVersion
 
 # These imports are required because they need to be added to the symbol table
 # so the parse_menu method can find them in globals()
-from lib import job, dataset, workflow, history, library, folder, benchmark, helm, kubectl, config
+from lib import job, dataset, workflow, history, library, folder, benchmark, helm, kubectl, config, experiment, users
 
 log = logging.getLogger('abm')
-log.setLevel(logging.INFO)
+handler = logging.StreamHandler()
+formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 
-VERSION = '1.4.1'
+log.setLevel(logging.ERROR)
+handler.setLevel(logging.ERROR)
+handler.setFormatter(formatter)
+log.addHandler(handler)
+
+
+#VERSION = '2.0.0-dev'
 
 BOLD = '\033[1m'
 CLEAR = '\033[0m'
@@ -37,6 +45,10 @@ def bold(text: str):
 
 help_args = ['help', '-h', '--help']
 version_args = ['-v', '--version', 'version']
+
+# TODO Parse this from the menu.yml file.
+# Commands that do not depend on a cloud instance
+stand_alone_commands = ['config', 'experiment', 'exp', 'ex']
 
 def head(text):
     print(bold(text))
@@ -67,7 +79,7 @@ def print_main_help(menu_data):
     print(f"    Available SUBCOMMANDS and OPTIONS depend on the command. Use the {bold('help')} subcommand")
     print(f"    to learn more about each of the commands. For example:\n")
     print(f"    $> abm workflow help\n")
-    print("    Copyright 2021 The Galaxy Project\n")
+    print("    Copyright 2022 The Galaxy Project\n")
 
 
 def print_help(menu_data, command):
@@ -91,7 +103,7 @@ def print_help(menu_data, command):
     print(f"    {bold('help')}")
     print("        print this help screen and exit")
     print()
-    print("    Copyright 2021 The Galaxy Project\n")
+    print("    Copyright 2022 The Galaxy Project\n")
 
 
 all_commands = {}
@@ -120,7 +132,8 @@ def parse_menu():
     log.debug('parse_menu')
     menu_config = f'{os.path.dirname(os.path.abspath(__file__))}/lib/menu.yml'
     if not os.path.exists(menu_config):
-        print(f"ERROR: Unable to load the menu configuration from {menu_config}")
+        log.error(f"ERROR: Unable to load the menu configuration from {menu_config}")
+        # TODO Throw an exception that can be caught at the appropriate level
         sys.exit(1)
     with open(menu_config) as f:
         menu_data = yaml.safe_load(f)
@@ -134,12 +147,13 @@ def parse_menu():
             handler_name = submenu_item['handler']
             log.debug('Submenu item: %s', handler_name)
             for part in handler_name.split('.'):
-                log.debug("Part: %s", part)
+                # log.debug("Part: %s", part)
                 if type(handler) is not dict:
                     handler = handler.__dict__
                 handler = handler[part]
             if isinstance(handler, dict):
-                print(f"Handler not found {handler_name}")
+                log.error(f"Handler not found {handler_name}")
+                # TODO Throw and excpetion that can be caught at the appropriate level.
                 sys.exit(1)
             register_handler(name, submenu_item['name'], handler)
         for command_alias in main_menu_item['name'][1:]:
@@ -148,29 +162,52 @@ def parse_menu():
 
 
 def version():
+    version = getVersion()
     print()
-    print(f"    Galaxy Automated Benchmarking v{VERSION}")
-    print(f"    Copyright 2021 The Galaxy Project. All Rights Reserved.\n")
+    print(f"    Galaxy Automated Benchmarking v{version}")
+    print(f"    Copyright 2022 The Galaxy Project. All Rights Reserved.\n")
+
+
+def _get_logopt(args: list):
+    OPTS = ['-log', '--log', '-logging', '--logging']
+    for i in range(len(args)):
+        if args[i] in OPTS:
+            return i
+    return -1
 
 
 def entrypoint():
+    # Check if log level is being set
+    logopt = _get_logopt(sys.argv)
+    if logopt >= 0:
+        if logopt+1 >= len(sys.argv):
+            print("ERROR: no log level provided")
+            return
+
+        level = sys.argv[logopt + 1].upper()
+        if level not in ['DEBUG', 'INFO', 'WARN', 'WARNING', 'ERROR', 'FATAL', 'CRITICAL']:
+            print(f"ERROR: Invalid logging level {sys.argv[logopt + 1]}")
+            return
+        print(f"Setting the log level to {level}")
+        log.setLevel(level)
+        global handler
+        handler.setLevel(level)
+        del sys.argv[logopt]
+        del sys.argv[logopt]
+
     menu_data = parse_menu()
 
     if len(sys.argv) < 2 or sys.argv[1] in help_args:
         print_main_help(menu_data)
         return
 
-    if '--debug' in sys.argv:
-        print("Enable debugging")
-        log.setLevel(logging.DEBUG)
-        sys.argv.remove('--debug')
     program = sys.argv[0]
     profile = sys.argv[1]
     if profile in version_args:
         version()
         return
 
-    if profile == 'config':
+    if profile in stand_alone_commands:
         command = profile
         profile = None
         if len(sys.argv) < 3:
@@ -201,14 +238,12 @@ def entrypoint():
         print_help(menu_data, command)
         return
 
+    context = None
     if profile is not None:
-        # common.GALAXY_SERVER, common.API_KEY, common.KUBECONFIG = parse_profile(profile)
-        if not lib.common.set_active_profile(profile):
-            print(f"ERROR: Unable to set the active profile. No GALAXY_SERVER defined.")
-            return
-        if lib.GALAXY_SERVER is None:
-            print("ERROR: GALAXY_SERVER was not set in the profile.")
-            return
+        context = Context(profile)
+#        if context.GALAXY_SERVER is None:
+#            print("ERROR: GALAXY_SERVER was not set in the profile.")
+#            return
     if command in all_commands:
         subcommands = all_commands[command]
         if subcommand not in subcommands:
@@ -216,7 +251,7 @@ def entrypoint():
             print(f'Type "{program} {command} help" for more help.')
             return
         handler = subcommands[subcommand]
-        handler(params)
+        handler(context, params)
     else:
         print(f'\n{bold("ERROR:")} Unknown command {bold({command})}')
         print_main_help(menu_data)

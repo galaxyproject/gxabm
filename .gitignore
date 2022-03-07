@@ -3,9 +3,12 @@ __pycache__/
 .idea
 .ktx
 .kube/
+build/
+dist/
+results/
 invocations/
 workflows/
 data/
 metrics/
 tools.yml
-
+gxabm.egg-info/
