@@ -219,6 +219,9 @@ def entrypoint():
         else:
             params = []
     else:
+        if len(sys.argv) < 3:
+            print(f"{bold('ERROR')} Invalid command {bold(profile)}")
+            return
         command = sys.argv[2]
         if command in version_args:
             version()
