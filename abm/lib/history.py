@@ -196,8 +196,8 @@ def himport(context: Context, args: list):
                     datasets = {}
                 with open(userfile, 'r') as f:
                     userdata = yaml.safe_load(f)
-                    for key in userdata.items():
-                        datasets[key] = userdata[key]
+                    for key, item in userdata.items():
+                        datasets[key] = item
             if datasets is None:
                 error_message("No history URLs have been configured.")
                 return

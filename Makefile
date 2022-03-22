@@ -10,4 +10,4 @@ test-deploy:
 	twine upload -r pypitest dist/*
     
 deploy:
-	twine -r pypi upload dist/*
+	twine upload -r pypi dist/*
