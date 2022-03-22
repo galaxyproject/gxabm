@@ -135,7 +135,11 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
                 invocations['run'] = parts[0]
                 invocations['cloud'] = parts[1]
                 invocations['job_conf'] = parts[2]
-                invocations['output_dir'] = metrics_dir
+            else:
+                invocations['run'] = 0
+                invocations['cloud'] = "N/A"
+                invocations['job_conf'] = "Unknown"
+            invocations['output_dir'] = metrics_dir
             invocations['inputs'] = ' '.join(input_names)
             #TODO Change this output path. (Change it to what? KS)
             output_path = os.path.join(invocations_dir, id + '.json')
