@@ -60,26 +60,26 @@ def command_list(commands:list):
 
 def print_main_help(menu_data):
     print()
-    head("SYNOPSIS")
-    print("    Workflow and data management for remote Galaxy instances")
+    head("    SYNOPSIS")
+    print("        Workflow and data management for remote Galaxy instances")
     print()
-    head("USAGE")
-    print(f"    {sys.argv[0]} COMMAND [SUBCOMMAND] [OPTIONS]")
+    head("    USAGE")
+    print(f"        abm COMMAND [SUBCOMMAND] [OPTIONS]")
     print()
-    head("COMMANDS")
+    head("    COMMANDS")
     for menu_item in menu_data:
-        print(f"    {command_list(menu_item['name'])}")
-        print(f"        {menu_item['help']}")
-    print(f"    {command_list(['version', '-v', '--version'])}")
-    print("        print the program version and exit")
-    print(f"    {command_list(help_args)}")
-    print("        print this help screen and exit")
+        print(f"        {command_list(menu_item['name'])}")
+        print(f"            {menu_item['help']}")
+    print(f"        {command_list(['version', '-v', '--version'])}")
+    print("            print the program version and exit")
+    print(f"        {command_list(help_args)}")
+    print("            print this help screen and exit")
     print()
-    head("NOTES")
-    print(f"    Available SUBCOMMANDS and OPTIONS depend on the command. Use the {bold('help')} subcommand")
-    print(f"    to learn more about each of the commands. For example:\n")
-    print(f"    $> abm workflow help\n")
-    print("    Copyright 2022 The Galaxy Project\n")
+    head("    NOTES")
+    print(f"        Available SUBCOMMANDS and OPTIONS depend on the command. Use the {bold('help')} subcommand")
+    print(f"        to learn more about each of the commands. For example:\n")
+    print(f"        $> abm workflow help\n")
+    print("        Copyright 2022 The Galaxy Project\n")
 
 
 def print_help(menu_data, command):
@@ -94,16 +94,16 @@ def print_help(menu_data, command):
         return
 
     print()
-    head("SYNOPSIS")
-    print(f"    {submenu['help']}\n")
-    head("SUBCOMMANDS")
+    head("    SYNOPSIS")
+    print(f"        {submenu['help']}\n")
+    head("    SUBCOMMANDS")
     for menu_item in submenu['menu']:
-        print(f"    {'|'.join(bold(x) for x in menu_item['name'])} {menu_item['params'] if 'params' in menu_item else ''}")
-        print(f"        {menu_item['help']}")
-    print(f"    {bold('help')}")
-    print("        print this help screen and exit")
+        print(f"        {'|'.join(bold(x) for x in menu_item['name'])} {menu_item['params'] if 'params' in menu_item else ''}")
+        print(f"            {menu_item['help']}")
+    print(f"        {bold('help')}")
+    print("            print this help screen and exit")
     print()
-    print("    Copyright 2022 The Galaxy Project\n")
+    print("        Copyright 2022 The Galaxy Project\n")
 
 
 all_commands = {}
