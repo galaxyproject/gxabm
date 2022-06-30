@@ -1,6 +1,5 @@
 import os
 import threading
-import traceback
 
 import yaml
 import json
@@ -8,6 +7,8 @@ import helm
 import benchmark
 import logging
 from common import load_profiles, Context
+from time import perf_counter
+from datetime import timedelta
 
 INVOCATIONS_DIR = "invocations"
 METRICS_DIR = "metrics"
@@ -39,6 +40,7 @@ def run(context: Context, args: list):
     profiles = load_profiles()
     # latch = CountdownLatch(len(config['cloud']))
     threads = []
+    start = perf_counter()
     for cloud in config['cloud']:
         if cloud not in profiles:
             print(f"WARNING: No profile found for {cloud}")
@@ -50,7 +52,10 @@ def run(context: Context, args: list):
     print('Waiting for threads')
     for t in threads:
         t.join()
+
+    end = perf_counter()
     print('All threads have terminated.')
+    print(f"Eecution time {timedelta(seonds=end - start)}")
 
         # if not set_active_profile(cloud):
         #     print(f"ERROR: Unable to set the profile for {cloud}")
