@@ -73,7 +73,10 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
 
     gi = connect(context)
     workflows = parse_workflow(workflow_path)
-
+    if not workflows:
+        print(f"Unable to load any workflow definitions from {workflow_path}")
+        return
+    
     print(f"Found {len(workflows)} workflow definitions")
     for workflow in workflows:
         wf_name = workflow[Keys.WORKFLOW_ID]
