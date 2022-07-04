@@ -55,46 +55,7 @@ def run(context: Context, args: list):
 
     end = perf_counter()
     print('All threads have terminated.')
-    print(f"Eecution time {timedelta(seonds=end - start)}")
-
-        # if not set_active_profile(cloud):
-        #     print(f"ERROR: Unable to set the profile for {cloud}")
-        #     continue
-        # if lib.KUBECONFIG is None:
-        #     print(f"ERROR: No kubeconfig set for {cloud}")
-        #     continue
-        # print("------------------------")
-        # print(f"Benchmarking: {cloud}")
-        # for conf in config['job_configs']:
-        #     job_conf_path = f"rules/{conf}.yml"
-        #     if not helm.update([job_conf_path]):
-        #         print(f"WARNING: job conf not found {conf}")
-        #         continue
-        #     for n in range(num_runs):
-        #         history_name_prefix = f"{n} {cloud} {conf}"
-        #         for workflow_conf in config['benchmark_confs']:
-        #             benchmark.run([workflow_conf, history_name_prefix])
-
-    # for n in range(num_runs):
-    #     print("------------------------")
-    #     print(f"Benchmarking run #{n+1}")
-    #     for cloud in config['cloud']:
-    #         if cloud not in profiles:
-    #             print(f"WARNING: no profile for instance {cloud}")
-    #             continue
-    #         if not set_active_profile(cloud):
-    #             print(f"WARNING: unable to set {cloud} as the active profile")
-    #         if lib.KUBECONFIG is None:
-    #             print(f"WARNGING: no kubeconfig for instance {cloud}")
-    #             continue
-    #         for job_conf in config['job_configs']:
-    #             job_conf_path = f"rules/{job_conf}.yml"
-    #             if not helm.update([job_conf_path]):
-    #                 print(f"WARNING: job conf not found {job_conf}")
-    #                 continue
-    #             history_name_prefix = f"Run {n} {job_conf}"
-    #             for workflow_conf in config['workflow_conf']:
-    #                 workflow.run([workflow_conf, history_name_prefix])
+    print(f"Execution time {timedelta(seonds=end - start)}")
 
 
 def run_on_cloud(cloud: str, config: dict):
