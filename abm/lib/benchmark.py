@@ -108,19 +108,20 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
                 output_history_name = f"{history_base_name} {run[Keys.HISTORY_NAME]}"
             else:
                 output_history_name = f"{history_base_name} run {count}"
-            #inputs = []
-            for spec in run[Keys.INPUTS]:
-                input = gi.workflows.get_workflow_inputs(wfid, spec[Keys.NAME])
-                if input is None or len(input) == 0:
-                    print(f'ERROR: Invalid input specification for {spec[Keys.NAME]}')
-                    return False
 
-                dsname = spec[Keys.DATASET_ID]
-                input_names.append(dsname)
-                #inputs.append(dsname)
-                dsid = find_dataset_id(gi, dsname)
-                print(f"Input dataset ID: {dsname} [{dsid}]")
-                inputs[input[0]] = {'id': dsid, 'src': 'hda'}
+            if Keys.INPUTS in run and run[Keys.INPUTS] is not None:
+                for spec in run[Keys.INPUTS]:
+                    input = gi.workflows.get_workflow_inputs(wfid, spec[Keys.NAME])
+                    if input is None or len(input) == 0:
+                        print(f'ERROR: Invalid input specification for {spec[Keys.NAME]}')
+                        return False
+
+                    dsname = spec[Keys.DATASET_ID]
+                    input_names.append(dsname)
+                    #inputs.append(dsname)
+                    dsid = find_dataset_id(gi, dsname)
+                    print(f"Input dataset ID: {dsname} [{dsid}]")
+                    inputs[input[0]] = {'id': dsid, 'src': 'hda'}
 
             print(f"Running workflow {wfid}")
             new_history_name = output_history_name
@@ -241,22 +242,23 @@ def validate(context: Context, args: list):
                         print(f"Reference input dataset {spec[Keys.DATASET_ID]} -> {dsid}")
                         inputs[input[0]] = {'id': dsid, 'src': 'hda'}
 
-        count = 0
+        #count = 0
         for run in workflow[Keys.RUNS]:
-            count += 1
-            for spec in run[Keys.INPUTS]:
-                input = gi.workflows.get_workflow_inputs(wfid, spec[Keys.NAME])
-                if input is None or len(input) == 0:
-                    print(f'ERROR: Invalid input specification for {spec[Keys.NAME]}')
-                    errors += 1
-                else:
-                    dsid = find_dataset_id(gi, spec[Keys.DATASET_ID])
-                    if dsid is None:
-                        print(f"ERROR: Dataset not found {spec[Keys.DATASET_ID]}")
+            #count += 1
+            if Keys.INPUTS in run and run[Keys.INPUTS] is not None:
+                for spec in run[Keys.INPUTS]:
+                    input = gi.workflows.get_workflow_inputs(wfid, spec[Keys.NAME])
+                    if input is None or len(input) == 0:
+                        print(f'ERROR: Invalid input specification for {spec[Keys.NAME]}')
                         errors += 1
                     else:
-                        print(f"Input dataset: {spec[Keys.DATASET_ID]} -> {dsid}")
-                        inputs[input[0]] = {'id': dsid, 'src': 'hda'}
+                        dsid = find_dataset_id(gi, spec[Keys.DATASET_ID])
+                        if dsid is None:
+                            print(f"ERROR: Dataset not found {spec[Keys.DATASET_ID]}")
+                            errors += 1
+                        else:
+                            print(f"Input dataset: {spec[Keys.DATASET_ID]} -> {dsid}")
+                            inputs[input[0]] = {'id': dsid, 'src': 'hda'}
 
         if errors == 0:
             print("This workflow configuration is valid and can be executed on this server.")
