@@ -78,7 +78,7 @@ def run_on_cloud(cloud: str, config: dict):
                     benchmark.run(context, workflow_conf, history_name_prefix, config['name'])
     else:
         for n in range(config['runs']):
-            history_name_prefix = f"{n} {cloud} {conf}"
+            history_name_prefix = f"{n} {cloud}"
             for workflow_conf in config['benchmark_confs']:
                 benchmark.run(context, workflow_conf, history_name_prefix, config['name'])
 
