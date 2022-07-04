@@ -55,7 +55,7 @@ def run(context: Context, args: list):
 
     end = perf_counter()
     print('All threads have terminated.')
-    print(f"Execution time {timedelta(seonds=end - start)}")
+    print(f"Execution time {timedelta(seconds=end - start)}")
 
 
 def run_on_cloud(cloud: str, config: dict):
@@ -67,10 +67,16 @@ def run_on_cloud(cloud: str, config: dict):
     if 'galaxy' in config:
         namespace = config['galaxy']['namespace']
         chart = config['galaxy']['chart']
-    for conf in config['job_configs']:
-        if not helm.update(context, [f"rules/{conf}.yml", namespace, chart]):
-            log.warning(f"job configuration not found: rules/{conf}.yml")
-            continue
+    if 'job_configs' in config and len(config['job_confis']) > 0:
+        for conf in config['job_configs']:
+            if not helm.update(context, [f"rules/{conf}.yml", namespace, chart]):
+                log.warning(f"job configuration not found: rules/{conf}.yml")
+                continue
+            for n in range(config['runs']):
+                history_name_prefix = f"{n} {cloud} {conf}"
+                for workflow_conf in config['benchmark_confs']:
+                    benchmark.run(context, workflow_conf, history_name_prefix, config['name'])
+    else:
         for n in range(config['runs']):
             history_name_prefix = f"{n} {cloud} {conf}"
             for workflow_conf in config['benchmark_confs']:
