@@ -151,7 +151,10 @@ def add_metrics_to_row(metrics_list: list, row: list):
     for job_metrics in metrics_list:
         if job_metrics['name'] in accept_metrics:
             index = accept_metrics.index(job_metrics['name'])
-            row[index + 8] = job_metrics['raw_value']
+            try:
+                row[index + 8] = job_metrics['raw_value']
+            except:
+                pass
             # row.append(job_metrics['raw_value'])
 
 
