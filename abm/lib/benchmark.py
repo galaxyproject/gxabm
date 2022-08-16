@@ -73,6 +73,9 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
 
     gi = connect(context)
     workflows = parse_workflow(workflow_path)
+    if not workflows:
+        print(f"Unable to load any workflow definitions from {workflow_path}")
+        return
 
     print(f"Found {len(workflows)} workflow definitions")
     for workflow in workflows:
@@ -135,7 +138,10 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
                 parts = history_prefix.split()
                 invocations['run'] = parts[0]
                 invocations['cloud'] = parts[1]
-                invocations['job_conf'] = parts[2]
+                if len(parts) > 2:
+                    invocations['job_conf'] = parts[2]
+                else:
+                    invocations['job_conf'] = 'Default'
             else:
                 invocations['run'] = 0
                 invocations['cloud'] = "N/A"
