@@ -1,0 +1,21 @@
+name: Bump Version
+on:
+  workflow_dispatch:
+    inputs:
+      label:
+        description: Label to determine verion segment to increment.
+        type: string
+        default: patch
+jobs:
+  bump:
+    name: Bump version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+           persist-credentials: false
+      - uses: ksuderman/github-action-bump-version@v2
+        with:
+          parser: cat
+          file: VERSION
+          type: ${{ github.event.inputs.label }}

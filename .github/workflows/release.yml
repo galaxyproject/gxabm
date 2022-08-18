@@ -1,0 +1,15 @@
+name: GitHub Release
+on:
+  workflow_dispatch:
+jobs:
+  bump:
+    name: Tag and Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+           persist-credentials: false
+      - uses: ksuderman/github-action-tag-release@v2
+        with:
+          parser: cat
+          file: abm/VERSION
