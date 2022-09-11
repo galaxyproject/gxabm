@@ -24,6 +24,10 @@
       handler: workflow.upload
       params: PATH
       help: 'upload a workflow file to the server'
+    - name: ['import', 'imp']
+      handler: workflow.import_from_config
+      params: NAME
+      help: 'import a workflow defined in ~/.abm/workflows.yml'
     - name: ['download', 'dl']
       handler: workflow.download
       help: 'download a workflow'
