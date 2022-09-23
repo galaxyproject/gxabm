@@ -93,16 +93,43 @@ def workflows(context: Context, args: list):
         for key,url in workflows.items():
             print(f"{key:10} {url}")
     elif args[0] in ['delete', 'del','rm']:
-        print(f"Deleting elements is not supported at this time. Please edit {userfile} directly.")
+        print(f"Deleting workflows is not supported at this time. Please edit {userfile} directly.")
     elif args[0] in ['add', 'new']:
-        print(f"Adding elements is not supported at this time. Please edit {userfile} directly.")
+        print(f"Adding workflows is not supported at this time. Please edit {userfile} directly.")
     else:
         print(f"ERROR: Unrecognized command {args[0]}")
+
+
+def datasets(context: Context, args: list):
+    userfile = os.path.join(Path.home(), ".abm", "datasets.yml")
+    if len(args) == 0 or args[0] in ['list', 'ls']:
+        datasets = _load_dataset_config(userfile)
+        if datasets is None:
+            return
+        print(f"Datasets defined in {userfile}")
+        for key,url in datasets.items():
+            print(f"{key:10} {url}")
+    elif args[0] in ['delete', 'del','rm']:
+        print(f"Deleting datasets is not supported at this time. Please edit {userfile} directly.")
+    elif args[0] in ['add', 'new']:
+        print(f"Adding datasets is not supported at this time. Please edit {userfile} directly.")
+    else:
+        print(f"ERROR: Unrecognized command {args[0]}")
+
+
+def _load_dataset_config(configfile):
+    if not os.path.exists(configfile):
+        print("ERROR: this instance has not been configured to import datasets.")
+        print(f"Please configure {configfile} to enable dataset imports.")
+        return None
+    with open(configfile, 'r') as f:
+        datasets = yaml.safe_load(f)
+    return datasets
 
 def _load_workflow_config(userfile):
     if not os.path.exists(userfile):
         print("ERROR: this instance has not been configured to import workflows.")
-        print(f"Please configure {userfile} to enable workflow imports")
+        print(f"Please configure {userfile} to enable workflow imports.")
         return None
     with open(userfile, 'r') as f:
         workflows = yaml.safe_load(f)
