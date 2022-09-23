@@ -48,8 +48,9 @@ def delete(context: Context, args: list):
 
 
 def upload(context: Context, args: list):
-    if len(args) == 0:
-        print('ERROR: no dataset file given')
+    if len(args) != 3:
+        print('ERROR: Invalid arguments.  Include the URL, and the ID of an existing history,')
+        print('or the name of a history to be created.')
         return
     index = 1
     gi = None
@@ -65,6 +66,7 @@ def upload(context: Context, args: list):
             index += 1
         else:
             print(f'ERROR: invalid option {arg}')
+
     if gi is None:
         gi = connect(context)
     pprint(gi.tools.put_url(args[0], history))
