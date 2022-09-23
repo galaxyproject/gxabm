@@ -66,11 +66,15 @@
     - name: ['upload', 'up']
       handler: dataset.upload
       params: PATH [-id HISTORY_ID | -c "History name"]
-      help: upload a data set to the server
+      help: upload a dataset to the server from the specified URL
     - name: ['download', 'dl']
       handler: dataset.download
       params: ID PATH
       help: download a dataset from the server
+    - name: ['import', 'imp']
+      handler: dataset.import_from_config
+      params: PATH [-id HISTORY_ID | -c "History name"]
+      help: imports a dataset to the server from a URL specified in the datasets.yml config file.
     - name: ['list', 'ls']
       handler: dataset.list
       help: lists all the datasets on the server
