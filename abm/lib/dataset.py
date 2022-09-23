@@ -1,6 +1,9 @@
 from common import connect, Context
 from pprint import pprint
-# import yaml
+from pathlib import Path
+
+import os
+import yaml
 
 
 def list(context: Context, args: list):
@@ -71,6 +74,40 @@ def upload(context: Context, args: list):
         gi = connect(context)
     pprint(gi.tools.put_url(args[0], history))
 
+
+def import_from_config(context: Context, args: list):
+    if len(args) != 3:
+        print('ERROR: Invalid arguments.  Include the dataset id, and the ID of an existing history,')
+        print('or the name of a history to be created.')
+        return
+
+    gi = None
+    if args[1] in ['-id', '--id']:
+        history = args[2]
+    elif args[1] in ['-c', '--create']:
+        gi = connect(context)
+        history = gi.histories.create_history(args[index]).get('id')
+    else:
+        print(f"Invalid option {args[1]}")
+        return
+
+    configfile = os.path.join(Path.home(), '.abm', 'datasets.yml')
+    if not os.path.exists(configfile):
+        print("ERROR: ABM has not been configured to import datasets.")
+        print(f"Please create {configfile}")
+        return
+
+    key = args[0]
+    with open(configfile, 'r') as f:
+        datasets = yaml.safe_load(f)
+    if not key in datasets:
+        print(f"ERROR: dataset {key} has not been defined.")
+        return
+    url = datasets[key]
+
+    if gi is None:
+        gi = connect(context)
+    pprint(gi.tools.put_url(url, history))
 
 
 def download(context: Context, args: list):
