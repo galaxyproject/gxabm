@@ -79,7 +79,7 @@ def print_main_help(menu_data):
     print(f"        Available SUBCOMMANDS and OPTIONS depend on the command. Use the {bold('help')} subcommand")
     print(f"        to learn more about each of the commands. For example:\n")
     print(f"        $> abm workflow help\n")
-    print("        Copyright 2022 The Galaxy Project\n")
+    print("    Copyright 2022 The Galaxy Project\n")
 
 
 def print_help(menu_data, command):
@@ -95,6 +95,8 @@ def print_help(menu_data, command):
 
     print()
     head("    SYNOPSIS")
+    print(f"        abm [cloud] {command} SUBCOMMAND <ARGS>\n")
+    head("    DESCRIPTION")
     print(f"        {submenu['help']}\n")
     head("    SUBCOMMANDS")
     for menu_item in submenu['menu']:
@@ -103,7 +105,7 @@ def print_help(menu_data, command):
     print(f"        {bold('help')}")
     print("            print this help screen and exit")
     print()
-    print("        Copyright 2022 The Galaxy Project\n")
+    print("    Copyright 2022 The Galaxy Project\n")
 
 
 all_commands = {}
