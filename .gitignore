@@ -7,7 +7,6 @@ build/
 dist/
 results/
 invocations/
-workflows/
 data/
 metrics/
 tools.yml

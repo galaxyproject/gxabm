@@ -1,0 +1,41 @@
+name: GitHub Release
+on:
+  workflow_dispatch:
+    inputs:
+      label:
+        description: Label to determine verion segment to increment.
+        type: string
+        default: patch
+
+  pull_request_target:
+    types: [ closed ]
+    branches:
+      - master
+jobs:
+  release:
+    name: Bump the version number, tag, and release.
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require a label and version bump to package and release
+        uses: mheap/github-action-required-labels@v2
+        with:
+          mode: exactly
+          count: 1
+          labels: "major, minor, patch"
+      - uses: actions/checkout@v3
+        with:
+           persist-credentials: true
+      - uses: ksuderman/github-action-bump-version@v2
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          file: abm/VERSION
+          parser: cat
+          type: ${{ github.event.label.name }}
+      - uses: ksuderman/github-action-tag-release@v2
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          file: abm/VERSION
+          parser: cat
