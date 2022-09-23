@@ -236,20 +236,24 @@
       handler: config.create
       params: "CLOUD KUBECONFIG"
     - name: [remove, rm, del]
-      help: emove a cloud configuration entry from the profile.yml
+      help: remove a cloud configuration entry from the profile.yml
       handler: config.remove
       params: CLOUD
     - name: [key]
-      help: Set the Galaxy API key for the provided cloud instance
+      help: set the Galaxy API key for the provided cloud instance
       handler: config.key
       params: CLOUD API_KEY
     - name: [url]
-      help: Set the URL for the Galaxy server.
+      help: set the URL for the Galaxy server.
       params: CLOUD URL
       handler: config.url
     - name: [workflows, workflow, wf]
-      help: manage configuration for import workflows to Galaxy.
+      help: manage configuration to import workflows.
       handler: config.workflows
+      params: "[list|add|delete] ARGS"
+    - name: [datasets, dataset, ds]
+      handler: config.datasets
+      help: manage configuration to import datasets.
       params: "[list|add|delete] ARGS"
 - name: [library, lib]
   help: manage data libraries on the server
