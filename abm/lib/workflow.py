@@ -86,7 +86,6 @@ def import_from_config(context: Context, args:list):
         return
     with open(userfile, 'r') as f:
         workflows = yaml.safe_load(f)
-    pprint(workflows)
     if not key in workflows:
         print(f"ERROR: no such workflow: {key}")
         return
