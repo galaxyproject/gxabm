@@ -65,7 +65,7 @@
   menu:
     - name: ['upload', 'up']
       handler: dataset.upload
-      params: PATH
+      params: PATH [-id HISTORY_ID | -c "History name"]
       help: upload a data set to the server
     - name: ['download', 'dl']
       handler: dataset.download
