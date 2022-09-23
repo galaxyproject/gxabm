@@ -60,10 +60,10 @@ def command_list(commands:list):
 
 def print_main_help(menu_data):
     print()
-    head("    SYNOPSIS")
+    head("    DESCRIPTION")
     print("        Workflow and data management for remote Galaxy instances")
     print()
-    head("    USAGE")
+    head("    SYNOPSIS")
     print(f"        abm COMMAND [SUBCOMMAND] [OPTIONS]")
     print()
     head("    COMMANDS")

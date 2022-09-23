@@ -243,6 +243,10 @@
       help: Set the URL for the Galaxy server.
       params: CLOUD URL
       handler: config.url
+    - name: [workflows, workflow, wf]
+      help: manage configuration for import workflows to Galaxy.
+      handler: config.workflows
+      params: "[list|add|delete] ARGS"
 - name: [library, lib]
   help: manage data libraries on the server
   menu:
