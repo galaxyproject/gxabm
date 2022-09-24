@@ -26,7 +26,7 @@ setup(
     ],
     packages=find_packages(),
     include_package_data=True,
-    install_requires=["pathlib", "bioblend", "pyyaml", "planemo"],
+    install_requires=["pathlib", "bioblend", "pyyaml", "planemo", "cloudlaunch-cli"],
     entry_points={
         "console_scripts": [
             "abm=abm.__main__:entrypoint",
