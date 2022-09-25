@@ -185,6 +185,7 @@
       params: NAME EMAIL PASSWORD
 - name: [experiment, exp, ex]
   help: execute benchmarking runs on various clouds
+  standalone: true
   menu:
     - name: [run]
       help: run all benchmarks in an experiment
@@ -227,6 +228,7 @@
       handler: kubectl.url
 - name: [config, conf, cfg]
   help: manage configuration profiles
+  standalone: true
   menu:
     - name: [list, ls]
       help: list configured servers
