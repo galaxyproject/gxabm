@@ -86,7 +86,7 @@ def import_from_config(context: Context, args: list):
         history = args[2]
     elif args[1] in ['-c', '--create']:
         gi = connect(context)
-        history = gi.histories.create_history(args[index]).get('id')
+        history = gi.histories.create_history(args[2]).get('id')
     else:
         print(f"Invalid option {args[1]}")
         return
@@ -136,6 +136,15 @@ def find(context: Context, args: list):
 
     ds = datasets[0]
     pprint(ds)
+
+
+def rename(context: Context, args: list):
+    if len(args) != 3:
+        print("ERROR: please provide the history ID, dataset ID, and new name.")
+        return
+    gi = connect(context)
+    result = gi.histories.update_dataset(args[0], args[1], name=args[2])
+    pprint(result)
 
 
 def test(context: Context, args: list):

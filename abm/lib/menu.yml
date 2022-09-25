@@ -86,6 +86,10 @@
       handler: dataset.clean
       params: "[STATE [STATE...]]"
       help: deletes and purges all datasets that are not 'ok'
+    - name: [rename, ren]
+      handler: dataset.rename
+      help: rename a dataset
+      params: HISTORY_ID DATASET_ID NAME
 - name:
     - history
     - hist
