@@ -1,3 +1,5 @@
+import json
+
 from common import connect, Context
 from pprint import pprint
 from pathlib import Path
@@ -60,10 +62,10 @@ def upload(context: Context, args: list):
     while index < len(args):
         arg = args[index]
         index += 1
-        if arg == '-id':
+        if args[1] in ['--hs', '--hist', '--history']:
             history = args[index]
             index += 1
-        elif arg == '-c':
+        elif arg in ['-c', '--create']:
             gi = connect(context)
             history = gi.histories.create_history(args[index]).get('id')
             index += 1
@@ -72,7 +74,8 @@ def upload(context: Context, args: list):
 
     if gi is None:
         gi = connect(context)
-    pprint(gi.tools.put_url(args[0], history))
+    # pprint(gi.tools.put_url(args[0], history))
+    _import_from_url(gi, history, args[0])
 
 
 def import_from_config(context: Context, args: list):
@@ -82,7 +85,7 @@ def import_from_config(context: Context, args: list):
         return
 
     gi = None
-    if args[1] in ['-id', '--id']:
+    if args[1] in ['--hs', '--hist', '--history']:
         history = args[2]
     elif args[1] in ['-c', '--create']:
         gi = connect(context)
@@ -107,7 +110,25 @@ def import_from_config(context: Context, args: list):
 
     if gi is None:
         gi = connect(context)
-    pprint(gi.tools.put_url(url, history))
+    # response = gi.tools.put_url(url, history)
+    # dataset_id = response['outputs'][0]['id']
+    # gi.histories.update_dataset(history, dataset_id, name=key)
+    #print(f"Imported {key} to history {history} as {dataset_id}")
+    _import_from_url(gi, history, url, key)
+
+
+def _import_from_url(gi, history, url, name=None):
+    response = gi.tools.put_url(url, history)
+    id = response['outputs'][0]['id']
+    # if name is None:
+    #     name = url.split('/')[-1]
+    # gi.histories.update_dataset(history, id, name=name)
+    result = {
+        'url': url,
+        'history_id': history,
+        'id': id,
+    }
+    print(json.dumps(result, indent=4))
 
 
 def download(context: Context, args: list):
@@ -143,8 +164,12 @@ def rename(context: Context, args: list):
         print("ERROR: please provide the history ID, dataset ID, and new name.")
         return
     gi = connect(context)
-    result = gi.histories.update_dataset(args[0], args[1], name=args[2])
-    pprint(result)
+    response = gi.histories.update_dataset(args[0], args[1], name=args[2])
+    result = {
+        'state': response['state'],
+        'name': response['name']
+    }
+    print(json.dumps(result, indent=4))
 
 
 def test(context: Context, args: list):
