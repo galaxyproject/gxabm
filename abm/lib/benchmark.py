@@ -92,6 +92,7 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
         if Keys.HISTORY_BASE_NAME in workflow:
             history_base_name = workflow[Keys.HISTORY_BASE_NAME]
 
+        ref_data_size = 0
         if Keys.REFERENCE_DATA in workflow:
             for spec in workflow[Keys.REFERENCE_DATA]:
                 input = gi.workflows.get_workflow_inputs(wfid, spec[Keys.NAME])
@@ -99,9 +100,12 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
                     print(f'ERROR: Invalid input specification for {spec[Keys.NAME]}')
                     return False
                 dsname = spec[Keys.NAME]
-                dsid = find_dataset_id(gi, dsname)
+                #dsid = find_dataset_id(gi, dsname)
+                dsdata = _get_dataset_data(gi, dsname)
+                dsid = dsdata['id']
+                ref_data_size += dsdata['size']
                 print(f"Reference input dataset {dsid}")
-                inputs[input[0]] = {'id': dsid, 'src': 'hda'}
+                inputs[input[0]] = {'id': dsid, 'src': 'hda', 'size':dsdata['size']}
                 input_names.append(dsname)
 
         count = 0
@@ -111,7 +115,7 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
                 output_history_name = f"{history_base_name} {run[Keys.HISTORY_NAME]}"
             else:
                 output_history_name = f"{history_base_name} run {count}"
-
+            input_data_size = 0
             if Keys.INPUTS in run and run[Keys.INPUTS] is not None:
                 for spec in run[Keys.INPUTS]:
                     input = gi.workflows.get_workflow_inputs(wfid, spec[Keys.NAME])
@@ -122,9 +126,13 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
                     dsname = spec[Keys.DATASET_ID]
                     input_names.append(dsname)
                     #inputs.append(dsname)
-                    dsid = find_dataset_id(gi, dsname)
-                    print(f"Input dataset ID: {dsname} [{dsid}]")
-                    inputs[input[0]] = {'id': dsid, 'src': 'hda'}
+                    # dsid = find_dataset_id(gi, dsname)
+                    dsdata = _get_dataset_data(gi, dsname)
+                    dsid = dsdata['id']
+                    dssize = dsdata['size']
+                    input_data_size += dssize
+                    print(f"Input dataset ID: {dsname} [{dsid}] {dssize}")
+                    inputs[input[0]] = {'id': dsid, 'src': 'hda', 'size': dssize}
 
             print(f"Running workflow {wfid}")
             new_history_name = output_history_name
@@ -148,6 +156,8 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
                 invocations['job_conf'] = "Unknown"
             invocations['output_dir'] = metrics_dir
             invocations['inputs'] = ' '.join(input_names)
+            invocations['ref_data_size'] = ref_data_size
+            invocations['input_data_size'] = input_data_size
             #TODO Change this output path. (Change it to what? KS)
             output_path = os.path.join(invocations_dir, id + '.json')
             with open(output_path, 'w') as f:
@@ -312,7 +322,9 @@ def wait_for_jobs(context, gi: GalaxyInstance, invocations: dict):
                         'inputs': inputs,
                         'metrics': data,
                         'status': status,
-                        'server': context.GALAXY_SERVER
+                        'server': context.GALAXY_SERVER,
+                        'ref_data_size': invocations['ref_data_size'],
+                        'input_data_size': invocations['input_data_size']
                     }
                     output_path = os.path.join(output_dir, f"{job_id}.json")
                     with open(output_path, "w") as f:
@@ -381,4 +393,26 @@ def find_dataset_id(gi, name_or_id):
     return None
 
 
+def _get_dataset_data(gi, name_or_id):
+    def make_result(data):
+        return {
+            'id': data['id'],
+            'size': data['file_size']
+        }
+
+    try:
+        ds = gi.datasets.show_dataset(name_or_id)
+        return make_result(ds)
+    except:
+        pass
+
+    try:
+        # print('Trying by name')
+        ds = gi.datasets.get_datasets(name=name_or_id)  # , deleted=True, purged=True)
+        if len(ds) > 0:
+            return make_result(ds[0])
+    except:
+        print('Caught an exception')
+        print(sys.exc_info())
+    return None
 
