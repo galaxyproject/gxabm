@@ -67,7 +67,7 @@ def run_on_cloud(cloud: str, config: dict):
     if 'galaxy' in config:
         namespace = config['galaxy']['namespace']
         chart = config['galaxy']['chart']
-    if 'job_configs' in config and len(config['job_confis']) > 0:
+    if 'job_configs' in config and len(config['job_configs']) > 0:
         for conf in config['job_configs']:
             if not helm.update(context, [f"rules/{conf}.yml", namespace, chart]):
                 log.warning(f"job configuration not found: rules/{conf}.yml")
