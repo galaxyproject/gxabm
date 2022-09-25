@@ -28,15 +28,15 @@ def create(context: Context, args: list):
 
 
 def remove(context: Context, args: list):
-    if len(args) != 1:
-        print("USAGE: abm config remove <cloud>")
+    if len(args) == 0:
+        print("USAGE: abm config remove <cloud> [<cloud>...]")
         return
-    profile_name = args[0]
     profiles = load_profiles()
-    if not profile_name in profiles:
-        print("ERROR: now cloud configuration with that name.")
-        return
-    del profiles[profile_name]
+    for profile_name in args:
+        if profile_name in profiles:
+            del profiles[profile_name]
+        else:
+            print("ERROR: now cloud configuration with that name.")
     save_profiles(profiles)
     print_yaml(profiles)
 
