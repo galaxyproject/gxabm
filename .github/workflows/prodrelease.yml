@@ -1,11 +1,6 @@
 name: GitHub Release
 on:
   workflow_dispatch:
-    inputs:
-      label:
-        description: Label to determine verion segment to increment.
-        type: string
-        default: patch
 
   pull_request_target:
     types: [ closed ]
@@ -22,7 +17,7 @@ jobs:
         with:
           mode: exactly
           count: 1
-          labels: "major, minor, patch"
+          labels: "release"
       - uses: actions/checkout@v3
         with:
            persist-credentials: true
@@ -32,10 +27,23 @@ jobs:
         with:
           file: abm/VERSION
           parser: cat
-          type: ${{ github.event.label.name }}
+          type: release
       - uses: ksuderman/github-action-tag-release@v2
         env:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           file: abm/VERSION
           parser: cat
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.9"
+      - name: Install pypa/build
+        run: python -m pip install build --user
+      - name: Build a binary wheel and a source tarball
+        run: python -m build --sdist --wheel --outdir dist/
+      - name: Publish distribution to Test PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          repository_url: https://pypi.org/legacy/
