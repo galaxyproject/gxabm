@@ -86,7 +86,7 @@ def show(context: Context, args: list):
 def workflows(context: Context, args: list):
     userfile = os.path.join(Path.home(), ".abm", "workflows.yml")
     if len(args) == 0 or args[0] in ['list', 'ls']:
-        workflows = _load_workflow_config(userfile)
+        workflows = _load_config(userfile)
         if workflows is None:
             return
         print(f"Workflows defined in {userfile}")
@@ -103,7 +103,7 @@ def workflows(context: Context, args: list):
 def datasets(context: Context, args: list):
     userfile = os.path.join(Path.home(), ".abm", "datasets.yml")
     if len(args) == 0 or args[0] in ['list', 'ls']:
-        datasets = _load_dataset_config(userfile)
+        datasets = _load_config(userfile)
         if datasets is None:
             return
         print(f"Datasets defined in {userfile}")
@@ -117,20 +117,41 @@ def datasets(context: Context, args: list):
         print(f"ERROR: Unrecognized command {args[0]}")
 
 
-def _load_dataset_config(configfile):
-    if not os.path.exists(configfile):
-        print("ERROR: this instance has not been configured to import datasets.")
-        print(f"Please configure {configfile} to enable dataset imports.")
-        return None
-    with open(configfile, 'r') as f:
-        datasets = yaml.safe_load(f)
-    return datasets
+def histories(context: Context, args: list):
+    userfile = os.path.join(Path.home(), ".abm", "histories.yml")
+    if len(args) == 0 or args[0] in ['list', 'ls']:
+        histories = _load_config(userfile)
+        if histories is None:
+            return
+        print(f"Datasets defined in {userfile}")
+        for key,url in histories.items():
+            print(f"{key:10} {url}")
+    elif args[0] in ['delete', 'del','rm']:
+        print(f"Deleting history entries is not supported at this time. Please edit {userfile} directly.")
+    elif args[0] in ['add', 'new']:
+        print(f"Adding dataset entries is not supported at this time. Please edit {userfile} directly.")
+    else:
+        print(f"ERROR: Unrecognized command {args[0]}")
 
-def _load_workflow_config(userfile):
-    if not os.path.exists(userfile):
-        print("ERROR: this instance has not been configured to import workflows.")
-        print(f"Please configure {userfile} to enable workflow imports.")
+
+# def _load_dataset_config(configfile):
+#     if not os.path.exists(configfile):
+#         print("ERROR: this instance has not been configured to import datasets.")
+#         print(f"Please configure {configfile} to enable dataset imports.")
+#         return None
+#     return _load_config(configfile)
+
+
+# def _load_workflow_config(userfile):
+#     if not os.path.exists(userfile):
+#         print("ERROR: this instance has not been configured to import workflows.")
+#         print(f"Please configure {userfile} to enable workflow imports.")
+#         return None
+#     return _load_config(userfile)
+
+def _load_config(filepath):
+    if not os.path.exists(filepath):
+        print(f"ERROR: configuration file not found: {filepath}")
         return None
-    with open(userfile, 'r') as f:
-        workflows = yaml.safe_load(f)
-    return workflows
+    with open(filepath, 'r') as f:
+        return yaml.safe_load(f)
