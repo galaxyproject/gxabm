@@ -92,7 +92,7 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
         if Keys.HISTORY_BASE_NAME in workflow:
             history_base_name = workflow[Keys.HISTORY_BASE_NAME]
 
-        ref_data_size = 0
+        ref_data_size = []
         if Keys.REFERENCE_DATA in workflow:
             for spec in workflow[Keys.REFERENCE_DATA]:
                 input = gi.workflows.get_workflow_inputs(wfid, spec[Keys.NAME])
@@ -103,7 +103,7 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
                 #dsid = find_dataset_id(gi, dsname)
                 dsdata = _get_dataset_data(gi, dsname)
                 dsid = dsdata['id']
-                ref_data_size += dsdata['size']
+                ref_data_size.append(dsdata['size'])
                 print(f"Reference input dataset {dsid}")
                 inputs[input[0]] = {'id': dsid, 'src': 'hda', 'size':dsdata['size']}
                 input_names.append(dsname)
@@ -115,7 +115,7 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
                 output_history_name = f"{history_base_name} {run[Keys.HISTORY_NAME]}"
             else:
                 output_history_name = f"{history_base_name} run {count}"
-            input_data_size = 0
+            input_data_size = []
             if Keys.INPUTS in run and run[Keys.INPUTS] is not None:
                 for spec in run[Keys.INPUTS]:
                     input = gi.workflows.get_workflow_inputs(wfid, spec[Keys.NAME])
@@ -128,9 +128,11 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
                     #inputs.append(dsname)
                     # dsid = find_dataset_id(gi, dsname)
                     dsdata = _get_dataset_data(gi, dsname)
+                    if dsdata is None:
+                        raise  Exception(f"ERROR: unable to resolve {dsname} to a dataset.")
                     dsid = dsdata['id']
                     dssize = dsdata['size']
-                    input_data_size += dssize
+                    input_data_size.append(dssize)
                     print(f"Input dataset ID: {dsname} [{dsid}] {dssize}")
                     inputs[input[0]] = {'id': dsid, 'src': 'hda', 'size': dssize}
 
@@ -382,10 +384,13 @@ def find_dataset_id(gi, name_or_id):
         pass
 
     try:
-        # print('Trying by name')
-        ds = gi.datasets.get_datasets(name=name_or_id)  # , deleted=True, purged=True)
-        if len(ds) > 0:
-            return ds[0]['id']
+        datasets = gi.datasets.get_datasets(name=name_or_id)  # , deleted=True, purged=True)
+        for ds in datasets:
+            if ds['state'] == 'ok' and not ds['deleted'] and ds['visible']:
+                return ds['id']
+            else:
+                print(f"Dataset {ds['id']} is not valid.")
+
     except:
         print('Caught an exception')
         print(sys.exc_info())
@@ -403,16 +408,18 @@ def _get_dataset_data(gi, name_or_id):
     try:
         ds = gi.datasets.show_dataset(name_or_id)
         return make_result(ds)
-    except:
+    except Exception as e:
         pass
 
     try:
-        # print('Trying by name')
-        ds = gi.datasets.get_datasets(name=name_or_id)  # , deleted=True, purged=True)
-        if len(ds) > 0:
-            return make_result(ds[0])
-    except:
-        print('Caught an exception')
-        print(sys.exc_info())
+        datasets = gi.datasets.get_datasets(name=name_or_id)  # , deleted=True, purged=True)
+        for ds in datasets:
+            if ds['state'] == 'ok' and not ds['deleted'] and ds['visible']:
+                # The dict returned by get_datasets does not include the input
+                # file sizes so we need to make another call to show_datasets
+                return make_result(gi.datasets.show_dataset(ds['id']))
+    except Exception as e:
+        print(e)
+
     return None
 

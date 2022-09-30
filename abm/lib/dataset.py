@@ -123,7 +123,7 @@ def download(context: Context, args: list):
 
 def find(context: Context, args: list):
     if len(args) == 0:
-        print('ERROR: now dataset name given.')
+        print('ERROR: no dataset name given.')
         return
     gi = connect(context)
     datasets = gi.datasets.get_datasets(name=args[0])
@@ -131,11 +131,10 @@ def find(context: Context, args: list):
         print('WARNING: no datasets found with that name')
         return
     if len(datasets) > 1:
-        print(f'WARNING: found {len(datasets)} datasets with that name. Using the first')
-        print('dataset in the list. Which one that is will be indeterminate.')
+        print(f'WARNING: found {len(datasets)} datasets with that name.')
 
-    ds = datasets[0]
-    pprint(ds)
+    for ds in datasets:
+        pprint(ds)
 
 
 def rename(context: Context, args: list):

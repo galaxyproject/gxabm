@@ -106,11 +106,26 @@ def summarize(context: Context, args: list):
     """
     separator = None
     input_dir = None
+    make_row = make_table_row
+    header_row = "Run,Cloud,Job Conf,Workflow,History,Inputs,Tool,Tool Version,State,Slots,Memory,Runtime (Sec),CPU,Memory Limit (Bytes),Memory Max usage (Bytes)"
     for arg in args:
         if arg in ['-t', '--tsv']:
+            if separator is not None:
+                print('ERROR: The output format is specified more than once')
+                return
             separator = '\t'
         elif arg in ['-c', '--csv']:
+            if separator is not None:
+                print('ERROR: The output format is specified more than once')
+                return
             separator = ','
+        elif arg in ['-m', '--model']:
+            if separator is not None:
+                print('ERROR: The output format is specified more than once')
+                return
+            separator = ','
+            make_row = make_model_row
+            header_row = "job_id,tool_id,tool_version,state,memory.max_usage_in_bytes,cpuacct.usage,process_count,galaxy_slots,runtime_seconds,ref_data_size,input_data_size"
         else:
             input_dir = arg
 
@@ -120,9 +135,7 @@ def summarize(context: Context, args: list):
     if separator is None:
         separator = ','
 
-    row = [''] * 14
-    #print("Run,Cloud,Job Conf,Workflow,History,Inputs,Server,Tool,Tool Version,State,Slots,Memory,Runtime (Sec),CPU,Memory Limit (Bytes),Memory Max usage (Bytes),Memory Soft Limit")
-    print("Run,Cloud,Job Conf,Workflow,History,Inputs,Tool,Tool Version,State,Slots,Memory,Runtime (Sec),CPU,Memory Limit (Bytes),Memory Max usage (Bytes)")
+    print(header_row)
     for file in os.listdir(input_dir):
         input_path = os.path.join(input_dir, file)
         if not os.path.isfile(input_path) or not input_path.endswith('.json'):
@@ -130,24 +143,60 @@ def summarize(context: Context, args: list):
         try:
             with open(input_path, 'r') as f:
                 data = json.load(f)
-            row[0] = data['run']
-            row[1] = data['cloud']
-            row[2] = data['job_conf']
-            row[3] = data['workflow_id']
-            row[4] = data['history_id']
-            row[5] = data['inputs']
-            #row[6] = data['server'] if data['server'] is not None else 'https://iu1.usegvl.org/galaxy'
-            row[6] = parse_toolid(data['metrics']['tool_id'])
-            row[7] = data['metrics']['state']
-            add_metrics_to_row(data['metrics']['job_metrics'], row)
-            print(separator.join(row))
+            row = make_row(data)
+            print(separator.join([ str(x) for x in row]))
         except Exception as e:
             # Silently fail to allow the remainder of the table to be generated.
+            # print(e)
             pass
 
 
+accept_metrics = ['galaxy_slots', 'galaxy_memory_mb', 'runtime_seconds', 'cpuacct.usage','memory.limit_in_bytes', 'memory.max_usage_in_bytes']  #,'memory.soft_limit_in_bytes']
+
+
+def make_table_row(data: dict):
+    row = [ str(data[key]) for key in ['run', 'cloud', 'job_conf', 'workflow_id', 'history_id', 'inputs']]
+    row.append(parse_toolid(data['metrics']['tool_id']))
+    row.append(data['metrics']['state'])
+    for e in _get_metrics(data['metrics']['job_metrics']):
+        row.append(e)
+    return row
+
+
+def make_model_row(data: dict):
+    metrics = data['metrics']
+    row = []
+    row.append(metrics['id'])
+    tool_id = metrics['tool_id']
+    row.append(tool_id)
+    row.append(tool_id.split('/')[-1])
+    row.append(metrics['state'])
+    job_metrics = parse_job_metrics(metrics['job_metrics'])
+    row.append(job_metrics.get('memory.max_usage_in_bytes',0))
+    row.append(job_metrics.get('cpuacct.usage', 0))
+    row.append(job_metrics.get('processor_count', 0))
+    row.append(job_metrics.get('galaxy_slots', 0))
+    row.append(job_metrics.get('runtime_seconds', 0))
+    if len(data['ref_data_size']) == 0:
+        row.append('0')
+    else:
+        row.append(data['ref_data_size'][0])
+    for size in data['input_data_size']:
+        row.append(size)
+    return row
+
+def _get_metrics(metrics: list):
+    row = [''] * len(metrics)
+    for job_metrics in metrics:
+        if job_metrics['name'] in accept_metrics:
+            index = accept_metrics.index(job_metrics['name'])
+            try:
+                row[index] = job_metrics['raw_value']
+            except:
+                pass
+    return row
+
 def add_metrics_to_row(metrics_list: list, row: list):
-    accept_metrics = ['galaxy_slots', 'galaxy_memory_mb', 'runtime_seconds', 'cpuacct.usage','memory.limit_in_bytes', 'memory.max_usage_in_bytes']  #,'memory.soft_limit_in_bytes']
     for job_metrics in metrics_list:
         if job_metrics['name'] in accept_metrics:
             index = accept_metrics.index(job_metrics['name'])
@@ -155,8 +204,10 @@ def add_metrics_to_row(metrics_list: list, row: list):
                 row[index + 8] = job_metrics['raw_value']
             except:
                 pass
-            # row.append(job_metrics['raw_value'])
 
 
-
-
+def parse_job_metrics(metrics_list: list):
+    metrics = {}
+    for job_metrics in metrics_list:
+        metrics[job_metrics['name']] = job_metrics['raw_value']
+    return metrics
