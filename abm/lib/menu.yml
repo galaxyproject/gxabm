@@ -78,6 +78,10 @@
     - name: ['list', 'ls']
       handler: dataset.list
       help: lists all the datasets on the server
+    - name: ['find']
+      handler: dataset.find
+      help: search for datasets by name
+      params: NAME
     - name: ['show']
       handler: dataset.show
       params: ID
