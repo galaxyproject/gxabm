@@ -265,6 +265,10 @@
       handler: config.datasets
       help: manage configuration to import datasets.
       params: "[list|add|delete] ARGS"
+    - name: [histories, history, hist, hs]
+      handler: config.histories
+      help: manage configuration to import histories
+      params: "[list|add|delete] ARGS"
 - name: [library, lib]
   help: manage data libraries on the server
   menu:
