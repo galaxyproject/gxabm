@@ -22,7 +22,7 @@ jobs:
         with:
           mode: minium
           count: 1
-          labels: "major, minor, patch, dev, alpha, beta, rc"
+          labels: "dev, alpha, beta, rc"
       - uses: actions/checkout@v3
         with:
            persist-credentials: true
