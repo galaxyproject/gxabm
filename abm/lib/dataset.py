@@ -8,7 +8,21 @@ import yaml
 
 def list(context: Context, args: list):
     gi = connect(context)
-    datasets = gi.datasets.get_datasets(limit=10000, offset=0)  # , deleted=True, purged=True)
+    kwargs = {
+        'limit': 10000,
+        'offset': 0
+    }
+    if len(args) > 0:
+        if args[0] in ['-s', '--state']:
+            if len(args) != 2:
+                print("ERROR: Invalid command.")
+                return
+            kwargs['state'] = args[1]
+        else:
+            print(f"ERROR: Invalid parameter: {args[0]}")
+            return
+    #datasets = gi.datasets.get_datasets(limit=10000, offset=0)  # , deleted=True, purged=True)
+    datasets = gi.datasets.get_datasets(**kwargs)
     if len(datasets) == 0:
         print('No datasets found')
         return
