@@ -8,7 +8,21 @@ import yaml
 
 def list(context: Context, args: list):
     gi = connect(context)
-    datasets = gi.datasets.get_datasets(limit=10000, offset=0)  # , deleted=True, purged=True)
+    kwargs = {
+        'limit': 10000,
+        'offset': 0
+    }
+    if len(args) > 0:
+        if args[0] in ['-s', '--state']:
+            if len(args) != 2:
+                print("ERROR: Invalid command.")
+                return
+            kwargs['state'] = args[1]
+        else:
+            print(f"ERROR: Invalid parameter: {args[0]}")
+            return
+    #datasets = gi.datasets.get_datasets(limit=10000, offset=0)  # , deleted=True, purged=True)
+    datasets = gi.datasets.get_datasets(**kwargs)
     if len(datasets) == 0:
         print('No datasets found')
         return
@@ -86,7 +100,7 @@ def import_from_config(context: Context, args: list):
         history = args[2]
     elif args[1] in ['-c', '--create']:
         gi = connect(context)
-        history = gi.histories.create_history(args[index]).get('id')
+        history = gi.histories.create_history(args[2]).get('id')
     else:
         print(f"Invalid option {args[1]}")
         return
@@ -123,7 +137,7 @@ def download(context: Context, args: list):
 
 def find(context: Context, args: list):
     if len(args) == 0:
-        print('ERROR: now dataset name given.')
+        print('ERROR: no dataset name given.')
         return
     gi = connect(context)
     datasets = gi.datasets.get_datasets(name=args[0])
@@ -131,11 +145,19 @@ def find(context: Context, args: list):
         print('WARNING: no datasets found with that name')
         return
     if len(datasets) > 1:
-        print(f'WARNING: found {len(datasets)} datasets with that name. Using the first')
-        print('dataset in the list. Which one that is will be indeterminate.')
+        print(f'WARNING: found {len(datasets)} datasets with that name.')
 
-    ds = datasets[0]
-    pprint(ds)
+    for ds in datasets:
+        pprint(ds)
+
+
+def rename(context: Context, args: list):
+    if len(args) != 3:
+        print("ERROR: please provide the history ID, dataset ID, and new name.")
+        return
+    gi = connect(context)
+    result = gi.histories.update_dataset(args[0], args[1], name=args[2])
+    pprint(result)
 
 
 def test(context: Context, args: list):

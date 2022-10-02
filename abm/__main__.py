@@ -49,7 +49,7 @@ version_args = ['-v', '--version', 'version']
 
 # TODO Parse this from the menu.yml file.
 # Commands that do not depend on a cloud instance
-stand_alone_commands = ['config', 'experiment', 'exp', 'ex']
+stand_alone_commands = []
 
 def head(text):
     print(bold(text))
@@ -96,7 +96,10 @@ def print_help(menu_data, command):
 
     print()
     head("    SYNOPSIS")
-    print(f"        abm [cloud] {command} SUBCOMMAND <ARGS>\n")
+    if submenu['name'][0] in stand_alone_commands:
+        print(f"        abm {command} SUBCOMMAND <ARGS>\n")
+    else:
+        print(f"        abm [cloud] {command} SUBCOMMAND <ARGS>\n")
     head("    DESCRIPTION")
     print(f"        {submenu['help']}\n")
     head("    SUBCOMMANDS")
@@ -144,6 +147,9 @@ def parse_menu():
         # Use the first name in the list as the main name for the item. The
         # others will be aliased below.
         name = main_menu_item['name'][0]
+        if main_menu_item.get('standalone', False):
+            for item_name in main_menu_item['name']:
+                stand_alone_commands.append(item_name)
         log.debug('Menu name: %s', name)
         for submenu_item in main_menu_item['menu']:
             handler = globals()

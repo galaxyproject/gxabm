@@ -78,6 +78,10 @@
     - name: ['list', 'ls']
       handler: dataset.list
       help: lists all the datasets on the server
+    - name: ['find']
+      handler: dataset.find
+      help: search for datasets by name
+      params: NAME
     - name: ['show']
       handler: dataset.show
       params: ID
@@ -86,6 +90,10 @@
       handler: dataset.clean
       params: "[STATE [STATE...]]"
       help: deletes and purges all datasets that are not 'ok'
+    - name: [rename, ren]
+      handler: dataset.rename
+      help: rename a dataset
+      params: HISTORY_ID DATASET_ID NAME
 - name:
     - history
     - hist
@@ -181,6 +189,7 @@
       params: NAME EMAIL PASSWORD
 - name: [experiment, exp, ex]
   help: execute benchmarking runs on various clouds
+  standalone: true
   menu:
     - name: [run]
       help: run all benchmarks in an experiment
@@ -223,6 +232,7 @@
       handler: kubectl.url
 - name: [config, conf, cfg]
   help: manage configuration profiles
+  standalone: true
   menu:
     - name: [list, ls]
       help: list configured servers
@@ -269,6 +279,10 @@
       help: delete a deployment
       handler: cloudlaunch.delete
       params: ID
+    - name: [histories, history, hist, hs]
+      handler: config.histories
+      help: manage configuration to import histories
+      params: "[list|add|delete] ARGS"
 - name: [library, lib]
   help: manage data libraries on the server
   menu:
