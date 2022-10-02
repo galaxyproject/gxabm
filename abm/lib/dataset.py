@@ -85,14 +85,20 @@ def import_from_config(context: Context, args: list):
         return
 
     gi = None
-    if args[1] in ['--hs', '--hist', '--history']:
-        history = args[2]
-    elif args[1] in ['-c', '--create']:
-        gi = connect(context)
-        history = gi.histories.create_history(args[2]).get('id')
-    else:
-        print(f"Invalid option {args[1]}")
-        return
+    kwargs = {}
+    while len(args) > 0:
+        arg = args.pop(0)
+        if arg in ['--hs', '--hist', '--history']:
+            history = args.pop(0)
+        elif arg in ['-c', '--create']:
+            gi = connect(context)
+            history = gi.histories.create_history(args.pop(0)).get('id')
+        elif arg in ['-n', '--nmae']:
+            kwargs['file_name'] = args.pop(0)
+        else:
+            key = args.pop(0)
+            #print(f"Invalid option {args[1]}")
+            #return
 
     configfile = os.path.join(Path.home(), '.abm', 'datasets.yml')
     if not os.path.exists(configfile):
@@ -100,7 +106,6 @@ def import_from_config(context: Context, args: list):
         print(f"Please create {configfile}")
         return
 
-    key = args[0]
     with open(configfile, 'r') as f:
         datasets = yaml.safe_load(f)
     if not key in datasets:
@@ -110,16 +115,13 @@ def import_from_config(context: Context, args: list):
 
     if gi is None:
         gi = connect(context)
-    # response = gi.tools.put_url(url, history)
-    # dataset_id = response['outputs'][0]['id']
-    # gi.histories.update_dataset(history, dataset_id, name=key)
-    #print(f"Imported {key} to history {history} as {dataset_id}")
-    _import_from_url(gi, history, url, key)
+    response = gi.tools.put_url(url, history, **kwargs)
+    print(json.dumps(response, indent=4))
 
 
-def _import_from_url(gi, history, url, name=None):
-    response = gi.tools.put_url(url, history)
-    id = response['outputs'][0]['id']
+def _import_from_url(gi, history, url, kwargs):
+    response = gi.tools.put_url(url, history, **kwargs)
+    # id = response['outputs'][0]['id']
     # if name is None:
     #     name = url.split('/')[-1]
     # gi.histories.update_dataset(history, id, name=name)
