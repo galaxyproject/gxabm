@@ -8,6 +8,34 @@ from common import Context
 from cloudlaunch_cli.main import create_api_client
 
 
+BOLD = '\033[1m'
+CLEAR = '\033[0m'
+
+def h1(text):
+    return f"{BOLD}{text}{CLEAR}"
+
+list_help = f'''
+{h1('NAME')}
+    list
+    
+{h1('DESCRIPTION')}
+    Lists deployments
+    
+{h1('SYNOPSIS')}
+    abm cloudlaunch list [OPTIONS]
+    
+{h1('OPTIONS')}
+    -a, --archived  list deployments that have been archived
+    -r, --running   list running deployments
+    -d, --deleted   list deleted deployments
+    -l, --launch    list deploymentes that are launching or have launched
+    -h, --help      print this help message
+    
+{h1('NOTES')}
+    The above options are mutually exclusive.
+    
+'''
+
 def list(context: Context, args: list):
     archived = False
     filter = None
@@ -17,13 +45,16 @@ def list(context: Context, args: list):
         if arg in ['-a', '--archived', 'archived']:
             archived = True
         elif arg in ['-r', '--running', 'running']:
-            filter = lambda d: 'running' in status(d.latest_task)
+            filter = lambda d: 'running' in status(d.latest_task) or ('LAUNCH' == d.latest_task.action and 'SUCCESS' == status(d.latest_task))
         elif arg in ['-d', '--deleted', 'deleted']:
             filter = lambda d: 'DELETE' in d.latest_task.action
         elif arg in ['-l', '--launch', 'launch']:
             filter = lambda d: 'LAUNCH' in d.latest_task.action
+        elif arg in ['-h', '--help', 'help']:
+            print(list_help)
+            return
         else:
-            print(f"Invalid parameter: ${arg}")
+            print(f"Invalid parameter: {arg}")
             return
     deployments = create_api_client().deployments.list(archived=archived)
 
@@ -93,13 +124,13 @@ def create(context: Context, args: list):
 
 
 def delete(context: Context, args: list):
-    if len(args) != 1:
+    if len(args) == 0:
         print("ERROR: Invalid parameters.")
         return
     # if args[0] not in ['aws', 'gcp']:
     #     print(f"ERROR: Invalid cloud specified: '{args[0]}'. Must be one of 'aws' or 'gcp'.")
     #     return
-    id = args[0]
+    # id = args[0]
     configfile = os.path.expanduser("~/.cloudlaunch")
     if not os.path.exists(configfile):
         print("ERROR: Cloudlaunch has not been configured.")
@@ -119,13 +150,16 @@ def delete(context: Context, args: list):
     }
 
     data = dict(action='DELETE')
-    print(f"URL is: {url}/deployments/{id}/tasks/")
-    response = requests.post(f"{url}/deployments/{id}/tasks/", json=data, headers=headers)
-    if response.status_code < 300:
-        print(f"Deleted deployment {id}")
-    else:
-        print(f"{response.status_code} - {response.reason}")
-        print(response.text)
+    for id in args:
+        print(f"URL is: {url}/deployments/{id}/tasks/")
+        response = requests.post(f"{url}/deployments/{id}/tasks/", json=data, headers=headers)
+        if response.status_code < 300:
+            print(f"Deleted deployment {id}")
+        else:
+            print(f"{response.status_code} - {response.reason}")
+            print(response.text)
+        print()
+
 
 def _print_deployments(deployments):
     if len(deployments) > 0:
