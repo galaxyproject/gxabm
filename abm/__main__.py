@@ -12,11 +12,12 @@ import sys
 import os
 import logging
 from lib.common import Context
+from pprint import pprint
 from abm import getVersion
 
-# These imports are required because they need to be added to the symbol table
-# so the parse_menu method can find them in globals()
-from lib import job, dataset, workflow, history, library, folder, benchmark, helm, kubectl, config, experiment, users
+# These imports are required because we need Python to be load them to the
+# symbol table so the parse_menu method can find them in globals()
+from lib import job, dataset, workflow, history, library, folder, benchmark, helm, kubectl, config, experiment, users, cloudlaunch
 
 log = logging.getLogger('abm')
 handler = logging.StreamHandler()
@@ -158,7 +159,10 @@ def parse_menu():
                 # log.debug("Part: %s", part)
                 if type(handler) is not dict:
                     handler = handler.__dict__
-                handler = handler[part]
+                if not part in handler:
+                    print(f"ERROR: {part} not found")
+                else:
+                    handler = handler[part]
             if isinstance(handler, dict):
                 log.error(f"Handler not found {handler_name}")
                 # TODO Throw and excpetion that can be caught at the appropriate level.

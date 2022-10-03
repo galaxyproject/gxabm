@@ -269,6 +269,21 @@
       handler: config.histories
       help: manage configuration to import histories
       params: "[list|add|delete] ARGS"
+- name: [cloudlaunch, cl]
+  help: manage cluster deployments on AWS and GCP
+  standalone: true
+  menu:
+    - name: [list, ls]
+      handler: cloudlaunch.list
+      help: list deployments on all cloud providers
+    - name: [create, launch, new]
+      handler: cloudlaunch.create
+      help: create a new deployment on the specified provider
+      params: "[aws|gcp] NAME [-|--type vmType] [-k|--keypair keyName] [-c|--config config-app]"
+    - name: [delete, rm]
+      help: delete a deployment
+      handler: cloudlaunch.delete
+      params: "ID"
 - name: [library, lib]
   help: manage data libraries on the server
   menu:

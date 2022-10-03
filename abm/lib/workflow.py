@@ -76,7 +76,7 @@ def import_from_url(context: Context, args:list):
 
 def import_from_config(context: Context, args:list):
     if len(args) == 0:
-        print("ERROR: no workflow URL given")
+        print("ERROR: no workflow ID given")
         return
     key = args[0]
     userfile = os.path.join(Path.home(), ".abm", "workflows.yml")
