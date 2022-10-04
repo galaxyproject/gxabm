@@ -1,3 +1,5 @@
+import json
+
 from common import connect, Context
 from pprint import pprint
 from pathlib import Path
@@ -65,45 +67,53 @@ def delete(context: Context, args: list):
 
 
 def upload(context: Context, args: list):
-    if len(args) != 3:
-        print('ERROR: Invalid arguments.  Include the URL, and the ID of an existing history,')
-        print('or the name of a history to be created.')
-        return
-    index = 1
+    history = None
+    name = None
+    url = None
     gi = None
-    while index < len(args):
-        arg = args[index]
-        index += 1
-        if arg == '-id':
-            history = args[index]
-            index += 1
-        elif arg == '-c':
+    while len(args) > 0:
+        arg = args.pop(0)
+        if arg in ['--hs', '--hist', '--history']:
+            history = args.pop(0)
+        elif arg in ['-c', '--create']:
             gi = connect(context)
-            history = gi.histories.create_history(args[index]).get('id')
-            index += 1
+            history = gi.histories.create_history(args.pop(0)).get('id')
+        elif arg in ['-n', '--name']:
+            name = args.pop(0)
+        elif url is not None:
+            print(f'ERROR: invalid option. URL already set to {arg}')
+            return
         else:
-            print(f'ERROR: invalid option {arg}')
-
+            url = arg
+    if history is None:
+        print("ERROR: please specify or create a history.")
+        return
     if gi is None:
         gi = connect(context)
-    pprint(gi.tools.put_url(args[0], history))
+    if name:
+        _import_from_url(gi, history, url, file_name=name)
+    else:
+        _import_from_url(gi, history, url)
 
 
 def import_from_config(context: Context, args: list):
-    if len(args) != 3:
-        print('ERROR: Invalid arguments.  Include the dataset id, and the ID of an existing history,')
-        print('or the name of a history to be created.')
-        return
-
     gi = None
-    if args[1] in ['-id', '--id']:
-        history = args[2]
-    elif args[1] in ['-c', '--create']:
-        gi = connect(context)
-        history = gi.histories.create_history(args[2]).get('id')
-    else:
-        print(f"Invalid option {args[1]}")
-        return
+    key = None
+    kwargs = {}
+    while len(args) > 0:
+        arg = args.pop(0)
+        if arg in ['--hs', '--hist', '--history']:
+            history = args.pop(0)
+        elif arg in ['-c', '--create']:
+            gi = connect(context)
+            history = gi.histories.create_history(args.pop(0)).get('id')
+        elif arg in ['-n', '--name']:
+            kwargs['file_name'] = args.pop(0)
+        elif key is not None:
+            print(f"ERROR: key already set: {key}")
+            return
+        else:
+            key = arg
 
     configfile = os.path.join(Path.home(), '.abm', 'datasets.yml')
     if not os.path.exists(configfile):
@@ -111,7 +121,6 @@ def import_from_config(context: Context, args: list):
         print(f"Please create {configfile}")
         return
 
-    key = args[0]
     with open(configfile, 'r') as f:
         datasets = yaml.safe_load(f)
     if not key in datasets:
@@ -121,7 +130,13 @@ def import_from_config(context: Context, args: list):
 
     if gi is None:
         gi = connect(context)
-    pprint(gi.tools.put_url(url, history))
+    response = gi.tools.put_url(url, history, **kwargs)
+    print(json.dumps(response, indent=4))
+
+
+def _import_from_url(gi, history, url, **kwargs):
+    response = gi.tools.put_url(url, history, kwargs)
+    print(json.dumps(response, indent=4))
 
 
 def download(context: Context, args: list):
@@ -156,8 +171,12 @@ def rename(context: Context, args: list):
         print("ERROR: please provide the history ID, dataset ID, and new name.")
         return
     gi = connect(context)
-    result = gi.histories.update_dataset(args[0], args[1], name=args[2])
-    pprint(result)
+    response = gi.histories.update_dataset(args[0], args[1], name=args[2])
+    result = {
+        'state': response['state'],
+        'name': response['name']
+    }
+    print(json.dumps(result, indent=4))
 
 
 def test(context: Context, args: list):
