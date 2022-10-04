@@ -57,4 +57,10 @@ def create(context: Context, args:list):
     user_record = gi.users.create_local_user(name, email, password)
     id = user_record['id']
     key = gi.users.create_user_apikey(id)
-    print(f"Created user {name} with API key {key}")
+    result = {
+        'name': name,
+        'email': email,
+        'id': id,
+        'key': key
+    }
+    print(json.dumps(result, indent=4))
