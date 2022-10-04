@@ -238,7 +238,7 @@ def create(context: Context, args: list):
         return
     gi = connect(context)
     id = gi.histories.create_history(args[0])
-    print(id)
+    print(json.dumps(id, indent=4))
 
 
 def delete(context: Context, args:list):
