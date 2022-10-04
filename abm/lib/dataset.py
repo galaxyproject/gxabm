@@ -53,38 +53,38 @@ def delete(context: Context, args: list):
 
 
 def upload(context: Context, args: list):
-    if len(args) != 3:
-        print('ERROR: Invalid arguments.  Include the URL, and the ID of an existing history,')
-        print('or the name of a history to be created.')
-        return
-    index = 1
+    history = None
+    name = None
+    url = None
     gi = None
-    while index < len(args):
-        arg = args[index]
-        index += 1
-        if args[1] in ['--hs', '--hist', '--history']:
-            history = args[index]
-            index += 1
+    while len(args) > 0:
+        arg = args.pop(0)
+        if arg in ['--hs', '--hist', '--history']:
+            history = args.pop(0)
         elif arg in ['-c', '--create']:
             gi = connect(context)
-            history = gi.histories.create_history(args[index]).get('id')
-            index += 1
+            history = gi.histories.create_history(args.pop(0)).get('id')
+        elif arg in ['-n', '--name']:
+            name = args.pop(0)
+        elif url is not None:
+            print(f'ERROR: invalid option. URL already set to {arg}')
+            return
         else:
-            print(f'ERROR: invalid option {arg}')
-
+            url = arg
+    if history is None:
+        print("ERROR: please specify or create a history.")
+        return
     if gi is None:
         gi = connect(context)
-    # pprint(gi.tools.put_url(args[0], history))
-    _import_from_url(gi, history, args[0])
+    if name:
+        _import_from_url(gi, history, url, file_name=name)
+    else:
+        _import_from_url(gi, history, url)
 
 
 def import_from_config(context: Context, args: list):
-    if len(args) != 3:
-        print('ERROR: Invalid arguments.  Include the dataset id, and the ID of an existing history,')
-        print('or the name of a history to be created.')
-        return
-
     gi = None
+    key = None
     kwargs = {}
     while len(args) > 0:
         arg = args.pop(0)
@@ -93,12 +93,13 @@ def import_from_config(context: Context, args: list):
         elif arg in ['-c', '--create']:
             gi = connect(context)
             history = gi.histories.create_history(args.pop(0)).get('id')
-        elif arg in ['-n', '--nmae']:
+        elif arg in ['-n', '--name']:
             kwargs['file_name'] = args.pop(0)
+        elif key is not None:
+            print(f"ERROR: key already set: {key}")
+            return
         else:
-            key = args.pop(0)
-            #print(f"Invalid option {args[1]}")
-            #return
+            key = arg
 
     configfile = os.path.join(Path.home(), '.abm', 'datasets.yml')
     if not os.path.exists(configfile):
@@ -119,18 +120,9 @@ def import_from_config(context: Context, args: list):
     print(json.dumps(response, indent=4))
 
 
-def _import_from_url(gi, history, url, kwargs):
-    response = gi.tools.put_url(url, history, **kwargs)
-    # id = response['outputs'][0]['id']
-    # if name is None:
-    #     name = url.split('/')[-1]
-    # gi.histories.update_dataset(history, id, name=name)
-    result = {
-        'url': url,
-        'history_id': history,
-        'id': id,
-    }
-    print(json.dumps(result, indent=4))
+def _import_from_url(gi, history, url, **kwargs):
+    response = gi.tools.put_url(url, history, kwargs)
+    print(json.dumps(response, indent=4))
 
 
 def download(context: Context, args: list):
