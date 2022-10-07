@@ -241,7 +241,7 @@
       help: disply URL, API key, and kube config for a specific cloud.
       handler: config.show
       params: CLOUD
-    - name: [create]
+    - name: [create, new]
       help: create a new cloud configuration.
       handler: config.create
       params: "CLOUD KUBECONFIG"
