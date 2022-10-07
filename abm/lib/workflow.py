@@ -70,8 +70,8 @@ def import_from_url(context: Context, args:list):
         return
 
     gi = connect(context)
-    gi.workflows.import_workflow_dict(workflow)
-    print(f"Imported workflow from {url}")
+    result = gi.workflows.import_workflow_dict(workflow)
+    print(json.dumps(result, indent=4))
 
 
 def import_from_config(context: Context, args:list):
