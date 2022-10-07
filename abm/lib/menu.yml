@@ -73,7 +73,7 @@
       help: download a dataset from the server
     - name: ['import', 'imp']
       handler: dataset.import_from_config
-      params: PATH [-id HISTORY_ID | -c "History name"]
+      params: KEY [-id HISTORY_ID | -c "History name"]
       help: imports a dataset to the server from a URL specified in the datasets.yml config file.
     - name: ['list', 'ls']
       handler: dataset.list
