@@ -73,12 +73,12 @@ def run_on_cloud(cloud: str, config: dict):
                 log.warning(f"job configuration not found: rules/{conf}.yml")
                 continue
             for n in range(config['runs']):
-                history_name_prefix = f"{n} {cloud} {conf}"
+                history_name_prefix = f"{n+1} {cloud} {conf}"
                 for workflow_conf in config['benchmark_confs']:
                     benchmark.run(context, workflow_conf, history_name_prefix, config['name'])
     else:
         for n in range(config['runs']):
-            history_name_prefix = f"{n} {cloud}"
+            history_name_prefix = f"{n+1} {cloud}"
             for workflow_conf in config['benchmark_confs']:
                 benchmark.run(context, workflow_conf, history_name_prefix, config['name'])
 
