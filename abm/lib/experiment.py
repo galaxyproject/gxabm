@@ -160,6 +160,8 @@ def make_table_row(data: dict):
     row.append(data['metrics']['state'])
     for e in _get_metrics(data['metrics']['job_metrics']):
         row.append(e)
+    print('make_table_row', row)
+    print()
     return row
 
 
@@ -186,7 +188,7 @@ def make_model_row(data: dict):
     return row
 
 def _get_metrics(metrics: list):
-    row = [''] * len(metrics)
+    row = [''] * len(accept_metrics)
     for job_metrics in metrics:
         if job_metrics['name'] in accept_metrics:
             index = accept_metrics.index(job_metrics['name'])
@@ -194,6 +196,7 @@ def _get_metrics(metrics: list):
                 row[index] = job_metrics['raw_value']
             except:
                 pass
+    print('_get_metrics', row)
     return row
 
 def add_metrics_to_row(metrics_list: list, row: list):
