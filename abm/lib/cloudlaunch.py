@@ -3,6 +3,7 @@ import json
 import arrow
 import requests
 import configparser
+import traceback
 
 from common import Context
 from cloudlaunch_cli.main import create_api_client
@@ -66,6 +67,7 @@ def list(context: Context, args: list):
 
 def create(context: Context, args: list):
     cloud = None
+    region = None
     params = {
         'application': 'cloudman-20',
         'application_version': 'dev'
@@ -84,6 +86,17 @@ def create(context: Context, args: list):
         'aws': 11,
         'gcp': 16
     }
+    regions = {
+        'aws': {
+            'us-east-1': 11,
+            'us-east-2': 12,
+            'us-west-1': 13,
+            'us-west-2': 14
+        },
+        'gcp': {
+            'us-central1': 16
+        }
+    }
     while len(args) > 0:
         arg = args.pop(0)
         if arg in ['aws', 'gcp']:
@@ -91,7 +104,7 @@ def create(context: Context, args: list):
                 print(f"ERROR: the cloud provider has already been specified: {cloud}")
                 return
             cloud = arg
-            params['deployment_target_id'] = targets[cloud]
+            #params['deployment_target_id'] = targets[cloud]
         elif arg in ['-c', '--config']:
             filepath = args.pop(0)
             with open(filepath, 'r') as f:
@@ -102,6 +115,8 @@ def create(context: Context, args: list):
             config['config_cloudlaunch']['keyPair'] = args.pop(0)
         elif arg in ['-p', '--password']:
             config['config_cloudman2']['clusterPassword'] = args.pop(0)
+        elif arg in ['-r', '--region']:
+            region = args.pop(0)
         elif 'name' in params:
             print(f"ERROR: the cluster name has already been specified: {params['name']}")
             return
@@ -115,12 +130,32 @@ def create(context: Context, args: list):
     if cloud is None:
         print("ERROR: cloud provider not specied. Must be one of 'aws' or 'gcp'")
         return
+    if region is not None:
+        if cloud not in regions:
+            print("ERROR: No regions have been defined for cloud provider {cloud")
+            return
+        if region not in regions[cloud]:
+            print(f"ERROR: Region {region} has not been defined for {cloud}")
+            return
+        params['deployment_target_id'] = regions[cloud][region]
+
+    # If the deployment target (region) has not been specified on the command
+    # line use the default for that provider.
+    if 'deployment_target_id' not in params:
+        params['deployment_target_id'] = targets[cloud]
+
     if 'vmType' not in config['config_cloudlaunch']:
         print("ERROR: please specify a VM type.")
         return
+    print(f"Deployment target id {params['deployment_target_id']}")
     cloudlaunch_client = create_api_client(cloud)
-    new_deployment = cloudlaunch_client.deployments.create(**params)
-    _print_deployments([new_deployment])
+    try:
+        new_deployment = cloudlaunch_client.deployments.create(**params)
+        _print_deployments([new_deployment])
+    except Exception as e:
+        print("Unable to launch the cluster")
+        #traceback.print_tb(e.__traceback__)
+        print(e)
 
 
 def delete(context: Context, args: list):
