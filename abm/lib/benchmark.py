@@ -91,7 +91,6 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
         history_base_name = wfid
         if Keys.HISTORY_BASE_NAME in workflow:
             history_base_name = workflow[Keys.HISTORY_BASE_NAME]
-
         ref_data_size = []
         if Keys.REFERENCE_DATA in workflow:
             for spec in workflow[Keys.REFERENCE_DATA]:
@@ -140,6 +139,8 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
             new_history_name = output_history_name
             if history_prefix is not None:
                 new_history_name = f"{history_prefix} {output_history_name}"
+            if experiment is not None:
+                new_history_name = f"{experiment} {new_history_name}"
             invocation = gi.workflows.invoke_workflow(wfid, inputs=inputs, history_name=new_history_name)
             id = invocation['id']
             invocations = gi.invocations.wait_for_invocation(id, 86400, 10, False)
