@@ -58,7 +58,8 @@ def show(context: Context, args: list):
         print("ERROR: no dataset ID provided")
         return
     gi = connect(context)
-    pprint(gi.datasets.show_dataset(args[0]))
+    result = gi.datasets.show_dataset(args[0])
+    print(json.dumps(result, indent=4))
 
 
 def delete(context: Context, args: list):

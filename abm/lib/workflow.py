@@ -113,7 +113,8 @@ def show(context: Context, args: list):
         print('ERROR: no workflow ID given')
         return
     gi = connect(context)
-    pprint(gi.workflows.show_workflow(args[0]))
+    result = gi.workflows.show_workflow(args[0])
+    print(json.dumps(result, indent=4))
 
 
 def find(context: Context, args: list):
