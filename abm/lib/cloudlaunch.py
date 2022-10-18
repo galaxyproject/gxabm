@@ -30,10 +30,11 @@ list_help = f'''
     -r, --running   list running deployments
     -d, --deleted   list deleted deployments
     -l, --launch    list deploymentes that are launching or have launched
+    -n, --limit     limit output to N lines
     -h, --help      print this help message
     
 {h1('NOTES')}
-    The above options are mutually exclusive.
+    The --archived, --running, and --deleted options are mutually exclusive.
     
 '''
 
@@ -41,6 +42,7 @@ def list(context: Context, args: list):
     archived = False
     filter = None
     status = lambda t: t.instance_status if t.instance_status else t.status
+    n = None
     while len(args) > 0:
         arg = args.pop(0)
         if arg in ['-a', '--archived', 'archived']:
@@ -51,6 +53,8 @@ def list(context: Context, args: list):
             filter = lambda d: 'DELETE' in d.latest_task.action
         elif arg in ['-l', '--launch', 'launch']:
             filter = lambda d: 'LAUNCH' in d.latest_task.action
+        elif arg in ['-n', '--limit', 'limit']:
+            n = int(args.pop(0))
         elif arg in ['-h', '--help', 'help']:
             print(list_help)
             return
@@ -61,6 +65,9 @@ def list(context: Context, args: list):
 
     if filter is not None:
         deployments = [ d for d in deployments if filter(d) ]
+
+    if n is not None and len(deployments) > n:
+        deployments = deployments[:n]
     _print_deployments(deployments)
 
 
@@ -91,7 +98,8 @@ def create(context: Context, args: list):
             'us-east-1': 11,
             'us-east-2': 12,
             'us-west-1': 13,
-            'us-west-2': 14
+            'us-west-2': 14,
+            'us-east-1b': 36
         },
         'gcp': {
             'us-central1': 16
