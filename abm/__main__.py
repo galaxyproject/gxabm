@@ -47,7 +47,6 @@ def bold(text: str):
 help_args = ['help', '-h', '--help']
 version_args = ['-v', '--version', 'version']
 
-# TODO Parse this from the menu.yml file.
 # Commands that do not depend on a cloud instance
 stand_alone_commands = []
 
