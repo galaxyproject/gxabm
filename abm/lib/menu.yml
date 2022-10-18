@@ -182,11 +182,19 @@
     - name: [api_key, apikey, key]
       help: obtain the API key for the specified user
       handler: users.api_key
-      params: EMAIL
+      params: "[NAME|EMAIL]"
     - name: [create, new]
       help: create a new user on the Galaxy instance
       handler: users.create
       params: NAME EMAIL PASSWORD
+    - name: [ show ]
+      help: show details about the given user
+      handler: users.show
+      params: "[NAME|EMAIL]"
+    - name: [ usage ]
+      help: show details about the given user
+      handler: users.usage
+      params: "[NAME|EMAIL]"
 - name: [experiment, exp, ex]
   help: execute benchmarking runs on various clouds
   standalone: true

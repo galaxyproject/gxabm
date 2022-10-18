@@ -1,6 +1,9 @@
 import json
 
 from pprint import pprint
+
+from bioblend.galaxy import GalaxyInstance
+
 from common import Context, connect
 
 
@@ -64,3 +67,55 @@ def create(context: Context, args:list):
         'key': key
     }
     print(json.dumps(result, indent=4))
+
+
+def show(context: Context, args:list):
+    if len(args) == 0:
+        print("ERROR: no user email given")
+        return
+
+    # TODO the master API key needs to be parameterized or specified in a config file.
+    context.API_KEY = "galaxypassword"
+    gi = connect(context)
+    id = _get_user_id(gi, args[0])
+    if id is None:
+        return
+    result = gi.users.show_user(id)
+    print(json.dumps(result, indent=4))
+
+
+def usage(context:Context, args:list):
+    if len(args) == 0:
+        print("ERROR: no user email given")
+        return
+
+    # TODO the master API key needs to be parameterized or specified in a config file.
+    context.API_KEY = "galaxypassword"
+    gi = connect(context)
+    id = _get_user_id(gi, args[0])
+    if id is None:
+        return
+    user_data = gi.users.show_user(id)
+    usage = user_data['total_disk_usage']
+    MB = 1048576
+    GB = 1073741824
+    if usage < MB:
+        num = usage / 1024
+        unit = 'K'
+    elif usage < GB:
+        num = usage / MB
+        unit = 'M'
+    else:
+        num = usage / GB
+        unit = 'G'
+    print(f"{num:.2f}{unit}")
+
+
+def _get_user_id(gi: GalaxyInstance, name_or_email: str) -> str:
+    user_list = gi.users.get_users(f_email=name_or_email)
+    if user_list is None or len(user_list) == 0:
+        print("WARNING: no such user")
+        return None
+    if len(user_list) > 1:
+        print("WARNING: more than one user with that email address. Returning the first")
+    return user_list[0]['id']
