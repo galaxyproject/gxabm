@@ -15,7 +15,7 @@ jobs:
       - name: Require a label and version bump to package and release
         uses: mheap/github-action-required-labels@v2
         with:
-          mode: minium
+          mode: minimum
           count: 1
           labels: "dev"
       - uses: actions/checkout@v3
