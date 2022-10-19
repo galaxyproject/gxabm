@@ -1,4 +1,4 @@
-name: Build Python Package
+name: Build Python Package (Disabled)
 
 on:
   workflow_dispatch:

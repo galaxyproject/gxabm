@@ -1,4 +1,4 @@
-name: Bump Version
+name: Bump Version (Disabled)
 on:
   workflow_dispatch:
     inputs:
