@@ -1,4 +1,4 @@
-name: GitHub Release
+name: GitHub Release (Disabled)
 on:
   workflow_dispatch:
 jobs:
