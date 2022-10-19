@@ -223,6 +223,7 @@ def himport(context: Context, args: list):
         print(f"Waiting for job {id}")
         try:
             gi.jobs.wait_for_job(id, 86400, 10, False)
+            # TODO We could rename the history here if we wanted to.
             print('Done')
         except:
             return False
@@ -237,7 +238,7 @@ def create(context: Context, args: list):
         return
     gi = connect(context)
     id = gi.histories.create_history(args[0])
-    print(id)
+    print(json.dumps(id, indent=4))
 
 
 def delete(context: Context, args:list):

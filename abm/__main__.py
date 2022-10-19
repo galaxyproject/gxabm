@@ -12,11 +12,12 @@ import sys
 import os
 import logging
 from lib.common import Context
+from pprint import pprint
 from abm import getVersion
 
-# These imports are required because they need to be added to the symbol table
-# so the parse_menu method can find them in globals()
-from lib import job, dataset, workflow, history, library, folder, benchmark, helm, kubectl, config, experiment, users
+# These imports are required because we need Python to be load them to the
+# symbol table so the parse_menu method can find them in globals()
+from lib import job, dataset, workflow, history, library, folder, benchmark, helm, kubectl, config, experiment, users, cloudlaunch
 
 log = logging.getLogger('abm')
 handler = logging.StreamHandler()
@@ -46,9 +47,8 @@ def bold(text: str):
 help_args = ['help', '-h', '--help']
 version_args = ['-v', '--version', 'version']
 
-# TODO Parse this from the menu.yml file.
 # Commands that do not depend on a cloud instance
-stand_alone_commands = ['config', 'experiment', 'exp', 'ex']
+stand_alone_commands = []
 
 def head(text):
     print(bold(text))
@@ -60,25 +60,25 @@ def command_list(commands:list):
 
 def print_main_help(menu_data):
     print()
-    head("SYNOPSIS")
-    print("    Workflow and data management for remote Galaxy instances")
+    head("    DESCRIPTION")
+    print("        Workflow and data management for remote Galaxy instances")
     print()
-    head("USAGE")
-    print(f"    {sys.argv[0]} COMMAND [SUBCOMMAND] [OPTIONS]")
+    head("    SYNOPSIS")
+    print(f"        abm COMMAND [SUBCOMMAND] [OPTIONS]")
     print()
-    head("COMMANDS")
+    head("    COMMANDS")
     for menu_item in menu_data:
-        print(f"    {command_list(menu_item['name'])}")
-        print(f"        {menu_item['help']}")
-    print(f"    {command_list(['version', '-v', '--version'])}")
-    print("        print the program version and exit")
-    print(f"    {command_list(help_args)}")
-    print("        print this help screen and exit")
+        print(f"        {command_list(menu_item['name'])}")
+        print(f"            {menu_item['help']}")
+    print(f"        {command_list(['version', '-v', '--version'])}")
+    print("            print the program version and exit")
+    print(f"        {command_list(help_args)}")
+    print("            print this help screen and exit")
     print()
-    head("NOTES")
-    print(f"    Available SUBCOMMANDS and OPTIONS depend on the command. Use the {bold('help')} subcommand")
-    print(f"    to learn more about each of the commands. For example:\n")
-    print(f"    $> abm workflow help\n")
+    head("    NOTES")
+    print(f"        Available SUBCOMMANDS and OPTIONS depend on the command. Use the {bold('help')} subcommand")
+    print(f"        to learn more about each of the commands. For example:\n")
+    print(f"        $> abm workflow help\n")
     print("    Copyright 2022 The Galaxy Project\n")
 
 
@@ -94,14 +94,19 @@ def print_help(menu_data, command):
         return
 
     print()
-    head("SYNOPSIS")
-    print(f"    {submenu['help']}\n")
-    head("SUBCOMMANDS")
+    head("    SYNOPSIS")
+    if submenu['name'][0] in stand_alone_commands:
+        print(f"        abm {command} SUBCOMMAND <ARGS>\n")
+    else:
+        print(f"        abm [cloud] {command} SUBCOMMAND <ARGS>\n")
+    head("    DESCRIPTION")
+    print(f"        {submenu['help']}\n")
+    head("    SUBCOMMANDS")
     for menu_item in submenu['menu']:
-        print(f"    {'|'.join(bold(x) for x in menu_item['name'])} {menu_item['params'] if 'params' in menu_item else ''}")
-        print(f"        {menu_item['help']}")
-    print(f"    {bold('help')}")
-    print("        print this help screen and exit")
+        print(f"        {'|'.join(bold(x) for x in menu_item['name'])} {menu_item['params'] if 'params' in menu_item else ''}")
+        print(f"            {menu_item['help']}")
+    print(f"        {bold('help')}")
+    print("            print this help screen and exit")
     print()
     print("    Copyright 2022 The Galaxy Project\n")
 
@@ -141,6 +146,9 @@ def parse_menu():
         # Use the first name in the list as the main name for the item. The
         # others will be aliased below.
         name = main_menu_item['name'][0]
+        if main_menu_item.get('standalone', False):
+            for item_name in main_menu_item['name']:
+                stand_alone_commands.append(item_name)
         log.debug('Menu name: %s', name)
         for submenu_item in main_menu_item['menu']:
             handler = globals()
@@ -150,7 +158,10 @@ def parse_menu():
                 # log.debug("Part: %s", part)
                 if type(handler) is not dict:
                     handler = handler.__dict__
-                handler = handler[part]
+                if not part in handler:
+                    print(f"ERROR: {part} not found")
+                else:
+                    handler = handler[part]
             if isinstance(handler, dict):
                 log.error(f"Handler not found {handler_name}")
                 # TODO Throw and excpetion that can be caught at the appropriate level.

@@ -24,6 +24,10 @@
       handler: workflow.upload
       params: PATH
       help: 'upload a workflow file to the server'
+    - name: ['import', 'imp']
+      handler: workflow.import_from_config
+      params: NAME
+      help: 'import a workflow defined in ~/.abm/workflows.yml'
     - name: ['download', 'dl']
       handler: workflow.download
       help: 'download a workflow'
@@ -61,15 +65,23 @@
   menu:
     - name: ['upload', 'up']
       handler: dataset.upload
-      params: PATH
-      help: upload a data set to the server
+      params: PATH [-id HISTORY_ID | -c "History name"]
+      help: upload a dataset to the server from the specified URL
     - name: ['download', 'dl']
       handler: dataset.download
       params: ID PATH
       help: download a dataset from the server
+    - name: ['import', 'imp']
+      handler: dataset.import_from_config
+      params: KEY [--hs|--hist|--history HISTORY_ID | -c|--create "History name"]
+      help: imports a dataset to the server from a URL specified in the datasets.yml config file.
     - name: ['list', 'ls']
       handler: dataset.list
       help: lists all the datasets on the server
+    - name: ['find']
+      handler: dataset.find
+      help: search for datasets by name
+      params: NAME
     - name: ['show']
       handler: dataset.show
       params: ID
@@ -78,6 +90,10 @@
       handler: dataset.clean
       params: "[STATE [STATE...]]"
       help: deletes and purges all datasets that are not 'ok'
+    - name: [rename, ren]
+      handler: dataset.rename
+      help: rename a dataset
+      params: HISTORY_ID DATASET_ID NAME
 - name:
     - history
     - hist
@@ -166,13 +182,22 @@
     - name: [api_key, apikey, key]
       help: obtain the API key for the specified user
       handler: users.api_key
-      params: EMAIL
+      params: "[NAME|EMAIL]"
     - name: [create, new]
       help: create a new user on the Galaxy instance
       handler: users.create
       params: NAME EMAIL PASSWORD
+    - name: [ show ]
+      help: show details about the given user
+      handler: users.show
+      params: "[NAME|EMAIL]"
+    - name: [ usage ]
+      help: show details about the given user
+      handler: users.usage
+      params: "[NAME|EMAIL]"
 - name: [experiment, exp, ex]
   help: execute benchmarking runs on various clouds
+  standalone: true
   menu:
     - name: [run]
       help: run all benchmarks in an experiment
@@ -215,6 +240,7 @@
       handler: kubectl.url
 - name: [config, conf, cfg]
   help: manage configuration profiles
+  standalone: true
   menu:
     - name: [list, ls]
       help: list configured servers
@@ -223,22 +249,49 @@
       help: disply URL, API key, and kube config for a specific cloud.
       handler: config.show
       params: CLOUD
-    - name: [create]
+    - name: [create, new]
       help: create a new cloud configuration.
       handler: config.create
       params: "CLOUD KUBECONFIG"
     - name: [remove, rm, del]
-      help: emove a cloud configuration entry from the profile.yml
+      help: remove a cloud configuration entry from the profile.yml
       handler: config.remove
       params: CLOUD
     - name: [key]
-      help: Set the Galaxy API key for the provided cloud instance
+      help: set the Galaxy API key for the provided cloud instance
       handler: config.key
       params: CLOUD API_KEY
     - name: [url]
-      help: Set the URL for the Galaxy server.
+      help: set the URL for the Galaxy server.
       params: CLOUD URL
       handler: config.url
+    - name: [workflows, workflow, wf]
+      help: manage configuration to import workflows.
+      handler: config.workflows
+      params: "[list|add|delete] ARGS"
+    - name: [datasets, dataset, ds]
+      handler: config.datasets
+      help: manage configuration to import datasets.
+      params: "[list|add|delete] ARGS"
+    - name: [histories, history, hist, hs]
+      handler: config.histories
+      help: manage configuration to import histories
+      params: "[list|add|delete] ARGS"
+- name: [cloudlaunch, cl]
+  help: manage cluster deployments on AWS and GCP
+  standalone: true
+  menu:
+    - name: [list, ls]
+      handler: cloudlaunch.list
+      help: list deployments on all cloud providers
+    - name: [create, launch, new]
+      handler: cloudlaunch.create
+      help: create a new deployment on the specified provider
+      params: "[aws|gcp] NAME [-|--type vmType] [-k|--keypair keyName] [-c|--config config-app]"
+    - name: [delete, rm]
+      help: delete a deployment
+      handler: cloudlaunch.delete
+      params: "ID"
 - name: [library, lib]
   help: manage data libraries on the server
   menu:

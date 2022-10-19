@@ -3,9 +3,13 @@ import json
 import logging
 
 from pprint import pprint
+
+import requests
+import yaml
 from planemo.runnable import for_path
 from planemo.galaxy.workflows import install_shed_repos
 from common import connect, Context
+from pathlib import Path
 
 log = logging.getLogger('abm')
 
@@ -33,6 +37,9 @@ def upload(context: Context, args: list):
         print('ERROR: no workflow file given')
         return
     path = args[0]
+    if path.startsWith('http'):
+        import_from_url(context, args)
+        return
     if not os.path.exists(path):
         print(f'ERROR: file not found: {path}')
         return
@@ -43,6 +50,48 @@ def upload(context: Context, args: list):
     print("Installing tools")
     result = install_shed_repos(runnable, gi, False)
     pprint(result)
+
+
+def import_from_url(context: Context, args:list):
+    if len(args) == 0:
+        print("ERROR: no workflow URL given")
+        return
+    url = args[0]
+    response = requests.get(url)
+    if (response.status_code != 200):
+        print(f"ERROR: There was a problem downloading the workflow: {response.status_code}")
+        print(response.reason)
+        return
+    try:
+        workflow = json.loads(response.text)
+    except Exception as e:
+        print("ERROR: Unable to parse workflow")
+        print(e)
+        return
+
+    gi = connect(context)
+    result = gi.workflows.import_workflow_dict(workflow)
+    print(json.dumps(result, indent=4))
+
+
+def import_from_config(context: Context, args:list):
+    if len(args) == 0:
+        print("ERROR: no workflow ID given")
+        return
+    key = args[0]
+    userfile = os.path.join(Path.home(), ".abm", "workflows.yml")
+    if not os.path.exists(userfile):
+        print("ERROR: this instance has not been configured to import workflows.")
+        print(f"Please configure {userfile} to enable workflow imports")
+        return
+    with open(userfile, 'r') as f:
+        workflows = yaml.safe_load(f)
+    if not key in workflows:
+        print(f"ERROR: no such workflow: {key}")
+        return
+
+    url = workflows[key]
+    import_from_url(context, [ url ])
 
 
 def download(context: Context, args: list):
@@ -64,7 +113,8 @@ def show(context: Context, args: list):
         print('ERROR: no workflow ID given')
         return
     gi = connect(context)
-    pprint(gi.workflows.show_workflow(args[0]))
+    result = gi.workflows.show_workflow(args[0])
+    print(json.dumps(result, indent=4))
 
 
 def find(context: Context, args: list):

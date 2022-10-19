@@ -73,6 +73,9 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
 
     gi = connect(context)
     workflows = parse_workflow(workflow_path)
+    if not workflows:
+        print(f"Unable to load any workflow definitions from {workflow_path}")
+        return
 
     print(f"Found {len(workflows)} workflow definitions")
     for workflow in workflows:
@@ -88,7 +91,7 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
         history_base_name = wfid
         if Keys.HISTORY_BASE_NAME in workflow:
             history_base_name = workflow[Keys.HISTORY_BASE_NAME]
-
+        ref_data_size = []
         if Keys.REFERENCE_DATA in workflow:
             for spec in workflow[Keys.REFERENCE_DATA]:
                 input = gi.workflows.get_workflow_inputs(wfid, spec[Keys.NAME])
@@ -96,9 +99,12 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
                     print(f'ERROR: Invalid input specification for {spec[Keys.NAME]}')
                     return False
                 dsname = spec[Keys.NAME]
-                dsid = find_dataset_id(gi, dsname)
+                #dsid = find_dataset_id(gi, dsname)
+                dsdata = _get_dataset_data(gi, dsname)
+                dsid = dsdata['id']
+                ref_data_size.append(dsdata['size'])
                 print(f"Reference input dataset {dsid}")
-                inputs[input[0]] = {'id': dsid, 'src': 'hda'}
+                inputs[input[0]] = {'id': dsid, 'src': 'hda', 'size':dsdata['size']}
                 input_names.append(dsname)
 
         count = 0
@@ -108,24 +114,33 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
                 output_history_name = f"{history_base_name} {run[Keys.HISTORY_NAME]}"
             else:
                 output_history_name = f"{history_base_name} run {count}"
-            #inputs = []
-            for spec in run[Keys.INPUTS]:
-                input = gi.workflows.get_workflow_inputs(wfid, spec[Keys.NAME])
-                if input is None or len(input) == 0:
-                    print(f'ERROR: Invalid input specification for {spec[Keys.NAME]}')
-                    return False
+            input_data_size = []
+            if Keys.INPUTS in run and run[Keys.INPUTS] is not None:
+                for spec in run[Keys.INPUTS]:
+                    input = gi.workflows.get_workflow_inputs(wfid, spec[Keys.NAME])
+                    if input is None or len(input) == 0:
+                        print(f'ERROR: Invalid input specification for {spec[Keys.NAME]}')
+                        return False
 
-                dsname = spec[Keys.DATASET_ID]
-                input_names.append(dsname)
-                #inputs.append(dsname)
-                dsid = find_dataset_id(gi, dsname)
-                print(f"Input dataset ID: {dsname} [{dsid}]")
-                inputs[input[0]] = {'id': dsid, 'src': 'hda'}
+                    dsname = spec[Keys.DATASET_ID]
+                    input_names.append(dsname)
+                    #inputs.append(dsname)
+                    # dsid = find_dataset_id(gi, dsname)
+                    dsdata = _get_dataset_data(gi, dsname)
+                    if dsdata is None:
+                        raise  Exception(f"ERROR: unable to resolve {dsname} to a dataset.")
+                    dsid = dsdata['id']
+                    dssize = dsdata['size']
+                    input_data_size.append(dssize)
+                    print(f"Input dataset ID: {dsname} [{dsid}] {dssize}")
+                    inputs[input[0]] = {'id': dsid, 'src': 'hda', 'size': dssize}
 
             print(f"Running workflow {wfid}")
             new_history_name = output_history_name
             if history_prefix is not None:
                 new_history_name = f"{history_prefix} {output_history_name}"
+            if experiment is not None:
+                new_history_name = f"{experiment} {new_history_name}"
             invocation = gi.workflows.invoke_workflow(wfid, inputs=inputs, history_name=new_history_name)
             id = invocation['id']
             invocations = gi.invocations.wait_for_invocation(id, 86400, 10, False)
@@ -134,13 +149,18 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
                 parts = history_prefix.split()
                 invocations['run'] = parts[0]
                 invocations['cloud'] = parts[1]
-                invocations['job_conf'] = parts[2]
+                if len(parts) > 2:
+                    invocations['job_conf'] = parts[2]
+                else:
+                    invocations['job_conf'] = 'Default'
             else:
                 invocations['run'] = 0
                 invocations['cloud'] = "N/A"
                 invocations['job_conf'] = "Unknown"
             invocations['output_dir'] = metrics_dir
             invocations['inputs'] = ' '.join(input_names)
+            invocations['ref_data_size'] = ref_data_size
+            invocations['input_data_size'] = input_data_size
             #TODO Change this output path. (Change it to what? KS)
             output_path = os.path.join(invocations_dir, id + '.json')
             with open(output_path, 'w') as f:
@@ -241,22 +261,23 @@ def validate(context: Context, args: list):
                         print(f"Reference input dataset {spec[Keys.DATASET_ID]} -> {dsid}")
                         inputs[input[0]] = {'id': dsid, 'src': 'hda'}
 
-        count = 0
+        #count = 0
         for run in workflow[Keys.RUNS]:
-            count += 1
-            for spec in run[Keys.INPUTS]:
-                input = gi.workflows.get_workflow_inputs(wfid, spec[Keys.NAME])
-                if input is None or len(input) == 0:
-                    print(f'ERROR: Invalid input specification for {spec[Keys.NAME]}')
-                    errors += 1
-                else:
-                    dsid = find_dataset_id(gi, spec[Keys.DATASET_ID])
-                    if dsid is None:
-                        print(f"ERROR: Dataset not found {spec[Keys.DATASET_ID]}")
+            #count += 1
+            if Keys.INPUTS in run and run[Keys.INPUTS] is not None:
+                for spec in run[Keys.INPUTS]:
+                    input = gi.workflows.get_workflow_inputs(wfid, spec[Keys.NAME])
+                    if input is None or len(input) == 0:
+                        print(f'ERROR: Invalid input specification for {spec[Keys.NAME]}')
                         errors += 1
                     else:
-                        print(f"Input dataset: {spec[Keys.DATASET_ID]} -> {dsid}")
-                        inputs[input[0]] = {'id': dsid, 'src': 'hda'}
+                        dsid = find_dataset_id(gi, spec[Keys.DATASET_ID])
+                        if dsid is None:
+                            print(f"ERROR: Dataset not found {spec[Keys.DATASET_ID]}")
+                            errors += 1
+                        else:
+                            print(f"Input dataset: {spec[Keys.DATASET_ID]} -> {dsid}")
+                            inputs[input[0]] = {'id': dsid, 'src': 'hda'}
 
         if errors == 0:
             print("This workflow configuration is valid and can be executed on this server.")
@@ -304,7 +325,9 @@ def wait_for_jobs(context, gi: GalaxyInstance, invocations: dict):
                         'inputs': inputs,
                         'metrics': data,
                         'status': status,
-                        'server': context.GALAXY_SERVER
+                        'server': context.GALAXY_SERVER,
+                        'ref_data_size': invocations['ref_data_size'],
+                        'input_data_size': invocations['input_data_size']
                     }
                     output_path = os.path.join(output_dir, f"{job_id}.json")
                     with open(output_path, "w") as f:
@@ -362,10 +385,13 @@ def find_dataset_id(gi, name_or_id):
         pass
 
     try:
-        # print('Trying by name')
-        ds = gi.datasets.get_datasets(name=name_or_id)  # , deleted=True, purged=True)
-        if len(ds) > 0:
-            return ds[0]['id']
+        datasets = gi.datasets.get_datasets(name=name_or_id)  # , deleted=True, purged=True)
+        for ds in datasets:
+            if ds['state'] == 'ok' and not ds['deleted'] and ds['visible']:
+                return ds['id']
+            else:
+                print(f"Dataset {ds['id']} is not valid.")
+
     except:
         print('Caught an exception')
         print(sys.exc_info())
@@ -373,4 +399,28 @@ def find_dataset_id(gi, name_or_id):
     return None
 
 
+def _get_dataset_data(gi, name_or_id):
+    def make_result(data):
+        return {
+            'id': data['id'],
+            'size': data['file_size']
+        }
+
+    try:
+        ds = gi.datasets.show_dataset(name_or_id)
+        return make_result(ds)
+    except Exception as e:
+        pass
+
+    try:
+        datasets = gi.datasets.get_datasets(name=name_or_id)  # , deleted=True, purged=True)
+        for ds in datasets:
+            if ds['state'] == 'ok' and not ds['deleted'] and ds['visible']:
+                # The dict returned by get_datasets does not include the input
+                # file sizes so we need to make another call to show_datasets
+                return make_result(gi.datasets.show_dataset(ds['id']))
+    except Exception as e:
+        print(e)
+
+    return None
 
