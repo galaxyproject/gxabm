@@ -1,11 +1,6 @@
 name: GitHub Release
 on:
   workflow_dispatch:
-    inputs:
-      label:
-        description: Label to determine verion segment to increment.
-        type: string
-        default: patch
 
   pull_request_target:
     types: [ closed ]
@@ -22,7 +17,7 @@ jobs:
         with:
           mode: minium
           count: 1
-          labels: "dev, alpha, beta, rc"
+          labels: "dev"
       - uses: actions/checkout@v3
         with:
            persist-credentials: true
@@ -32,7 +27,7 @@ jobs:
         with:
           file: abm/VERSION
           parser: cat
-          type: ${{ label }}
+          type: dev
       - uses: ksuderman/github-action-tag-release@v2
         env:
           GITHUB_TOKEN: ${{ github.token }}
