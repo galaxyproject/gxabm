@@ -19,6 +19,33 @@ def rollback(context: Context, args: list):
     run(command, get_env(context))
 
 
+def install(context:Context, args: list):
+    # if len(args) == 0:
+    #     print('USAGE: abm <cloud> helm install [-c|--chart CHART] [values.yml...]')
+    #     return
+    chart = "galaxy/galaxy"
+    values_files = []
+    while len(args) > 0:
+        arg = args.pop(0)
+        if arg in ['-c', '--chart']:
+            chart = args.pop(0)
+        else:
+            values_files.append(arg)
+    helm = find_executable('helm')
+    if helm is None:
+        print('ERROR: helm is not available on the $PATH')
+        return
+    env = get_env(context)
+    command = f"helm install galaxy -n galaxy {chart} --create-namespace"
+    if len(values_files) > 0:
+        command = f"{command} -f {' -f '.join(values_files)}"
+    try:
+        run(command, env)
+        print(f"Installed Galaxy to {context.GALAXY_SERVER}")
+    except RuntimeError as e:
+        print(f"Unable to helm install galaxy to {context.GALAXY_SERVER}")
+
+
 def update(context: Context, args: list):
     if len(args) == 0:
         print(f'USAGE: abm <cloud> helm update <values> <namespace> <chart>')
