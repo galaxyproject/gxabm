@@ -105,7 +105,7 @@ def summarize(context: Context, args: list):
     :return: None
     """
     separator = None
-    input_dir = None
+    input_dirs = []
     make_row = make_table_row
     header_row = "Run,Cloud,Job Conf,Workflow,History,Inputs,Tool,Tool Version,State,Slots,Memory,Runtime (Sec),CPU,Memory Limit (Bytes),Memory Max usage (Bytes)"
     for arg in args:
@@ -125,34 +125,34 @@ def summarize(context: Context, args: list):
                 return
             separator = ','
             make_row = make_model_row
-            header_row = "job_id,tool_id,tool_version,state,memory.max_usage_in_bytes,cpuacct.usage,process_count,galaxy_slots,runtime_seconds,ref_data_size,input_data_size"
+            header_row = "job_id,tool_id,tool_version,state,memory.max_usage_in_bytes,cpuacct.usage,process_count,galaxy_slots,runtime_seconds,ref_data_size,input_data_size_1,input_data_size_2"
         else:
-            input_dir = arg
+            input_dirs.append(arg)
 
-    if input_dir is None:
-        input_dir = 'metrics'
+    if len(input_dirs) == 0:
+        input_dirs.append('metrics')
 
     if separator is None:
         separator = ','
 
     print(header_row)
-    for file in os.listdir(input_dir):
-        input_path = os.path.join(input_dir, file)
-        if not os.path.isfile(input_path) or not input_path.endswith('.json'):
-            continue
-        try:
-            with open(input_path, 'r') as f:
-                data = json.load(f)
-            row = make_row(data)
-            print(separator.join([ str(x) for x in row]))
-        except Exception as e:
-            # Silently fail to allow the remainder of the table to be generated.
-            # print(e)
-            pass
+    for input_dir in input_dirs:
+        for file in os.listdir(input_dir):
+            input_path = os.path.join(input_dir, file)
+            if not os.path.isfile(input_path) or not input_path.endswith('.json'):
+                continue
+            try:
+                with open(input_path, 'r') as f:
+                    data = json.load(f)
+                row = make_row(data)
+                print(separator.join([ str(x) for x in row]))
+            except Exception as e:
+                # Silently fail to allow the remainder of the table to be generated.
+                # print(e)
+                pass
 
 
 accept_metrics = ['galaxy_slots', 'galaxy_memory_mb', 'runtime_seconds', 'cpuacct.usage','memory.limit_in_bytes', 'memory.max_usage_in_bytes']  #,'memory.soft_limit_in_bytes']
-
 
 def make_table_row(data: dict):
     row = [ str(data[key]) for key in ['run', 'cloud', 'job_conf', 'workflow_id', 'history_id', 'inputs']]
