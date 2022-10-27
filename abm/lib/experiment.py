@@ -144,10 +144,13 @@ def summarize(context: Context, args: list):
             try:
                 with open(input_path, 'r') as f:
                     data = json.load(f)
+                if data['metrics']['tool_id'] == 'upload1':
+                    continue
                 row = make_row(data)
                 print(separator.join([ str(x) for x in row]))
             except Exception as e:
                 # Silently fail to allow the remainder of the table to be generated.
+                # print(f"Unable to process {input_path}")
                 # print(e)
                 pass
 
