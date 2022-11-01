@@ -192,7 +192,7 @@
       handler: users.show
       params: "[NAME|EMAIL]"
     - name: [ usage ]
-      help: show details about the given user
+      help: display the disk usage for the user
       handler: users.usage
       params: "[NAME|EMAIL]"
 - name: [experiment, exp, ex]
