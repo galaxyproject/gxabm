@@ -12,11 +12,5 @@ test-deploy:
 deploy:
 	twine upload -r pypi dist/*
 
-version:
-	@./release.sh
-
 release:
-	tag_name="v$(cat abm/VERSION)"
-	git tag -a -m "Automatic release of $tag_name" $tag_name
-	git push origin $tag_name
-	gh release create $tag_name --generate-notes
+	./release.sh
