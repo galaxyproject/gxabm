@@ -52,7 +52,7 @@ def metrics(context: Context, args: list):
         return
     gi = connect(context)
     metrics = gi.jobs.get_metrics(args[0])
-    print(json.dumps(metrics[0], indent=4))
+    print(json.dumps(metrics, indent=4))
     # metrics = {}
     # for m in gi.jobs.get_metrics(args[0]):
     #     metrics[m['name']] = get_value(m)
