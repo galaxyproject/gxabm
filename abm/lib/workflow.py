@@ -37,7 +37,7 @@ def upload(context: Context, args: list):
         print('ERROR: no workflow file given')
         return
     path = args[0]
-    if path.startsWith('http'):
+    if path.startswith('http'):
         import_from_url(context, args)
         return
     if not os.path.exists(path):
