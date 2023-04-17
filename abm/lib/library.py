@@ -8,9 +8,11 @@ def list(context: Context, args: list):
         for library in gi.libraries.get_libraries():
             print(f"{library['id']}\t{library['name']}\t{library['description']}")
         return
-    folders = gi.libraries.show_library(args[0], contents=True)
-    for folder in folders:
-        print(f"{folder['id']}\t{folder['type']}\t{folder['name']}")
+    for arg in args:
+        print(f"Library {arg}")
+        folders = gi.libraries.show_library(arg, contents=True)
+        for folder in folders:
+            print(f"{folder['id']}\t{folder['type']}\t{folder['name']}")
 
 
 def create(context: Context, args: list):
@@ -24,6 +26,10 @@ def create(context: Context, args: list):
     gi = connect(context)
     result = gi.libraries.create_library(name, description=description)
     pprint(result)
+
+
+def add_dataset(context: Context, args: list):
+    print("Library add not implemented.")
 
 
 def delete(context: Context, args: list):

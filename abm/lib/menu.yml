@@ -306,6 +306,10 @@
       help: create a new library
       handler: library.create
       params: NAME
+    - name: [add]
+      help: add one or more datasets to the library
+      handler: library.add_dataset
+      params: LIBRARY_ID DATASET_ID [DATASET_ID...]
     - name: [upload, up]
       help: upload a dataset to a libary
       handler: library.upload
