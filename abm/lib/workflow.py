@@ -97,7 +97,7 @@ def import_from_url(context: Context, args:list):
     runnable = for_path(cached_file)
     # runnable = for_uri(url)
     print("Installing tools")
-    result = install_shed_repos(runnable, gi, False)
+    result = install_shed_repos(runnable, gi, False, install_tool_dependencies=True)
     pprint(result)
 
 
