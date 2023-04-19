@@ -112,6 +112,10 @@
       params: NAME
       handler: history.create
       help: create a new history and return its ID
+    - name: [copy, cp]
+      params: HISTORY_ID NAME
+      handler: history.copy
+      help: create a copy of an existing history
     - name: ['export', 'exp', 'ex']
       handler: history.export
       params: "ID [-n|--no-wait]"
