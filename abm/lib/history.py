@@ -250,6 +250,21 @@ def delete(context: Context, args:list):
     print(f"Deleted history {args[0]}")
 
 
+def copy(context:Context, args:list):
+    if len(args) != 2:
+        print("ERROR: Invalid parameters. Provide a history ID and new history name.")
+        return
+    id = args[0]
+    name = args[1]
+
+    gi = connect(context)
+    new_history = gi.histories.create_history(name)
+    datasets = gi.datasets.get_datasets(history_id=id)
+    for dataset in datasets:
+        gi.histories.copy_dataset(new_history['id'], dataset['id'])
+    print(json.dumps(new_history, indent=4))
+
+
 def purge(context: Context, args:list):
     if len(args) != 1:
         print("ERROR: Please pass a string used to filter histories to be deleted.")

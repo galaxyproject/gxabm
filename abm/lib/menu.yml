@@ -112,6 +112,10 @@
       params: NAME
       handler: history.create
       help: create a new history and return its ID
+    - name: [copy, cp]
+      params: HISTORY_ID NAME
+      handler: history.copy
+      help: create a copy of an existing history
     - name: ['export', 'exp', 'ex']
       handler: history.export
       params: "ID [-n|--no-wait]"
@@ -287,7 +291,7 @@
     - name: [create, launch, new]
       handler: cloudlaunch.create
       help: create a new deployment on the specified provider
-      params: "[aws|gcp] NAME [-|--type vmType] [-k|--keypair keyName] [-c|--config config-app]"
+      params: "[aws|gcp] NAME [-t|--type vmType] [-k|--keypair keyName] [-c|--config config-app]"
     - name: [delete, rm]
       help: delete a deployment
       handler: cloudlaunch.delete

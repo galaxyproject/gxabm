@@ -3,7 +3,7 @@
 """
 The Automated Benchmarking Tool
 
-Copyright 2021 The Galaxy Project. All rights reserved.
+Copyright 2023 The Galaxy Project. All rights reserved.
 
 """
 
@@ -58,6 +58,9 @@ def command_list(commands:list):
     return '|'.join(bold(c) for c in commands)
 
 
+def copyright():
+    print(f"    Copyright 2023 The Galaxy Project. All Rights Reserved.\n")
+
 def print_main_help(menu_data):
     print()
     head("    DESCRIPTION")
@@ -79,7 +82,7 @@ def print_main_help(menu_data):
     print(f"        Available SUBCOMMANDS and OPTIONS depend on the command. Use the {bold('help')} subcommand")
     print(f"        to learn more about each of the commands. For example:\n")
     print(f"        $> abm workflow help\n")
-    print("    Copyright 2022 The Galaxy Project\n")
+    copyright()
 
 
 def print_help(menu_data, command):
@@ -108,7 +111,7 @@ def print_help(menu_data, command):
     print(f"        {bold('help')}")
     print("            print this help screen and exit")
     print()
-    print("    Copyright 2022 The Galaxy Project\n")
+    copyright()
 
 
 all_commands = {}
@@ -176,8 +179,7 @@ def version():
     version = getVersion()
     print()
     print(f"    Galaxy Automated Benchmarking v{version}")
-    print(f"    Copyright 2022 The Galaxy Project. All Rights Reserved.\n")
-
+    copyright()
 
 def _get_logopt(args: list):
     OPTS = ['-log', '--log', '-logging', '--logging']
@@ -255,9 +257,6 @@ def entrypoint():
     context = None
     if profile is not None:
         context = Context(profile)
-#        if context.GALAXY_SERVER is None:
-#            print("ERROR: GALAXY_SERVER was not set in the profile.")
-#            return
     if command in all_commands:
         subcommands = all_commands[command]
         if subcommand not in subcommands:
