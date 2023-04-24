@@ -6,7 +6,7 @@ from pprint import pprint
 
 import requests
 import yaml
-from planemo.runnable import for_path
+from planemo.runnable import for_path, for_uri
 from planemo.galaxy.workflows import install_shed_repos
 from common import connect, Context
 from pathlib import Path
@@ -37,7 +37,7 @@ def upload(context: Context, args: list):
         print('ERROR: no workflow file given')
         return
     path = args[0]
-    if path.startsWith('http'):
+    if path.startswith('http'):
         import_from_url(context, args)
         return
     if not os.path.exists(path):
@@ -57,21 +57,48 @@ def import_from_url(context: Context, args:list):
         print("ERROR: no workflow URL given")
         return
     url = args[0]
-    response = requests.get(url)
-    if (response.status_code != 200):
-        print(f"ERROR: There was a problem downloading the workflow: {response.status_code}")
-        print(response.reason)
-        return
+
+    # There is a bug in ephemeris (for lack of a better term) that assumes all
+    # Runnable objects can be found on the local file system
+    input_text = None
+    filename = url.split('/')[-1]
+    cache = os.path.expanduser("~/.abm/cache/workflows")
+    if not os.path.exists(cache):
+        os.makedirs(cache)
+    cached_file = os.path.join(cache, filename)
+    if os.path.exists(cached_file):
+        with open(cached_file) as f:
+            input_text = f.read()
+    else:
+        response = requests.get(url)
+        if (response.status_code != 200):
+            print(f"ERROR: There was a problem downloading the workflow: {response.status_code}")
+            print(response.reason)
+            return
+        input_text = response.text
+        with open(cached_file, 'w') as f:
+            f.write(input_text)
+
+    # response = requests.get(url)
+    # if (response.status_code != 200):
+    #     print(f"ERROR: There was a problem downloading the workflow: {response.status_code}")
+    #     print(response.reason)
+    #     return
     try:
-        workflow = json.loads(response.text)
+        workflow = json.loads(input_text)
     except Exception as e:
         print("ERROR: Unable to parse workflow")
         print(e)
         return
 
     gi = connect(context)
-    result = gi.workflows.import_workflow_dict(workflow)
+    result = gi.workflows.import_workflow_dict(workflow, publish=True)
     print(json.dumps(result, indent=4))
+    runnable = for_path(cached_file)
+    # runnable = for_uri(url)
+    print("Installing tools")
+    result = install_shed_repos(runnable, gi, False, install_tool_dependencies=True)
+    pprint(result)
 
 
 def import_from_config(context: Context, args:list):
