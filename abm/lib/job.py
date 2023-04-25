@@ -54,7 +54,30 @@ def metrics(context: Context, args: list):
         print("ERROR: no job ID provided")
         return
     gi = connect(context)
-    metrics = gi.jobs.get_metrics(args[0])
+    if len(args) > 1:
+        arg = args.pop(0)
+        if arg in ['-h', '--history']:
+            history_id = args.pop(0)
+            log.debug(f"Getting metrics for jobs from history {history_id}")
+            job_list = gi.jobs.get_jobs(history_id=history_id)
+            metrics = []
+            for job in job_list:
+                metrics.append({
+                    'job_id': job['id'],
+                    'job_state': job['state'],
+                    'tool_id': job['tool_id'],
+                    'job_metrics': gi.jobs.get_metrics(job['id'])
+                })
+        else:
+            print(f"ERROR: Unrecognized argument {arg}")
+    else:
+        job = gi.jobs.show_job(args[0])
+        metrics = [{
+            'job_id': job['id'],
+            'job_state': job['state'],
+            'tool_id': job['tool_id'],
+            'job_metrics': gi.jobs.get_metrics(args[0])
+        }]
     print(json.dumps(metrics, indent=4))
     # metrics = {}
     # for m in gi.jobs.get_metrics(args[0]):
