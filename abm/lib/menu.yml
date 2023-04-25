@@ -1,4 +1,4 @@
-- name: 
+- name:
     - benchmark
     - bench
   help: 'manage benchmarks'
@@ -158,9 +158,9 @@
   help: manage jobs on the server
   menu:
     - name: [ list, ls ]
-      help: list all jobs, or jobs in a particular state
+      help: list all jobs, or jobs in a particular state. Can filter by a history.
       handler: job.list
-      params: "[-s|--state ok|running|error|waiting]"
+      params: "[-s|--state ok|running|error|waiting] [-h|--history_id historyID]"
     - name: [ show ]
       help: show detailed information about a job
       handler: job.show
@@ -174,9 +174,9 @@
       handler: job.cancel
       params: ID
     - name: [ metrics, stats ]
-      help: display runtime metrics for the job
+      help: display runtime metrics for the job, or a list of jobs contained in a history
       handler: job.metrics
-      params: ID
+      params: "[ID | -h|--history historyID]"
 - name: [users, user]
   help: manage users on the Galaxy instance
   menu:
