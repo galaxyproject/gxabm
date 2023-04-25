@@ -1,4 +1,4 @@
-- name: 
+- name:
     - benchmark
     - bench
   help: 'manage benchmarks'
@@ -174,9 +174,9 @@
       handler: job.cancel
       params: ID
     - name: [ metrics, stats ]
-      help: display runtime metrics for the job
+      help: display runtime metrics for the job, or a list of jobs contained in a history
       handler: job.metrics
-      params: ID
+      params: "[ID | -h|--history historyID]"
 - name: [users, user]
   help: manage users on the Galaxy instance
   menu:
