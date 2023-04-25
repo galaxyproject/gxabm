@@ -8,6 +8,7 @@ log = logging.getLogger('abm')
 
 def list(context: Context, args: list):
     state = ''
+    history_id = None
     log.debug('Processing args')
     log_state = False
     while len(args) > 0:
@@ -18,14 +19,16 @@ def list(context: Context, args: list):
                 return
             state = args.pop(0)
             log_state = True
-
+        elif arg in ['-h', '--history']:
+            history_id = args.pop(0)
+            log.debug(f"Getting jobs from history {history_id}")
     log.debug('Connecting to the Galaxy server')
     gi = connect(context)
     if log_state:
         log.debug(f"Getting jobs with state {state}")
     else:
         log.debug("Getting job list")
-    job_list = gi.jobs.get_jobs(state=state)
+    job_list = gi.jobs.get_jobs(state=state, history_id=history_id)
     log.debug(f"Iterating over job list with {len(job_list)} items")
     for job in job_list:
         print(f"{job['id']}\t{job['state']}\t{job['update_time']}\t{job['tool_id']}")
