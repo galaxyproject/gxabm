@@ -15,6 +15,10 @@
       handler: benchmark.validate
       help: validate that workflow and dataset names can be translated into IDs
       params: PATH
+    - name: [test]
+      handler: benchmark.test
+      help: experimental code
+      params: VARIES
 - name:
     - workflow
     - wf

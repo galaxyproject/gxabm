@@ -424,3 +424,10 @@ def _get_dataset_data(gi, name_or_id):
 
     return None
 
+
+from pprint import pprint
+def test(context:Context, args:list):
+    id = '64230724fb00faed'
+    gi = connect(context)
+    inputs = gi.workflows.get_workflow_inputs(id)
+    pprint(inputs)
