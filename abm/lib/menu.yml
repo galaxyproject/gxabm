@@ -1,4 +1,4 @@
-- name: 
+- name:
     - benchmark
     - bench
   help: 'manage benchmarks'
@@ -15,6 +15,10 @@
       handler: benchmark.validate
       help: validate that workflow and dataset names can be translated into IDs
       params: PATH
+    - name: [test]
+      handler: benchmark.test
+      help: experimental code
+      params: VARIES
 - name:
     - workflow
     - wf
@@ -55,6 +59,14 @@
       handler: workflow.rename
       params: "ID 'new workflow name'"
       help: "rename a workflow on the Galaxy server"
+    - name: ['invocation']
+      handler: workflow.invocation
+      params: "--workflow WORKFLOW_ID --invocation INVOCATION_ID"
+      help: show details about a specific workflow invocation
+    - name: ['inputs']
+      help: list inputs required by a workflow
+      params: WORKFLOW_ID
+      handler: workflow.inputs
     - name: ['test']
       handler: workflow.test
       help: run some test code
@@ -86,6 +98,10 @@
       handler: dataset.show
       params: ID
       help: show detailed information on a dataset
+    - name: ['get']
+      handler: dataset.get
+      params: NAME_OR_ID
+      help: show information for a given dataset name or ID
     - name: [cleanup, clean, clear]
       handler: dataset.clean
       params: "[STATE [STATE...]]"
@@ -158,9 +174,9 @@
   help: manage jobs on the server
   menu:
     - name: [ list, ls ]
-      help: list all jobs, or jobs in a particular state
+      help: list all jobs, or jobs in a particular state. Can filter by a history.
       handler: job.list
-      params: "[-s|--state ok|running|error|waiting]"
+      params: "[-s|--state ok|running|error|waiting] [-h|--history_id historyID]"
     - name: [ show ]
       help: show detailed information about a job
       handler: job.show
@@ -174,9 +190,9 @@
       handler: job.cancel
       params: ID
     - name: [ metrics, stats ]
-      help: display runtime metrics for the job
+      help: display runtime metrics for the job, or a list of jobs contained in a history
       handler: job.metrics
-      params: ID
+      params: "[ID | -h|--history historyID]"
 - name: [users, user]
   help: manage users on the Galaxy instance
   menu:

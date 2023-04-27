@@ -5,7 +5,7 @@ import yaml
 import logging
 import argparse
 from lib import Keys, INVOCATIONS_DIR, METRICS_DIR
-from lib.common import connect, Context
+from lib.common import connect, Context, print_json
 from bioblend.galaxy import GalaxyInstance
 
 log = logging.getLogger('abm')
@@ -122,19 +122,37 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
                         print(f'ERROR: Invalid input specification for {spec[Keys.NAME]}')
                         return False
 
-                    dsname = spec[Keys.DATASET_ID]
-                    input_names.append(dsname)
-                    #inputs.append(dsname)
-                    # dsid = find_dataset_id(gi, dsname)
-                    dsdata = _get_dataset_data(gi, dsname)
-                    if dsdata is None:
-                        raise  Exception(f"ERROR: unable to resolve {dsname} to a dataset.")
-                    dsid = dsdata['id']
-                    dssize = dsdata['size']
-                    input_data_size.append(dssize)
-                    print(f"Input dataset ID: {dsname} [{dsid}] {dssize}")
-                    inputs[input[0]] = {'id': dsid, 'src': 'hda', 'size': dssize}
-
+                    if 'value' in spec:
+                        inputs[input[0]] = spec['value']
+                        print(f"Input data value: {spec['value']}")
+                    elif 'collection' in spec:
+                        dsname = spec['collection']
+                        input_names.append(dsname)
+                        #inputs.append(dsname)
+                        # dsid = find_dataset_id(gi, dsname)
+                        dsdata = _get_dataset_data(gi, dsname)
+                        if dsdata is None:
+                            raise  Exception(f"ERROR: unable to resolve {dsname} to a dataset.")
+                        dsid = dsdata['id']
+                        dssize = dsdata['size']
+                        input_data_size.append(dssize)
+                        print(f"Input dataset ID: {dsname} [{dsid}] {dssize}")
+                        inputs[input[0]] = {'id': dsid, 'src': 'hdca', 'size': dssize}
+                    elif Keys.DATASET_ID in spec:
+                        dsname = spec[Keys.DATASET_ID]
+                        input_names.append(dsname)
+                        #inputs.append(dsname)
+                        # dsid = find_dataset_id(gi, dsname)
+                        dsdata = _get_dataset_data(gi, dsname)
+                        if dsdata is None:
+                            raise  Exception(f"ERROR: unable to resolve {dsname} to a dataset.")
+                        dsid = dsdata['id']
+                        dssize = dsdata['size']
+                        input_data_size.append(dssize)
+                        print(f"Input dataset ID: {dsname} [{dsid}] {dssize}")
+                        inputs[input[0]] = {'id': dsid, 'src': 'hda', 'size': dssize}
+                    else:
+                        raise Exception(f'Invalid input value')
             print(f"Running workflow {wfid}")
             new_history_name = output_history_name
             if history_prefix is not None:
@@ -415,12 +433,33 @@ def _get_dataset_data(gi, name_or_id):
     try:
         datasets = gi.datasets.get_datasets(name=name_or_id)  # , deleted=True, purged=True)
         for ds in datasets:
-            if ds['state'] == 'ok' and not ds['deleted'] and ds['visible']:
+            print_json(ds)
+            state = True
+            if 'state' in ds:
+                state = ds['state'] == 'ok'
+            if state and not ds['deleted'] and ds['visible']:
                 # The dict returned by get_datasets does not include the input
                 # file sizes so we need to make another call to show_datasets
                 return make_result(gi.datasets.show_dataset(ds['id']))
+            # if ds['state'] == 'ok':
+            #     print('state is ok')
+            # if ds['deleted']:
+            #     print('dataset deleted')
+            # else:
+            #     print('dataset not deleted')
+            # if ds['visible']:
+            #     print('dataset visible')
+            # else:
+            #     print('dataset not visible')
     except Exception as e:
-        print(e)
+        pass
 
     return None
 
+
+from pprint import pprint
+def test(context:Context, args:list):
+    id = 'c90fffcf98b31cd3'
+    gi = connect(context)
+    inputs = gi.workflows.get_workflow_inputs(id, 'PE fastq input')
+    pprint(inputs)

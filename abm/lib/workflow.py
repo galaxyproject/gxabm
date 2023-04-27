@@ -6,6 +6,7 @@ from pprint import pprint
 
 import requests
 import yaml
+import planemo
 from planemo.runnable import for_path, for_uri
 from planemo.galaxy.workflows import install_shed_repos
 from common import connect, Context
@@ -141,6 +142,47 @@ def show(context: Context, args: list):
         return
     gi = connect(context)
     result = gi.workflows.show_workflow(args[0])
+    print(json.dumps(result, indent=4))
+
+
+def inputs(context:Context, args:list):
+    if len(args) == 0:
+        print('ERROR: no workflow ID given')
+        return
+    gi = connect(context)
+    workflow = gi.workflows.show_workflow(args[0])
+    inputs = workflow['inputs']
+    for input_name, input_dict in inputs.items():
+        print(input_name)
+        print(json.dumps(input_dict, indent=4))
+
+
+def invocation(context:Context, args:list):
+    if len(args) != 2:
+        print("ERROR: Invalid paramaeters. A workflow ID invocation ID are required")
+        return
+    workflow_id = None
+    invocation_id = None
+    while len(args) > 0:
+        arg = args.pop(0)
+        if arg in ['-w', '--work', '--workflow']:
+            print("Setting workflow id")
+            workflow_id = args.pop(0)
+        # elif arg in ['-i', '--invoke', '--invocation']:
+        #     invocation_id = args.pop(0)
+        #     print("Setting invocation id")
+        else:
+            print(f'Invalid parameter: "{arg}')
+            return
+    if workflow_id is None:
+        print("ERROR: No workflow ID provided")
+        return
+    # if invocation_id is None:
+    #     print("ERROR: No invocation ID provided")
+    #     return
+    gi = connect(context)
+    # result = gi.workflows.show_invocation(workflow_id, invocation_id)
+    result = gi.invocations.get_invocations(workflow_id=workflow_id, view='element', step_details=True)
     print(json.dumps(result, indent=4))
 
 

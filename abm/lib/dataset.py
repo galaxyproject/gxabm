@@ -7,7 +7,6 @@ from pathlib import Path
 import os
 import yaml
 
-
 def list(context: Context, args: list):
     gi = connect(context)
     kwargs = {
@@ -29,11 +28,10 @@ def list(context: Context, args: list):
         print('No datasets found')
         return
     print(f'Found {len(datasets)} datasets')
-    print('ID\tHistory\tDeleted\tState\tName')
+    print('ID\tHistory\tType\tDeleted\tState\tName')
     for dataset in datasets:
         state = dataset['state'] if 'state' in dataset else 'unknown'
-        print(f"{dataset['id']}\t{dataset['history_id']}\t{dataset['deleted']}\t{state}\t{dataset['name']}")
-        #pprint(dataset)
+        print(f"{dataset['id']}\t{dataset['history_id']}\t{dataset['history_content_type']}\t{dataset['deleted']}\t{state}\t{dataset['name']}")
 
 
 def clean(context: Context, args: list):
@@ -59,6 +57,15 @@ def show(context: Context, args: list):
         return
     gi = connect(context)
     result = gi.datasets.show_dataset(args[0])
+    print(json.dumps(result, indent=4))
+
+
+def get(context: Context, args: list):
+    if len(args) == 0:
+        print("ERROR: no dataset ID provided")
+        return
+    gi = connect(context)
+    result = gi.datasets.get_datasets(args[0])
     print(json.dumps(result, indent=4))
 
 
