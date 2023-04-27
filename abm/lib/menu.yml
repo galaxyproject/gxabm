@@ -59,6 +59,14 @@
       handler: workflow.rename
       params: "ID 'new workflow name'"
       help: "rename a workflow on the Galaxy server"
+    - name: ['invocation']
+      handler: workflow.invocation
+      params: "--workflow WORKFLOW_ID --invocation INVOCATION_ID"
+      help: show details about a specific workflow invocation
+    - name: ['inputs']
+      help: list inputs required by a workflow
+      params: WORKFLOW_ID
+      handler: workflow.inputs
     - name: ['test']
       handler: workflow.test
       help: run some test code
@@ -90,6 +98,10 @@
       handler: dataset.show
       params: ID
       help: show detailed information on a dataset
+    - name: ['get']
+      handler: dataset.get
+      params: NAME_OR_ID
+      help: show information for a given dataset name or ID
     - name: [cleanup, clean, clear]
       handler: dataset.clean
       params: "[STATE [STATE...]]"
