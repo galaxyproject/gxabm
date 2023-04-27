@@ -41,8 +41,8 @@ class Context:
 
 
 
-def print_json(obj):
-    print(json.dumps(obj, indent=2))
+def print_json(obj, indent=2):
+    print(json.dumps(obj, indent=indent))
 
 
 def print_yaml(obj):
