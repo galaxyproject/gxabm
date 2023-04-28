@@ -147,11 +147,10 @@ def summarize(context: Context, args: list):
             if not os.path.isfile(input_path) or not input_path.endswith('.json'):
                 continue
             try:
-                print(f"Loading {input_path}")
                 with open(input_path, 'r') as f:
                     data = json.load(f)
-                if data['job_metrics']['tool_id'] == 'upload1':
-                    print('Ignoring upload tool')
+                if data['metrics']['tool_id'] == 'upload1':
+                    #print('Ignoring upload tool')
                     continue
                 row = make_row(data)
                 print(separator.join([ str(x) for x in row]))
@@ -167,15 +166,15 @@ accept_metrics = ['galaxy_slots', 'galaxy_memory_mb', 'runtime_seconds', 'cpuacc
 
 def make_table_row(data: dict):
     row = [ str(data[key]) for key in ['run', 'cloud', 'job_conf', 'workflow_id', 'history_id', 'inputs']]
-    row.append(parse_toolid(data['job_metrics']['tool_id']))
-    row.append(data['job_metrics']['state'])
-    for e in _get_metrics(data['job_metrics']['job_metrics']):
+    row.append(parse_toolid(data['metrics']['tool_id']))
+    row.append(data['metrics']['state'])
+    for e in _get_metrics(data['metrics']['job_metrics']):
         row.append(e)
     return row
 
 
 def make_model_row(data: dict):
-    metrics = data['job_metrics']
+    metrics = data['metrics']
     row = []
     row.append(metrics['id'])
     tool_id = metrics['tool_id']
