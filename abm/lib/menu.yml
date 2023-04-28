@@ -176,7 +176,7 @@
     - name: [ list, ls ]
       help: list all jobs, or jobs in a particular state. Can filter by a history.
       handler: job.list
-      params: "[-s|--state ok|running|error|waiting] [-h|--history_id historyID]"
+      params: "[-s|--state ok|running|error|waiting] [-h|--history historyID]"
     - name: [ show ]
       help: show detailed information about a job
       handler: job.show
