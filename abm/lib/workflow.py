@@ -9,7 +9,7 @@ import yaml
 import planemo
 from planemo.runnable import for_path, for_uri
 from planemo.galaxy.workflows import install_shed_repos
-from common import connect, Context
+from common import connect, Context, summarize_metrics
 from pathlib import Path
 
 log = logging.getLogger('abm')
@@ -223,4 +223,20 @@ def rename(context: Context, args: list):
     result = gi.workflows.update_workflow(args[0], name=args[1])
     print(f"Renamed workflow to {result['name']}")
 
-
+def summarize(context: Context, args: list):
+    if len(args) == 0:
+        print("ERROR: Provide one or more workflow ID values.")
+        return
+    gi = connect(context)
+    wid = args[0]
+    all_jobs = []
+    invocations = gi.invocations.get_invocations(workflow_id=wid)
+    for invocation in invocations:
+        id = invocation['id']
+        jobs = gi.jobs.get_jobs(invocation_id=id, workflow_id=wid)
+        for job in jobs:
+            job['invocation_id'] = id
+            job['workflow_id'] = wid
+            all_jobs.append(job)
+    summarize_metrics(gi, all_jobs)
+    # summarize_metrics(gi, gi.jobs.get_jobs(workflow_id=args[0]))

@@ -3,7 +3,7 @@ import os
 import sys
 import yaml
 
-from lib.common import connect, parse_profile, Context
+from lib.common import connect, parse_profile, Context, summarize_metrics
 from pprint import pprint
 from pathlib import Path
 
@@ -306,3 +306,82 @@ def tag(context: Context, args: list):
         args += history['tags']
     gi.histories.update_history(hid, tags=args)
     print(f"Set history tags to: {', '.join(args)}")
+
+def summarize(context: Context, args: list):
+    if len(args) == 0:
+        print("ERROR: Provide one or more history ID values.")
+        return
+    gi = connect(context)
+    hid = args[0]
+    all_jobs = []
+    invocations = gi.invocations.get_invocations(history_id=hid)
+    for invocation in invocations:
+        id = invocation['id']
+        jobs = gi.jobs.get_jobs(history_id=hid, invocation_id=id)
+        for job in jobs:
+            job['invocation_id'] = id
+            job['history_id'] = hid
+            if 'workflow_id' in invocation:
+                job['workflow_id'] = invocation['workflow_id']
+            all_jobs.append(job)
+    # summarize_metrics(gi, gi.jobs.get_jobs(history_id=args[0]))
+    summarize_metrics(gi, all_jobs)
+
+# def summarize(context: Context, args: list):
+#     if len(args) == 0:
+#         print("ERROR: Provide one or more history ID values.")
+#         return
+#
+#     header = ['id', 'history', 'state']
+#     header.extend([
+#     "cpuacct.usage",
+#     "end_epoch",
+#     "galaxy_memory_mb",
+#     "galaxy_slots",
+#     "memory.failcnt",
+#     "memory.limit_in_bytes",
+#     "memory.max_usage_in_bytes",
+#     "memory.memsw.limit_in_bytes",
+#     "memory.memsw.max_usage_in_bytes",
+#     "memory.oom_control.oom_kill_disable",
+#     "memory.oom_control.under_oom",
+#     "memory.soft_limit_in_bytes",
+#     "memtotal",
+#     "processor_count",
+#     "runtime_seconds",
+#     "start_epoch",
+#     "swaptotal",
+#     "uname"
+#     ])
+#     print(','.join(header))
+#     gi = connect(context)
+#     jobs = gi.jobs.get_jobs(history_id=args[0])
+#     #print("Run,Cloud,Job Conf,Workflow,History,Inputs,Tool,Tool Version,State,Slots,Memory,Runtime (Sec),CPU,Memory Limit (Bytes),Memory Max usage (Bytes)")
+#     for job in jobs:
+#         job_metrics = gi.jobs.get_metrics(job['id'])
+#         row = []
+#         row.append(job['id'])
+#         row.append(job['history_id'])
+#         row.append(job['state'])
+#         metrics = metrics_to_dict(job_metrics)
+#         # pprint(metrics.keys())
+#         # keys = list(metrics.keys())
+#         keys = get_keys(metrics)
+#         for key in get_keys(metrics):
+#             row.append(metrics[key])
+#         print(','.join(row), end='')
+#
+# def metrics_to_dict(metrics: list):
+#     result = dict()
+#     for m in metrics:
+#         result[m['name']] = m['raw_value']
+#     return result
+#
+#
+# def get_keys(d: dict):
+#     result = []
+#     for key in d.keys():
+#         # print(f"Appending {key}")
+#         result.append(key)
+#     result.sort()
+#     return result

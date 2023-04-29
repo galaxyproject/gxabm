@@ -166,3 +166,92 @@ def find_executable(name):
     return run(f"which {name}")
 
 
+# This is all the job metrics returned by Galaxy
+#    "cpuacct.usage",
+#     "end_epoch",
+#     "galaxy_memory_mb",
+#     "galaxy_slots",
+#     "memory.failcnt",
+#     "memory.limit_in_bytes",
+#     "memory.max_usage_in_bytes",
+#     "memory.memsw.limit_in_bytes",
+#     "memory.memsw.max_usage_in_bytes",
+#     "memory.oom_control.oom_kill_disable",
+#     "memory.oom_control.under_oom",
+#     "memory.soft_limit_in_bytes",
+#     "memtotal",
+#     "processor_count",
+#     "runtime_seconds",
+#     "start_epoch",
+#     "swaptotal",
+#     "uname"
+
+def summarize_metrics(gi, jobs: list):
+    header = ['id', 'history', 'state']
+    header= [
+    "id",
+    "history",
+    "state",
+    "tool_id",
+    "invocation_id",
+    "workflow_id",
+    "cpuacct.usage",
+    # "end_epoch",
+    "galaxy_memory_mb",
+    "galaxy_slots",
+    # "memory.failcnt",
+    "memory.limit_in_bytes",
+    # "memory.max_usage_in_bytes",
+    # "memory.memsw.limit_in_bytes",
+    # "memory.memsw.max_usage_in_bytes",
+    # "memory.oom_control.oom_kill_disable",
+    # "memory.oom_control.under_oom",
+    # "memory.soft_limit_in_bytes",
+    "memtotal",
+    "processor_count",
+    "runtime_seconds",
+    # "start_epoch",
+    # "swaptotal",
+    # "uname"
+    ]
+
+    print(','.join(header))
+    #print("Run,Cloud,Job Conf,Workflow,History,Inputs,Tool,Tool Version,State,Slots,Memory,Runtime (Sec),CPU,Memory Limit (Bytes),Memory Max usage (Bytes)")
+    for job in jobs:
+        job_metrics = gi.jobs.get_metrics(job['id'])
+        row = []
+        # row.append(job['id'])
+        # row.append(job['history_id'])
+        # row.append(job['state'])
+        metrics = metrics_to_dict(job_metrics, header)
+        metrics['id'] = job['id']
+        metrics['history'] = job['history_id']
+        metrics['state'] = job['state']
+        metrics['tool_id'] = job['tool_id']
+        metrics['invocation_id'] = job['invocation_id']
+        # pprint(metrics.keys())
+        # keys = list(metrics.keys())
+        # keys = get_keys(metrics)
+        for key in header:
+            if key in metrics:
+                row.append(metrics[key])
+            else:
+                row.append('')
+        print(','.join(row), end='\n')
+
+
+def metrics_to_dict(metrics: list, accept:list):
+    result = dict()
+    for m in metrics:
+        key = m['name']
+        if key in accept:
+            result[key] = m['raw_value']
+    return result
+
+
+def get_keys(d: dict):
+    result = []
+    for key in d.keys():
+        result.append(key)
+    result.sort()
+    return result
