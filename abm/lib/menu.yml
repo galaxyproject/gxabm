@@ -67,6 +67,10 @@
       help: list inputs required by a workflow
       params: WORKFLOW_ID
       handler: workflow.inputs
+    - name: [summary, summarize]
+      handler: workflow.summarize
+      help: generate a CSV with job metrics for all workflow runs
+      params: ID [ID ...]
     - name: ['test']
       handler: workflow.test
       help: run some test code
@@ -148,6 +152,10 @@
       handler: history.show
       params: "ID [-c|--contents]"
       help: show detailed information about a history
+    - name: [summarize, summary, table]
+      handler: history.summarize
+      params: "ID [ID...]"
+      help: Generate a CSV table with runtime metrics for all jobs in the history.
     - name: [publish, pub]
       handler: history.publish
       help: publish the given history
@@ -193,6 +201,10 @@
       help: display runtime metrics for the job, or a list of jobs contained in a history
       handler: job.metrics
       params: "[ID | -h|--history historyID]"
+    - name: [ rerun ]
+      handler: job.rerun
+      params: JOB_ID
+      help: re-run a job
 - name: [users, user]
   help: manage users on the Galaxy instance
   menu:
