@@ -201,6 +201,10 @@
       help: display runtime metrics for the job, or a list of jobs contained in a history
       handler: job.metrics
       params: "[ID | -h|--history historyID]"
+    - name: [ rerun ]
+      handler: job.rerun
+      params: JOB_ID
+      help: re-run a job
 - name: [users, user]
   help: manage users on the Galaxy instance
   menu:
