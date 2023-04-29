@@ -3,7 +3,7 @@ import os
 import sys
 import yaml
 
-from lib.common import connect, parse_profile, Context
+from lib.common import connect, parse_profile, Context, summarize_metrics
 from pprint import pprint
 from pathlib import Path
 
@@ -306,3 +306,23 @@ def tag(context: Context, args: list):
         args += history['tags']
     gi.histories.update_history(hid, tags=args)
     print(f"Set history tags to: {', '.join(args)}")
+
+def summarize(context: Context, args: list):
+    if len(args) == 0:
+        print("ERROR: Provide one or more history ID values.")
+        return
+    gi = connect(context)
+    hid = args[0]
+    all_jobs = []
+    invocations = gi.invocations.get_invocations(history_id=hid)
+    for invocation in invocations:
+        id = invocation['id']
+        jobs = gi.jobs.get_jobs(history_id=hid, invocation_id=id)
+        for job in jobs:
+            job['invocation_id'] = id
+            job['history_id'] = hid
+            if 'workflow_id' in invocation:
+                job['workflow_id'] = invocation['workflow_id']
+            all_jobs.append(job)
+    # summarize_metrics(gi, gi.jobs.get_jobs(history_id=args[0]))
+    summarize_metrics(gi, all_jobs)

@@ -1,5 +1,5 @@
 import json
-from .common import connect, Context
+from .common import connect, Context, print_json
 from pprint import pprint
 import logging
 
@@ -104,4 +104,13 @@ def problems(context: Context, args: list):
         print('ERROR: no job ID provided.')
         return
     gi = connect(context)
-    pprint(gi.jobs.get_common_problems(args[0]))
+    print_json(gi.jobs.get_common_problems(args[0]))
+
+
+def rerun(context: Context, args: list):
+    if len(args) == 0:
+        print("ERROR: no job ID provided")
+        return
+    gi = connect(context)
+    result = gi.jobs.rerun_job(args[0])
+    print_json(result)
