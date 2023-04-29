@@ -187,7 +187,6 @@ def find_executable(name):
 #     "uname"
 
 def summarize_metrics(gi, jobs: list):
-    header = ['id', 'history', 'state']
     header= [
     "id",
     "history",
@@ -216,22 +215,15 @@ def summarize_metrics(gi, jobs: list):
     ]
 
     print(','.join(header))
-    #print("Run,Cloud,Job Conf,Workflow,History,Inputs,Tool,Tool Version,State,Slots,Memory,Runtime (Sec),CPU,Memory Limit (Bytes),Memory Max usage (Bytes)")
     for job in jobs:
         job_metrics = gi.jobs.get_metrics(job['id'])
         row = []
-        # row.append(job['id'])
-        # row.append(job['history_id'])
-        # row.append(job['state'])
         metrics = metrics_to_dict(job_metrics, header)
         metrics['id'] = job['id']
         metrics['history'] = job['history_id']
         metrics['state'] = job['state']
         metrics['tool_id'] = job['tool_id']
         metrics['invocation_id'] = job['invocation_id']
-        # pprint(metrics.keys())
-        # keys = list(metrics.keys())
-        # keys = get_keys(metrics)
         for key in header:
             if key in metrics:
                 row.append(metrics[key])

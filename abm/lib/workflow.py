@@ -239,4 +239,3 @@ def summarize(context: Context, args: list):
             job['workflow_id'] = wid
             all_jobs.append(job)
     summarize_metrics(gi, all_jobs)
-    # summarize_metrics(gi, gi.jobs.get_jobs(workflow_id=args[0]))
