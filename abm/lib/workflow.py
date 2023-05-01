@@ -182,8 +182,15 @@ def invocation(context:Context, args:list):
     #     return
     gi = connect(context)
     # result = gi.workflows.show_invocation(workflow_id, invocation_id)
-    result = gi.invocations.get_invocations(workflow_id=workflow_id, view='element', step_details=True)
-    print(json.dumps(result, indent=4))
+    invocations = gi.invocations.get_invocations(workflow_id=workflow_id, view='element', step_details=True)
+    # print(json.dumps(result, indent=4))
+    print('ID\tState\tWorkflow\tHistory')
+    for invocation in invocations:
+        id = invocation['id']
+        state = invocation['state']
+        workflow = invocation['workflow_id']
+        history = invocation['history_id']
+        print(f'{id}\t{state}\t{workflow}\t{history}')
 
 
 def find(context: Context, args: list):

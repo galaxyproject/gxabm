@@ -243,6 +243,17 @@
       help: playground code
       handler: experiment.test
       params: [VARIES]
+- name: [invocation, inv, invocations]
+  help: get information about job and workflow invocations
+  menu:
+    - name: [list, ls]
+      help: list all invocations.
+      handler: invocation.doList
+      params: "[-w|--workflow ID] [-h|--history ID]"
+    - name: [summarize]
+      help: generate a CSV of job metrics for an invocation
+      params: ID
+      handler: invocation.summarize
 - name: [helm]
   help: execute a helm command
   menu:
