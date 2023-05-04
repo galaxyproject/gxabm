@@ -312,17 +312,29 @@ def summarize(context: Context, args: list):
         print("ERROR: Provide one or more history ID values.")
         return
     gi = connect(context)
-    hid = args[0]
     all_jobs = []
-    invocations = gi.invocations.get_invocations(history_id=hid)
-    for invocation in invocations:
-        id = invocation['id']
-        jobs = gi.jobs.get_jobs(history_id=hid, invocation_id=id)
+    while len(args) > 0:
+        hid = args.pop(0)
+        history = gi.histories.show_history(history_id=hid)
+        jobs = gi.jobs.get_jobs(history_id=hid)
         for job in jobs:
-            job['invocation_id'] = id
+            job['invocation_id'] = ''
             job['history_id'] = hid
-            if 'workflow_id' in invocation:
-                job['workflow_id'] = invocation['workflow_id']
+            job['history_name'] = history['name']
+            job['workflow_id'] = ''
+            # if 'workflow_id' in invocation:
+            #     job['workflow_id'] = invocation['workflow_id']
             all_jobs.append(job)
+        # invocations = gi.invocations.get_invocations(history_id=hid)
+        # for invocation in invocations:
+        #     id = invocation['id']
+        #     #jobs = gi.jobs.get_jobs(history_id=hid, invocation_id=id)
+        #     jobs = gi.jobs.get_jobs(history_id=hid)
+        #     for job in jobs:
+        #         job['invocation_id'] = id
+        #         job['history_id'] = hid
+        #         if 'workflow_id' in invocation:
+        #             job['workflow_id'] = invocation['workflow_id']
+        #         all_jobs.append(job)
     # summarize_metrics(gi, gi.jobs.get_jobs(history_id=args[0]))
     summarize_metrics(gi, all_jobs)

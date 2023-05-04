@@ -189,7 +189,8 @@ def find_executable(name):
 def summarize_metrics(gi, jobs: list):
     header= [
     "id",
-    "history",
+    "history_id",
+    "history_name",
     "state",
     "tool_id",
     "invocation_id",
@@ -220,7 +221,8 @@ def summarize_metrics(gi, jobs: list):
         row = []
         metrics = metrics_to_dict(job_metrics, header)
         metrics['id'] = job['id']
-        metrics['history'] = job['history_id']
+        metrics['history_id'] = job['history_id']
+        metrics['history_name'] = job['history_name']
         metrics['state'] = job['state']
         metrics['tool_id'] = job['tool_id']
         metrics['invocation_id'] = job['invocation_id']
