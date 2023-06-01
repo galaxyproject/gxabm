@@ -143,7 +143,7 @@ def import_from_config(context: Context, args: list):
 
 
 def _import_from_url(gi, history, url, **kwargs):
-    response = gi.tools.put_url(url, history, kwargs)
+    response = gi.tools.put_url(url, history, **kwargs)
     print(json.dumps(response, indent=4))
 
 
