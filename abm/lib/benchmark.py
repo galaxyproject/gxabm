@@ -161,7 +161,8 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
                 new_history_name = f"{experiment} {new_history_name}"
             invocation = gi.workflows.invoke_workflow(wfid, inputs=inputs, history_name=new_history_name)
             id = invocation['id']
-            invocations = gi.invocations.wait_for_invocation(id, 86400, 10, False)
+            #invocations = gi.invocations.wait_for_invocation(id, 86400, 10, False)
+            invocations = gi.invocations.wait_for_invocation(id, 86400, 10, True)
             print("Waiting for jobs")
             if history_prefix is not None:
                 parts = history_prefix.split()
