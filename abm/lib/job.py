@@ -43,6 +43,21 @@ def show(context: Context, args: list):
     print(json.dumps(job, indent=4))
 
 
+def wait(context:Context, args: list):
+    if len(args) != 1:
+        print("ERROR: Invalid parameters. Job ID is required")
+        return
+    gi = connect(context)
+    state = "Unknown"
+    waiting = True
+    while waiting:
+        job = gi.jobs.show_job(args[0], full_details=False)
+        state = job["state"]
+        if state == "ok" or state == "error":
+            waiting = False
+    print(json.dumps(job, indent=4))
+
+
 def get_value(metric: dict):
     if metric['name'] == 'runtime_seconds':
         return metric['raw_value']

@@ -197,6 +197,10 @@
       help: kills a job
       handler: job.cancel
       params: ID
+    - name: [wait]
+      help: Wait for a job to finish running
+      handler: job.wait
+      params: ID
     - name: [ metrics, stats ]
       help: display runtime metrics for the job, or a list of jobs contained in a history
       handler: job.metrics
