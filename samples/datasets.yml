@@ -1,0 +1,9 @@
+dna-1G: https://js2.jetstream-cloud.org:8001/swift/v1/testing-data/ERR9856796.fastq.gz
+dna-6G: https://galaxy-benchmark-data.s3.amazonaws.com/ERR9856694.fastq.gz
+dna-12G: https://galaxy-benchmark-data.s3.amazonaws.com/ERR9856489.fastq.gz
+rna-20-1: https://benchmarking-inputs.s3.amazonaws.com/SRR24043307/downsampled20-SRR24043307-1.fastq.gz
+rna-20-2: https://benchmarking-inputs.s3.amazonaws.com/SRR24043307/downsampled20-SRR24043307-2.fastq.gz
+rna-50-1: https://benchmarking-inputs.s3.amazonaws.com/SRR24043307/downsampled50-SRR24043307-1.fastq.gz
+rna-50-2: https://benchmarking-inputs.s3.amazonaws.com/SRR24043307/downsampled50-SRR24043307-2.fastq.gz
+rna-1: https://benchmarking-inputs.s3.amazonaws.com/SRR24043307/SRR24043307-1.fastq.gz
+rna-2: https://benchmarking-inputs.s3.amazonaws.com/SRR24043307/SRR24043307-2.fastq.gz

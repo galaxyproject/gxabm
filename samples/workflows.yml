@@ -1,0 +1,3 @@
+dna: https://galaxy-benchmark-data.s3.amazonaws.com/workflows/dna-cloud-costs.ga
+rnaseq-sr: https://raw.githubusercontent.com/iwc-workflows/rnaseq-sr/main/rnaseq-sr.ga
+rnaseq-pe: https://raw.githubusercontent.com/iwc-workflows/rnaseq-pe/main/rnaseq-pe.ga
