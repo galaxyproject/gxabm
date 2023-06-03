@@ -138,6 +138,9 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
                         input_data_size.append(dssize)
                         print(f"Input dataset ID: {dsname} [{dsid}] {dssize}")
                         inputs[input[0]] = {'id': dsid, 'src': 'hdca', 'size': dssize}
+                    elif 'paired' in spec:
+                        paired_list = spec['paired']
+                        
                     elif Keys.DATASET_ID in spec:
                         dsname = spec[Keys.DATASET_ID]
                         input_names.append(dsname)
