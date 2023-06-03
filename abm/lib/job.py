@@ -1,4 +1,6 @@
 import json
+import time
+
 from .common import connect, Context, print_json
 from pprint import pprint
 import logging
@@ -55,6 +57,8 @@ def wait(context:Context, args: list):
         state = job["state"]
         if state == "ok" or state == "error":
             waiting = False
+        else:
+            time.sleep(15)
     print(json.dumps(job, indent=4))
 
 
