@@ -1,7 +1,7 @@
 import json
 import time
 
-from .common import connect, Context, print_json
+from .common import connect, Context, print_json, find_history
 from pprint import pprint
 import logging
 
@@ -30,6 +30,8 @@ def list(context: Context, args: list):
         log.debug(f"Getting jobs with state {state}")
     else:
         log.debug("Getting job list")
+    if history_id:
+        history_id = find_history(gi, history_id)
     job_list = gi.jobs.get_jobs(state=state, history_id=history_id)
     log.debug(f"Iterating over job list with {len(job_list)} items")
     for job in job_list:
@@ -112,10 +114,25 @@ def cancel(context: Context, args: list):
         print('ERROR: no job ID provided.')
         return
     gi = connect(context)
-    if gi.jobs.cancel_job(args[0]):
-        print("Job canceled")
-    else:
-        print("ERROR: Unable to cancel job or job was already in a terminal state.")
+    state = ''
+    history = None
+    jobs = []
+    while len(args) > 0:
+        arg = args.pop(0)
+        if arg in ['-s', '--state']:
+            state = args.pop(0)
+        elif arg in ['-h', '--history']:
+            history = find_history(args.pop(0))
+    if state or history:
+        if len(jobs) > 0:
+            print("ERROR: To many parameters. Either filter by state or history, or list job IDs")
+            return
+        jobs = [ job['id'] for job in gi.jobs.get_jobs(state=state, history_id=history) ]
+    for job in jobs:
+        if gi.jobs.cancel_job(job):
+            print(f"Job {job} canceled")
+        else:
+            print(f"ERROR: Unable to cancel {job} or job was already in a terminal state.")
 
 
 def problems(context: Context, args: list):
