@@ -3,7 +3,7 @@ import os
 import sys
 import yaml
 
-from lib.common import connect, parse_profile, Context, summarize_metrics
+from lib.common import connect, parse_profile, Context, summarize_metrics, find_history
 from pprint import pprint
 from pathlib import Path
 
@@ -246,7 +246,8 @@ def delete(context: Context, args:list):
         print('ERROR: please provide the history ID')
         return
     gi = connect(context)
-    gi.histories.delete_history(args[0], True)
+    history = find_history(gi, args[0])
+    gi.histories.delete_history(history, True)
     print(f"Deleted history {args[0]}")
 
 
