@@ -5,8 +5,8 @@ import yaml
 import logging
 import argparse
 from lib import Keys, INVOCATIONS_DIR, METRICS_DIR
-from lib.common import connect, Context, print_json
-from bioblend.galaxy import GalaxyInstance
+from lib.common import connect, Context, _get_dataset_data, _make_dataset_element, print_json
+from bioblend.galaxy import GalaxyInstance, dataset_collections
 
 log = logging.getLogger('abm')
 
@@ -56,7 +56,6 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
     if os.path.exists(METRICS_DIR):
         if not os.path.isdir(METRICS_DIR):
             print('ERROR: Can not save metrics, directory name in use.')
-            #sys.exit(1)
             return False
     else:
         os.mkdir(METRICS_DIR)
@@ -110,10 +109,18 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
         count = 0
         for run in workflow[Keys.RUNS]:
             count += 1
+
+            # Create a new history for this run
             if Keys.HISTORY_NAME in run:
                 output_history_name = f"{history_base_name} {run[Keys.HISTORY_NAME]}"
             else:
                 output_history_name = f"{history_base_name} run {count}"
+            new_history_name = output_history_name
+            if history_prefix is not None:
+                new_history_name = f"{history_prefix} {output_history_name}"
+            if experiment is not None:
+                new_history_name = f"{experiment} {new_history_name}"
+
             input_data_size = []
             if Keys.INPUTS in run and run[Keys.INPUTS] is not None:
                 for spec in run[Keys.INPUTS]:
@@ -138,6 +145,49 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
                         input_data_size.append(dssize)
                         print(f"Input dataset ID: {dsname} [{dsid}] {dssize}")
                         inputs[input[0]] = {'id': dsid, 'src': 'hdca', 'size': dssize}
+                    elif 'paired' in spec:
+                        name = spec['name']
+                        input_names.append(name)
+                        dsdata = _get_dataset_data(gi, name)
+                        if dsdata is not None:
+                            print(f"Found an existing dataset named {name}")
+                            print_json(dsdata)
+                            # Reuse the previously defined collection
+                            dsid = dsdata['id']
+                            dssize = dsdata['size']
+                            input_data_size.append(dssize)
+                            print(f"Input dataset ID: {name} [{dsid}] {dssize}")
+                            inputs[input[0]] = {'id': dsid, 'src': 'hdca', 'size': dssize}
+                        else:
+                            histories = gi.histories.get_histories(name=spec['history'])
+                            if len(histories) == 0:
+                                print(f"ERROR: History {spec['history']} not foune")
+                                return
+                            hid = histories[0]['id']
+                            pairs = 0
+                            paired_list = spec['paired']
+                            for item in paired_list:
+                                elements = []
+                                size = 0
+                                for key in item.keys():
+                                    #print(f"Getting dataset for {key} = {item[key]}")
+                                    value = _get_dataset_data(gi, item[key])
+                                    size += value['size']
+                                    elements.append(_make_dataset_element(key, value['id']))
+                                description = dataset_collections.CollectionDescription(
+                                    name=name,
+                                    type='paired',
+                                    elements=elements
+                                )
+                                pairs += 1
+                                # print(json.dumps(description.__dict__, indent=4))
+                                # pprint(description)
+                                collection = gi.histories.create_dataset_collection(
+                                    history_id=hid,
+                                    collection_description=description
+                                )
+                                print(f"Input dataset paired list: {collection['id']} {size}")
+                                inputs[input[0]] = {'id': collection['id'], 'src':'hdca', 'size':size}
                     elif Keys.DATASET_ID in spec:
                         dsname = spec[Keys.DATASET_ID]
                         input_names.append(dsname)
@@ -154,11 +204,6 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
                     else:
                         raise Exception(f'Invalid input value')
             print(f"Running workflow {wfid}")
-            new_history_name = output_history_name
-            if history_prefix is not None:
-                new_history_name = f"{history_prefix} {output_history_name}"
-            if experiment is not None:
-                new_history_name = f"{experiment} {new_history_name}"
             invocation = gi.workflows.invoke_workflow(wfid, inputs=inputs, history_name=new_history_name)
             id = invocation['id']
             invocations = gi.invocations.wait_for_invocation(id, 86400, 10, False)
@@ -414,46 +459,6 @@ def find_dataset_id(gi, name_or_id):
         print('Caught an exception')
         print(sys.exc_info())
     #print(f"Warning: unable to find dataset {name_or_id}")
-    return None
-
-
-def _get_dataset_data(gi, name_or_id):
-    def make_result(data):
-        return {
-            'id': data['id'],
-            'size': data['file_size']
-        }
-
-    try:
-        ds = gi.datasets.show_dataset(name_or_id)
-        return make_result(ds)
-    except Exception as e:
-        pass
-
-    try:
-        datasets = gi.datasets.get_datasets(name=name_or_id)  # , deleted=True, purged=True)
-        for ds in datasets:
-            print_json(ds)
-            state = True
-            if 'state' in ds:
-                state = ds['state'] == 'ok'
-            if state and not ds['deleted'] and ds['visible']:
-                # The dict returned by get_datasets does not include the input
-                # file sizes so we need to make another call to show_datasets
-                return make_result(gi.datasets.show_dataset(ds['id']))
-            # if ds['state'] == 'ok':
-            #     print('state is ok')
-            # if ds['deleted']:
-            #     print('dataset deleted')
-            # else:
-            #     print('dataset not deleted')
-            # if ds['visible']:
-            #     print('dataset visible')
-            # else:
-            #     print('dataset not visible')
-    except Exception as e:
-        pass
-
     return None
 
 

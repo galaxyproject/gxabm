@@ -1,6 +1,7 @@
 import json
 
-from common import connect, Context
+from bioblend.galaxy import dataset_collections
+from common import connect, Context, print_json, _get_dataset_data, _make_dataset_element
 from pprint import pprint
 from pathlib import Path
 
@@ -102,6 +103,45 @@ def upload(context: Context, args: list):
         _import_from_url(gi, history, url, file_name=name)
     else:
         _import_from_url(gi, history, url)
+
+
+def collection(context: Context, args: list):
+    type = 'list:paired'
+    collection_name = 'collection'
+    elements = []
+    hid = None
+    gi = connect(context)
+    while len(args) > 0:
+        arg = args.pop(0)
+        if arg == '-t' or arg == '--type':
+            type = args.pop(0)
+        elif arg == '-n' or arg == '--name':
+            collection_name = args.pop(0)
+        elif '=' in arg:
+            name,value = arg.split('=')
+            dataset = _get_dataset_data(gi, value)
+            if dataset is None:
+                print(f"ERROR: dataset not found {value}")
+                return
+            # print_json(dataset)
+            if hid is None:
+                hid = dataset['history']
+            elif hid != dataset['history']:
+                print('ERROR: Datasets must be in the same history')
+            elements.append(_make_dataset_element(name, dataset['id']))
+
+    if len(elements) == 0:
+        print("ERROR: No dataset elements have been defined for the collection")
+        return
+    result = gi.histories.create_dataset_collection(
+        history_id=hid,
+        collection_description=dataset_collections.CollectionDescription(
+            name=collection_name,
+            type=type,
+            elements=elements
+        )
+    )
+    print(json.dumps(result, indent=4))
 
 
 def import_from_config(context: Context, args: list):

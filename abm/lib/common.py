@@ -4,6 +4,8 @@ import subprocess
 from ruamel.yaml import YAML
 import json
 import bioblend.galaxy
+from bioblend.galaxy import dataset_collections
+
 import lib
 
 PROFILE_SEARCH_PATH = ['~/.abm/profile.yml', '.abm-profile.yml']
@@ -247,3 +249,41 @@ def get_keys(d: dict):
         result.append(key)
     result.sort()
     return result
+
+
+def _get_dataset_data(gi, name_or_id):
+    def make_result(data):
+        return {
+            'id': data['id'],
+            'size': data['file_size'],
+            'history': data['history_id']
+        }
+
+    try:
+        ds = gi.datasets.show_dataset(name_or_id)
+        return make_result(ds)
+    except Exception as e:
+        pass
+
+    try:
+        datasets = gi.datasets.get_datasets(name=name_or_id)  # , deleted=True, purged=True)
+        for ds in datasets:
+            # print_json(ds)
+            state = True
+            if 'state' in ds:
+                state = ds['state'] == 'ok'
+            if state and not ds['deleted'] and ds['visible']:
+                # The dict returned by get_datasets does not include the input
+                # file sizes so we need to make another call to show_datasets
+                return make_result(gi.datasets.show_dataset(ds['id']))
+    except Exception as e:
+        pass
+
+    return None
+
+
+def _make_dataset_element(name, value):
+    # print(f"Making dataset element for {name} = {value}({type(value)})")
+    return dataset_collections.HistoryDatasetElement(name=name, id=value)
+
+

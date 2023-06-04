@@ -114,6 +114,10 @@
       handler: dataset.rename
       help: rename a dataset
       params: HISTORY_ID DATASET_ID NAME
+    - name: [collection, collect]
+      handler: dataset.collection
+      help: Create a dataset collection.  Only list:paired is currently supported.
+      params: "[-n|--name NAME] [-t|--type TYPE] key1=dataset_id [key2=dataset_id...]"
 - name:
     - history
     - hist
