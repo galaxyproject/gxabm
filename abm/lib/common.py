@@ -251,6 +251,13 @@ def get_keys(d: dict):
     return result
 
 
+def find_history(gi, name_or_id):
+    history = gi.histories.get_histories(name=name_or_id)
+    if history is None:
+        return name_or_id
+    return history[0]['id']
+
+
 def _get_dataset_data(gi, name_or_id):
     def make_result(data):
         return {
