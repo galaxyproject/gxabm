@@ -122,7 +122,7 @@ def cancel(context: Context, args: list):
         if arg in ['-s', '--state']:
             state = args.pop(0)
         elif arg in ['-h', '--history']:
-            history = find_history(args.pop(0))
+            history = find_history(gi, args.pop(0))
     if state or history:
         if len(jobs) > 0:
             print("ERROR: To many parameters. Either filter by state or history, or list job IDs")
@@ -132,7 +132,7 @@ def cancel(context: Context, args: list):
         if gi.jobs.cancel_job(job):
             print(f"Job {job} canceled")
         else:
-            print(f"ERROR: Unable to cancel {job} or job was already in a terminal state.")
+            print(f"ERROR: Unable to cancel {job}, job was already in a terminal state.")
 
 
 def problems(context: Context, args: list):
