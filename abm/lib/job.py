@@ -22,6 +22,9 @@ def list(context: Context, args: list):
             state = args.pop(0)
             log_state = True
         elif arg in ['-h', '--history']:
+            if len(args) == 0:
+                print("ERROR: history ID was not specified.")
+                return
             history_id = args.pop(0)
             log.debug(f"Getting jobs from history {history_id}")
     log.debug('Connecting to the Galaxy server')
