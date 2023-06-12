@@ -255,6 +255,8 @@ def find_history(gi, name_or_id):
     history = gi.histories.get_histories(name=name_or_id)
     if history is None:
         return name_or_id
+    if len(history) == 0:
+        return None
     return history[0]['id']
 
 

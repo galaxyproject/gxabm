@@ -247,6 +247,8 @@ def delete(context: Context, args:list):
         return
     gi = connect(context)
     history = find_history(gi, args[0])
+    if history is None:
+        print("ERROR: No such history.")
     gi.histories.delete_history(history, True)
     print(f"Deleted history {args[0]}")
 

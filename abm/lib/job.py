@@ -35,6 +35,9 @@ def list(context: Context, args: list):
         log.debug("Getting job list")
     if history_id:
         history_id = find_history(gi, history_id)
+    if history_id is None:
+        print("ERROR: No such history")
+        return
     job_list = gi.jobs.get_jobs(state=state, history_id=history_id)
     log.debug(f"Iterating over job list with {len(job_list)} items")
     for job in job_list:
@@ -126,6 +129,9 @@ def cancel(context: Context, args: list):
             state = args.pop(0)
         elif arg in ['-h', '--history']:
             history = find_history(gi, args.pop(0))
+            if history is None:
+                print("ERROR: No such history")
+                return
     if state or history:
         if len(jobs) > 0:
             print("ERROR: To many parameters. Either filter by state or history, or list job IDs")
