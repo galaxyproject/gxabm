@@ -3,7 +3,7 @@ import os
 import sys
 import yaml
 
-from lib.common import connect, parse_profile, Context, summarize_metrics, find_history
+from lib.common import connect, parse_profile, Context, summarize_metrics, find_history, print_json
 from pprint import pprint
 from pathlib import Path
 
@@ -68,9 +68,24 @@ def find(context: Context, args: list):
     if len(args) == 0:
         print("ERROR: No history ID provided")
         return
+    return_json = False
+    history_name = None
+    while len(args) > 0:
+        arg = args.pop(0)
+        if arg in ['-j', '--json']:
+            return_json = True
+        else:
+            history_name = arg
+    if history_name is None:
+        print("ERROR: no history name provided")
+        return
     gi = connect(context)
-    for history in gi.histories.get_histories(name=args[0]):
-        print(f"{history['id']}\t{history['name']}")
+    histories = gi.histories.get_histories(name=history_name)
+    if return_json:
+        print_json(histories)
+    else:
+        for history in histories:
+            print(f"{history['id']}\t{history['name']}")
 
 
 def clean(context: Context, args: list):
