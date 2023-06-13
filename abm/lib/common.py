@@ -95,7 +95,7 @@ def load_profiles():
     :return: a dictionary containing the YAML content of the configuration.
     '''
     yaml = get_yaml_parser()
-    profiles = None
+    profiles = {}
     for profile_path in PROFILE_SEARCH_PATH:
         profile_path = os.path.expanduser(profile_path)
         if os.path.exists(profile_path):
@@ -131,8 +131,9 @@ def parse_profile(profile_name: str):
     if profile_name not in profiles:
         print(f'ERROR: {profile_name} is not the name of a valid profile.')
         keys = list(profiles.keys())
-        quoted_keys = ', '.join([f"'{k}'" for k in keys[0:-2]]) + f", and '{keys[-1]}'"
-        print(f'The defined profile names are: {quoted_keys}')
+        if len(keys) > 0:
+            quoted_keys = ', '.join([f"'{k}'" for k in keys[0:-2]]) + f", and '{keys[-1]}'"
+            print(f'The defined profile names are: {quoted_keys}')
         return None, None, None
     profile = profiles[profile_name]
     if 'kube' in profile:
