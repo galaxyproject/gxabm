@@ -35,9 +35,9 @@ def list(context: Context, args: list):
         log.debug("Getting job list")
     if history_id:
         history_id = find_history(gi, history_id)
-    if history_id is None:
-        print("ERROR: No such history")
-        return
+        if history_id is None:
+            print("ERROR: No such history")
+            return
     job_list = gi.jobs.get_jobs(state=state, history_id=history_id)
     log.debug(f"Iterating over job list with {len(job_list)} items")
     for job in job_list:
