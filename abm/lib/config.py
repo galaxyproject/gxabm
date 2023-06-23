@@ -59,7 +59,7 @@ def key(context: Context, args: list):
 
 def url(context: Context, args: list):
     if len(args) != 2:
-        print(f"USAGE: abm config key <cloud> <url>")
+        print(f"USAGE: abm config url <cloud> <url>")
         return
     profile_name = args[0]
     url = args[1]
