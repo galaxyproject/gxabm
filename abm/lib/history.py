@@ -60,7 +60,11 @@ def show(context: Context, args: list):
         print("ERROR: No history ID provided.")
         return
     gi = connect(context)
-    history = gi.histories.show_history(args[0], contents=contents)
+    hid = find_history(gi, args[0])
+    if hid is None:
+        print(f"ERROR: No such history {args[0]}")
+        return
+    history = gi.histories.show_history(hid, contents=contents)
     print(json.dumps(history, indent=4))
 
 
@@ -127,8 +131,8 @@ def export(context: Context, args: list):
     if len(args) == 0:
         print("ERROR: no history ID specified")
         return
-    hid = args[0]
     gi = connect(context)
+    hid = find_history(gi, args[0])
     jeha_id = gi.histories.export_history(hid, gzip=True, wait=wait)
     # global GALAXY_SERVER
     export_url = "unknown"
@@ -154,7 +158,7 @@ def publish(context: Context, args: list):
         print("ERROR: No history ID provided.")
         return
     gi = connect(context)
-    result = gi.histories.update_history(args[0], published=True)
+    result = gi.histories.update_history(find_history(gi, args[0]), published=True)
     print(f"Published: {result['published']}")
 
 
@@ -164,7 +168,7 @@ def rename(context: Context, args: list):
         print("USAGE: rename ID 'new history name'")
         return
     gi = connect(context)
-    result = gi.histories.update_history(args[0], name=args[1])
+    result = gi.histories.update_history(find_history(gi, args[0]), name=args[1])
     print(f"History renamed to {result['name']}")
 
 
@@ -272,7 +276,7 @@ def copy(context:Context, args:list):
     if len(args) != 2:
         print("ERROR: Invalid parameters. Provide a history ID and new history name.")
         return
-    id = args[0]
+    id = find_history(args[0])
     name = args[1]
 
     gi = connect(context)
@@ -318,7 +322,7 @@ def tag(context: Context, args: list):
         return
 
     gi = connect(context)
-    hid = args.pop(0)
+    hid = find_history(gi, args.pop(0))
     if not replace:
         history = gi.histories.show_history(hid, contents=False)
         args += history['tags']
@@ -332,7 +336,7 @@ def summarize(context: Context, args: list):
     gi = connect(context)
     all_jobs = []
     while len(args) > 0:
-        hid = args.pop(0)
+        hid = find_history(gi, args.pop(0))
         history = gi.histories.show_history(history_id=hid)
         jobs = gi.jobs.get_jobs(history_id=hid)
         for job in jobs:
