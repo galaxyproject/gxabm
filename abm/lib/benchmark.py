@@ -176,7 +176,7 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
                                     elements.append(_make_dataset_element(key, value['id']))
                                 description = dataset_collections.CollectionDescription(
                                     name=name,
-                                    type='paired',
+                                    # type='paired',
                                     elements=elements
                                 )
                                 pairs += 1
