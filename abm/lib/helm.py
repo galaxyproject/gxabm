@@ -37,6 +37,8 @@ def update(context: Context, args: list):
         return False
 
     print(f"Applying rules {values} to {context.GALAXY_SERVER}")
+    print(f"Helm update namespace: {namespace}")
+    print(f"Helm update chart: {chart}")
     #command = f'{helm} upgrade galaxy {chart} -n {namespace} --reuse-values --set-file jobs.rules."container_mapper_rules\.yml".content={rules}'
     command = f'{helm} upgrade galaxy {chart} -n {namespace} --reuse-values -f {values}'
     env = get_env(context)
@@ -51,6 +53,8 @@ def update(context: Context, args: list):
         return False
 
     print('Waiting for the new deployments to come online')
+    # Give kubernetes a moment to start processing the update.
+    time.sleep(30)
     wait_until_ready(namespace, env)
     return True
 

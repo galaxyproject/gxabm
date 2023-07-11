@@ -1,7 +1,7 @@
 import json
 
 from bioblend.galaxy import dataset_collections
-from common import connect, Context, print_json, _get_dataset_data, _make_dataset_element
+from common import connect, Context, print_json, _get_dataset_data, _make_dataset_element, find_history
 from pprint import pprint
 from pathlib import Path
 
@@ -147,6 +147,7 @@ def collection(context: Context, args: list):
 def import_from_config(context: Context, args: list):
     gi = None
     key = None
+    history = None
     kwargs = {}
     while len(args) > 0:
         arg = args.pop(0)
@@ -178,6 +179,9 @@ def import_from_config(context: Context, args: list):
 
     if gi is None:
         gi = connect(context)
+    if history is not None:
+        history = find_history(gi, history)
+        
     response = gi.tools.put_url(url, history, **kwargs)
     print(json.dumps(response, indent=4))
 
