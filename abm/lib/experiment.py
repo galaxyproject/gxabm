@@ -96,6 +96,8 @@ def test(context: Context, args: list):
 
 def parse_toolid(id:str) -> str:
     parts = id.split('/')
+    if len(parts) < 2:
+        return f"{id},unknown"
     return f"{parts[-2]},{parts[-1]}"
 
 
