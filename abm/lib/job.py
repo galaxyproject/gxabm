@@ -157,5 +157,5 @@ def rerun(context: Context, args: list):
         print("ERROR: no job ID provided")
         return
     gi = connect(context)
-    result = gi.jobs.rerun_job(args[0])
+    result = gi.jobs.rerun_job(args[0], remap=True)
     print_json(result)
