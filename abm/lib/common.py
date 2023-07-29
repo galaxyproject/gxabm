@@ -255,6 +255,9 @@ def get_keys(d: dict):
 
 
 def find_history(gi, name_or_id):
+    history = gi.histories.get_histories(history_id=name_or_id)
+    if history is not None and len(history) > 0:
+        return history[0]['id']
     history = gi.histories.get_histories(name=name_or_id)
     if history is None:
         return name_or_id
