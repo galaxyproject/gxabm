@@ -255,7 +255,12 @@ def get_keys(d: dict):
 
 
 def find_history(gi, name_or_id):
-    history = gi.histories.show_history(name_or_id)
+    history = None
+    try:
+        history = gi.histories.show_history(name_or_id)
+    except:
+        pass
+
     if history is not None:
         return history['id']
     history = gi.histories.get_histories(name=name_or_id)
