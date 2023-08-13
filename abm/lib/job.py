@@ -153,9 +153,16 @@ def problems(context: Context, args: list):
 
 
 def rerun(context: Context, args: list):
+    remap = False
+    if '-r' in args:
+        remap = True
+        args.remove('-r')
+    if '--remap' in args:
+        remap = True
+        args.remove('--remap')
     if len(args) == 0:
         print("ERROR: no job ID provided")
         return
     gi = connect(context)
-    result = gi.jobs.rerun_job(args[0], remap=True)
+    result = gi.jobs.rerun_job(args[0], remap=remap)
     print_json(result)
