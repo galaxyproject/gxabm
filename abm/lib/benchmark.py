@@ -7,6 +7,7 @@ import argparse
 from lib import Keys, INVOCATIONS_DIR, METRICS_DIR
 from lib.common import connect, Context, _get_dataset_data, _make_dataset_element, print_json
 from bioblend.galaxy import GalaxyInstance, dataset_collections
+from lib.history import wait_for
 
 log = logging.getLogger('abm')
 
@@ -369,41 +370,63 @@ def wait_for_jobs(context, gi: GalaxyInstance, invocations: dict):
     conf = invocations['job_conf']
     inputs = invocations['inputs']
     output_dir = invocations['output_dir']
-    for step in invocations['steps']:
-        job_id = step['job_id']
-        if job_id is not None:
-            retries = 3
-            done = False
-            while not done and retries >= 0:
-                print(f"Waiting for job {job_id} on {context.GALAXY_SERVER}")
-                try:
-                    # TDOD Should retry if anything throws an exception.
-                    status = gi.jobs.wait_for_job(job_id, 86400, 10, False)
-                    data = gi.jobs.show_job(job_id, full_details=True)
-                    metrics = {
-                        'run': run,
-                        'cloud': cloud,
-                        'job_conf': conf,
-                        'workflow_id': wfid,
-                        'history_id': hid,
-                        'inputs': inputs,
-                        'metrics': data,
-                        'status': status,
-                        'server': context.GALAXY_SERVER,
-                        'ref_data_size': invocations['ref_data_size'],
-                        'input_data_size': invocations['input_data_size']
-                    }
-                    output_path = os.path.join(output_dir, f"{job_id}.json")
-                    with open(output_path, "w") as f:
-                        json.dump(metrics, f, indent=4)
-                        print(f"Wrote metrics to {output_path}")
-                    done = True
-                except ConnectionError as e:
-                    print(f"ERROR: connection dropped while waiting for {job_id}")
-                    retries -= 1
-                except Exception as e:
-                    print(f"ERROR: {e}")
-                    retries -= 1
+    wait_for(gi, hid)
+    jobs = gi.jobs.get_jobs(history_id=hid)
+    for job in jobs:
+        data = gi.jobs.show_job(job['id'], full_details=True)
+        metrics = {
+            'run': run,
+            'cloud': cloud,
+            'job_conf': conf,
+            'workflow_id': wfid,
+            'history_id': hid,
+            'inputs': inputs,
+            'metrics': data,
+            'status': job['state'],
+            'server': context.GALAXY_SERVER,
+            'ref_data_size': invocations['ref_data_size'],
+            'input_data_size': invocations['input_data_size']
+        }
+        output_path = os.path.join(output_dir, f"{job['id']}.json")
+        with open(output_path, "w") as f:
+            json.dump(metrics, f, indent=4)
+            print(f"Wrote metrics to {output_path}")
+
+    # for step in invocations['steps']:
+    #     job_id = step['job_id']
+    #     if job_id is not None:
+    #         retries = 3
+    #         done = False
+    #         while not done and retries >= 0:
+    #             print(f"Waiting for job {job_id} on {context.GALAXY_SERVER}")
+    #             try:
+    #                 # TDOD Should retry if anything throws an exception.
+    #                 status = gi.jobs.wait_for_job(job_id, 86400, 10, False)
+    #                 data = gi.jobs.show_job(job_id, full_details=True)
+    #                 metrics = {
+    #                     'run': run,
+    #                     'cloud': cloud,
+    #                     'job_conf': conf,
+    #                     'workflow_id': wfid,
+    #                     'history_id': hid,
+    #                     'inputs': inputs,
+    #                     'metrics': data,
+    #                     'status': status,
+    #                     'server': context.GALAXY_SERVER,
+    #                     'ref_data_size': invocations['ref_data_size'],
+    #                     'input_data_size': invocations['input_data_size']
+    #                 }
+    #                 output_path = os.path.join(output_dir, f"{job_id}.json")
+    #                 with open(output_path, "w") as f:
+    #                     json.dump(metrics, f, indent=4)
+    #                     print(f"Wrote metrics to {output_path}")
+    #                 done = True
+    #             except ConnectionError as e:
+    #                 print(f"ERROR: connection dropped while waiting for {job_id}")
+    #                 retries -= 1
+    #             except Exception as e:
+    #                 print(f"ERROR: {e}")
+    #                 retries -= 1
 
 
 def parse_workflow(workflow_path: str):
