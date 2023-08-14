@@ -5,6 +5,7 @@ import time
 
 import yaml
 
+from bioblend.galaxy.objects import GalaxyInstance
 from lib.common import connect, parse_profile, Context, summarize_metrics, find_history, print_json
 from pprint import pprint
 from pathlib import Path
@@ -374,7 +375,10 @@ def wait(context: Context, args: list):
     if history_id is None:
         print("ERROR: No such history")
         return
+    wait_for(gi, history_id)
 
+
+def wait_for(gi: GalaxyInstance, history_id: str):
     errored = []
     waiting = True
     job_states = JobStates()
