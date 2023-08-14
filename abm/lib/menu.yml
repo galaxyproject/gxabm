@@ -278,7 +278,7 @@
       help: wait for the deployment to come online
     - name: [list, ls]
       help: list some things...
-      handler: helm.list
+      handler: helm._list
 - name: [kubectl, kube, k]
   help: execute a kubectl command
   menu:
