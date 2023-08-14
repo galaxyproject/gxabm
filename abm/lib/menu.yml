@@ -182,6 +182,10 @@
       params: STR
       help: delete all histories that contain STR in the name. Use * to purge all histories.
       handler: history.purge
+    - name: [ wait ]
+      handler: history.wait
+      help: Wait for all jobs in the history to enter a terminal state (ok or error)
+      params: ID
 - name: [ jobs, job ]
   help: manage jobs on the server
   menu:
