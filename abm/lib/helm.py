@@ -141,7 +141,7 @@ def wait_until_ready(namespace: str):
         if 'job' in name or 'web' in name or 'workflow' in name:
             deployments.append(name)
     for deployment in deployments:
-        print(run(f"{kubectl} rollout status deployment -n {namespace} {deployment}"))
+        print(run(f"{kubectl} rollout status deployment -n {namespace} {deployment} --watch"))
 
 def _list(context: Context, args: list):
     print("Not implemented")
