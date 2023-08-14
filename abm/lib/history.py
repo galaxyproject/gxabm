@@ -1,6 +1,8 @@
 import json
 import os
 import sys
+import time
+
 import yaml
 
 from lib.common import connect, parse_profile, Context, summarize_metrics, find_history, print_json
@@ -360,3 +362,75 @@ def summarize(context: Context, args: list):
         #         all_jobs.append(job)
     # summarize_metrics(gi, gi.jobs.get_jobs(history_id=args[0]))
     summarize_metrics(gi, all_jobs)
+
+def wait(context: Context, args: list):
+    state = ''
+    if len(args) == 0:
+        print("ERROR: No history ID provided")
+        return
+
+    gi = connect(context)
+    history_id = find_history(gi, args[0])
+    if history_id is None:
+        print("ERROR: No such history")
+        return
+
+    errored = []
+    waiting = True
+    job_states = JobStates()
+    while waiting:
+        restart = []
+        status_counts = dict()
+        terminal = 0
+        job_list = gi.jobs.get_jobs(history_id=history_id)
+        for job in job_list:
+            job_states.update(job)
+            state = job['state']
+            id = job['id']
+            # Count how many jobs are in each state.
+            if state not in status_counts:
+                status_counts[state] = 1
+            else:
+                status_counts[state] += 1
+            # Count jobs in a terminal state and mark failed jobs for a restart
+            if state == 'ok':
+                terminal += 1
+            elif state == 'error':
+                terminal += 1
+                if id not in errored:
+                    restart.append(id)
+                    errored.append(id)
+        if len(restart) > 0:
+            for job in restart:
+                print(f"Restaring job {job}")
+                try:
+                    gi.jobs.rerun_job(job, remap=True)
+                except:
+                    try:
+                        gi.jobs.rerun_job(job, remap=False)
+                    except:
+                        print(f"Failed to restart job {job}")
+                        waiting = False
+        elif len(job_list) == terminal:
+            print("All jobs are in a terminal state")
+            waiting = False
+        if waiting:
+            time.sleep(30)
+            # elif state == 'paused':
+            #     paused += 1
+            # print(f"{job['id']}\t{job['state']}\t{job['update_time']}\t{job['tool_id']}")
+
+
+class JobStates:
+    def __init__(self):
+        self._jobs = dict()
+
+    def update(self, job):
+        id = job['id']
+        state = job['state']
+        tool = job['tool_id']
+        if id not in self._jobs:
+            print(f"Job {id} {tool} initial state is {state}")
+        elif state != self._jobs[id]:
+            print(f"Job {id} {tool} transitioned from {self._jobs[id]} to {state}")
+        self._jobs[id] = state
