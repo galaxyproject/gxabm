@@ -55,8 +55,8 @@ def update(context: Context, args: list):
 
     print('Waiting for the new deployments to come online')
     # Give kubernetes a moment to start processing the update.
-    time.sleep(30)
-    wait_until_ready(namespace, env)
+    time.sleep(5)
+    wait_until_ready(namespace)
     return True
 
 
