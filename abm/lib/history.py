@@ -40,7 +40,7 @@ def print_histories(histories: list):
         print(f"{history['id']:<{id_width}} {history['name']:<{name_width}} {pad(history['deleted'])} {pad(history['published'])} {', '.join(history['tags'])}")
 
 
-def list(context: Context, args: list):
+def _list(context: Context, args: list):
     gi = connect(context)
     print_histories(gi.histories.get_histories())
 

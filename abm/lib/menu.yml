@@ -125,7 +125,7 @@
   help: manage histories
   menu:
     - name: ['list', 'ls']
-      handler: history.list
+      handler: history._list
       help: list histories on the server.
       params: "[-a|--all]"
     - name: ['import', 'imp', 'im']
