@@ -135,7 +135,7 @@ def summarize(context: Context, args: list):
             make_row = make_model_row
             header_row = "job_id,tool_id,tool_version,state,memory.max_usage_in_bytes,cpuacct.usage,process_count,galaxy_slots,runtime_seconds,ref_data_size,input_data_size_1,input_data_size_2"
         else:
-            print(f"Input dir {arg}")
+            # print(f"Input dir {arg}")
             input_dirs.append(arg)
 
     if len(input_dirs) == 0:
