@@ -433,8 +433,10 @@ class JobStates:
         id = job['id']
         state = job['state']
         tool = job['tool_id']
+        if '/' in tool:
+            tool = tool.split('/')[-2]
         if id not in self._jobs:
-            print(f"Job {id} {tool} initial state is {state}")
+            print(f"Job {id} {tool} state {state}")
         elif state != self._jobs[id]:
-            print(f"Job {id} {tool} transitioned from {self._jobs[id]} to {state}")
+            print(f"Job {id} {tool} {self._jobs[id]} -> {state}")
         self._jobs[id] = state
