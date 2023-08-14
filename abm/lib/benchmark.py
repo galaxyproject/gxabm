@@ -382,7 +382,7 @@ def wait_for_jobs(context, gi: GalaxyInstance, invocations: dict):
             'history_id': hid,
             'inputs': inputs,
             'metrics': data,
-            'status': job['status'],
+            'status': job['state'],
             'server': context.GALAXY_SERVER,
             'ref_data_size': invocations['ref_data_size'],
             'input_data_size': invocations['input_data_size']
