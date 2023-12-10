@@ -15,6 +15,7 @@ class Keys:
     REFERENCE_DATA = 'reference_data'
     WORKFLOW_ID = 'workflow_id'
     DATASET_ID = 'dataset_id'
+    COLLECTION = 'collection'
     HISTORY_BASE_NAME = 'output_history_base_name'
     HISTORY_NAME = 'history_name'
 

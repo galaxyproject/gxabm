@@ -138,13 +138,14 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
                         input_names.append(dsname)
                         #inputs.append(dsname)
                         # dsid = find_dataset_id(gi, dsname)
-                        dsdata = _get_dataset_data(gi, dsname)
+                        dsid = find_collection_id(gi, dsname)
+                        dsdata = _get_dataset_data(gi, dsid)
                         if dsdata is None:
                             raise  Exception(f"ERROR: unable to resolve {dsname} to a dataset.")
                         dsid = dsdata['id']
                         dssize = dsdata['size']
                         input_data_size.append(dssize)
-                        print(f"Input dataset ID: {dsname} [{dsid}] {dssize}")
+                        print(f"Input collection ID: {dsname} [{dsid}] {dssize}")
                         inputs[input[0]] = {'id': dsid, 'src': 'hdca', 'size': dssize}
                     elif 'paired' in spec:
                         name = spec['name']
@@ -208,12 +209,19 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
             invocation = gi.workflows.invoke_workflow(wfid, inputs=inputs, history_name=new_history_name)
             id = invocation['id']
             #invocations = gi.invocations.wait_for_invocation(id, 86400, 10, False)
-            invocations = gi.invocations.wait_for_invocation(id, 86400, 10, True)
+            try:
+                invocations = gi.invocations.wait_for_invocation(id, 86400, 10, False)
+            except:
+                pprint(invocation)
+                sys.exc_info()
             print("Waiting for jobs")
             if history_prefix is not None:
                 parts = history_prefix.split()
                 invocations['run'] = parts[0]
-                invocations['cloud'] = parts[1]
+                if len(parts) > 1:
+                    invocations['cloud'] = parts[1]
+                else:
+                    invocations['cloud'] = 'Unknown'
                 if len(parts) > 2:
                     invocations['job_conf'] = parts[2]
                 else:
@@ -336,12 +344,28 @@ def validate(context: Context, args: list):
                         print(f'ERROR: Invalid input specification for {spec[Keys.NAME]}')
                         errors += 1
                     else:
-                        dsid = find_dataset_id(gi, spec[Keys.DATASET_ID])
+                        key = None
+                        if Keys.DATASET_ID in spec:
+                            dsid = find_dataset_id(gi, spec[Keys.DATASET_ID])
+                            key = Keys.DATASET_ID
+                        elif Keys.COLLECTION in spec:
+                            print(f"Trying to find collection {spec[Keys.COLLECTION]}")
+                            dsid = find_collection_id(gi, spec[Keys.COLLECTION])
+                            key = Keys.COLLECTION
+                        elif 'name' in spec and 'value' in spec:
+                            key = 'name'
+                            dsid = spec['value']
+                        else:
+                            print("dataset_id nor collection found in spec")
+                            pprint(input)
+                            pprint(spec)
+                            errors += 1
+                            break
                         if dsid is None:
-                            print(f"ERROR: Dataset not found {spec[Keys.DATASET_ID]}")
+                            print(f"ERROR: Dataset not found {spec[key]}")
                             errors += 1
                         else:
-                            print(f"Input dataset: {spec[Keys.DATASET_ID]} -> {dsid}")
+                            print(f"Input dataset: {spec[key]} -> {dsid}")
                             inputs[input[0]] = {'id': dsid, 'src': 'hda'}
 
         if errors == 0:
@@ -483,6 +507,23 @@ def find_dataset_id(gi, name_or_id):
         print('Caught an exception')
         print(sys.exc_info())
     #print(f"Warning: unable to find dataset {name_or_id}")
+    return None
+
+
+def find_collection_id(gi, name):
+    kwargs = {
+        'limit': 10000,
+        'offset': 0
+    }
+    datasets = gi.datasets.get_datasets(**kwargs)
+    if len(datasets) == 0:
+        print('No datasets found')
+        return None
+    for dataset in datasets:
+        # print(f"Checking if dataset {dataset['name']} == {name}")
+        if dataset['type'] == 'collection' and dataset['name'].strip() == name:
+            if dataset['populated_state'] == 'ok' and not dataset['deleted'] and dataset['visible']:
+                return dataset['id']
     return None
 
 

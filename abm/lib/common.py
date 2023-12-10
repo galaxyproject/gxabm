@@ -223,12 +223,12 @@ def summarize_metrics(gi, jobs: list):
         job_metrics = gi.jobs.get_metrics(job['id'])
         row = []
         metrics = metrics_to_dict(job_metrics, header)
-        metrics['id'] = job['id']
-        metrics['history_id'] = job['history_id']
-        metrics['history_name'] = job['history_name']
-        metrics['state'] = job['state']
-        metrics['tool_id'] = job['tool_id']
-        metrics['invocation_id'] = job['invocation_id']
+        metrics['id'] = job.get('id', 'unknown')
+        metrics['history_id'] = job.get('history_id', 'unknown')
+        metrics['history_name'] = job.get('history_name', 'unknown')
+        metrics['state'] = job.get('state', 'unknown')
+        metrics['tool_id'] = job.get('tool_id', 'unknown')
+        metrics['invocation_id'] = job.get('invocation_id', 'unknown')
         for key in header:
             if key in metrics:
                 row.append(metrics[key])
