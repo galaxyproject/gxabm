@@ -194,6 +194,7 @@ def find_executable(name):
 
 
 def summarize_metrics(gi, jobs: list):
+    table = []
     header = [
         "id",
         "history_id",
@@ -221,8 +222,8 @@ def summarize_metrics(gi, jobs: list):
         # "swaptotal",
         # "uname"
     ]
-
-    print(','.join(header))
+    table.append(header)
+    # print(','.join(header))
     for job in jobs:
         job_metrics = gi.jobs.get_metrics(job['id'])
         row = []
@@ -238,7 +239,9 @@ def summarize_metrics(gi, jobs: list):
                 row.append(metrics[key])
             else:
                 row.append('')
-        print(','.join(row), end='\n')
+        # print(','.join(row), end='\n')
+        table.append(row)
+    return table
 
 
 def metrics_to_dict(metrics: list, accept: list):

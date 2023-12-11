@@ -36,4 +36,6 @@ def summarize(context: Context, args: list):
         job['invocation_id'] = id
         job['workflow_id'] = ''
         all_jobs.append(job)
-    summarize_metrics(gi, all_jobs)
+    table = summarize_metrics(gi, all_jobs)
+    for row in table:
+        print(','.join(row))

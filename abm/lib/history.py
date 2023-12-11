@@ -368,7 +368,9 @@ def summarize(context: Context, args: list):
         #             job['workflow_id'] = invocation['workflow_id']
         #         all_jobs.append(job)
     # summarize_metrics(gi, gi.jobs.get_jobs(history_id=args[0]))
-    summarize_metrics(gi, all_jobs)
+    table = summarize_metrics(gi, all_jobs)
+    for row in table:
+        print(','.join(row))
 
 
 def wait(context: Context, args: list):
