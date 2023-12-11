@@ -1,18 +1,18 @@
-import os
 import json
 import logging
-
+import os
+from pathlib import Path
 from pprint import pprint
 
+import planemo
 import requests
 import yaml
-import planemo
-from planemo.runnable import for_path, for_uri
+from common import Context, connect, summarize_metrics
 from planemo.galaxy.workflows import install_shed_repos
-from common import connect, Context, summarize_metrics
-from pathlib import Path
+from planemo.runnable import for_path, for_uri
 
 log = logging.getLogger('abm')
+
 
 def list(context: Context, args: list):
     gi = connect(context)
@@ -53,7 +53,7 @@ def upload(context: Context, args: list):
     pprint(result)
 
 
-def import_from_url(context: Context, args:list):
+def import_from_url(context: Context, args: list):
     if len(args) == 0:
         print("ERROR: no workflow URL given")
         return
@@ -72,8 +72,10 @@ def import_from_url(context: Context, args:list):
             input_text = f.read()
     else:
         response = requests.get(url)
-        if (response.status_code != 200):
-            print(f"ERROR: There was a problem downloading the workflow: {response.status_code}")
+        if response.status_code != 200:
+            print(
+                f"ERROR: There was a problem downloading the workflow: {response.status_code}"
+            )
             print(response.reason)
             return
         input_text = response.text
@@ -102,7 +104,7 @@ def import_from_url(context: Context, args:list):
     pprint(result)
 
 
-def import_from_config(context: Context, args:list):
+def import_from_config(context: Context, args: list):
     if len(args) == 0:
         print("ERROR: no workflow ID given")
         return
@@ -119,7 +121,7 @@ def import_from_config(context: Context, args:list):
         return
 
     url = workflows[key]
-    import_from_url(context, [ url ])
+    import_from_url(context, [url])
 
 
 def download(context: Context, args: list):
@@ -145,7 +147,7 @@ def show(context: Context, args: list):
     print(json.dumps(result, indent=4))
 
 
-def inputs(context:Context, args:list):
+def inputs(context: Context, args: list):
     if len(args) == 0:
         print('ERROR: no workflow ID given')
         return
@@ -157,7 +159,7 @@ def inputs(context:Context, args:list):
         print(json.dumps(input_dict, indent=4))
 
 
-def invocation(context:Context, args:list):
+def invocation(context: Context, args: list):
     if len(args) != 2:
         print("ERROR: Invalid paramaeters. A workflow ID invocation ID are required")
         return
@@ -182,7 +184,9 @@ def invocation(context:Context, args:list):
     #     return
     gi = connect(context)
     # result = gi.workflows.show_invocation(workflow_id, invocation_id)
-    invocations = gi.invocations.get_invocations(workflow_id=workflow_id, view='element', step_details=True)
+    invocations = gi.invocations.get_invocations(
+        workflow_id=workflow_id, view='element', step_details=True
+    )
     # print(json.dumps(result, indent=4))
     print('ID\tState\tWorkflow\tHistory')
     for invocation in invocations:
@@ -215,7 +219,7 @@ def test(context: Context, args: list):
 
 def publish(context: Context, args: list):
     if len(args) != 1:
-        print("USAGE: publish ID" )
+        print("USAGE: publish ID")
         return
     gi = connect(context)
     result = gi.workflows.update_workflow(args[0], published=True)
@@ -229,6 +233,7 @@ def rename(context: Context, args: list):
     gi = connect(context)
     result = gi.workflows.update_workflow(args[0], name=args[1])
     print(f"Renamed workflow to {result['name']}")
+
 
 def summarize(context: Context, args: list):
     if len(args) == 0:

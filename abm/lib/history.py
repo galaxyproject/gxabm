@@ -2,17 +2,18 @@ import json
 import os
 import sys
 import time
+from pathlib import Path
+from pprint import pprint
 
 import yaml
-
 from bioblend.galaxy.objects import GalaxyInstance
-from lib.common import connect, parse_profile, Context, summarize_metrics, find_history, print_json
-from pprint import pprint
-from pathlib import Path
+from lib.common import (Context, connect, find_history, parse_profile,
+                        print_json, summarize_metrics)
 
 #
 # History related functions
 #
+
 
 def longest_name(histories: list):
     longest = 0
@@ -32,13 +33,15 @@ def print_histories(histories: list):
     if len(histories) == 0:
         print("There are no available histories.")
         return
-    
+
     id_width = len(histories[0]['id'])
     name_width = longest_name(histories)
 
-    print(f"{'ID':<{id_width}} {'Name':<{name_width}} Deleted Public  Tags" )
+    print(f"{'ID':<{id_width}} {'Name':<{name_width}} Deleted Public  Tags")
     for history in histories:
-        print(f"{history['id']:<{id_width}} {history['name']:<{name_width}} {pad(history['deleted'])} {pad(history['published'])} {', '.join(history['tags'])}")
+        print(
+            f"{history['id']:<{id_width}} {history['name']:<{name_width}} {pad(history['deleted'])} {pad(history['published'])} {', '.join(history['tags'])}"
+        )
 
 
 def _list(context: Context, args: list):
@@ -46,7 +49,7 @@ def _list(context: Context, args: list):
     print_histories(gi.histories.get_histories())
 
     if len(args) > 0:
-        if args[0] in [ 'all', '-a', '--all' ]:
+        if args[0] in ['all', '-a', '--all']:
             print('Histories Published by all users')
             print_histories(gi.histories.get_published_histories())
 
@@ -128,7 +131,7 @@ def export(context: Context, args: list):
     if '--no-wait' in args:
         wait = False
         args.remove('--no-wait')
-    if  '-n' in args:
+    if '-n' in args:
         wait = False
         args.remove('-w')
     if len(args) == 0:
@@ -187,7 +190,7 @@ def _import(context: Context, args: list):
 
 
 def himport(context: Context, args: list):
-    def error_message(msg = 'Invalid command'):
+    def error_message(msg='Invalid command'):
         print(f"ERROR: {msg}")
         print(f"USAGE: {sys.argv[0]} history import SERVER HISTORY_ID JEHA_ID")
         print(f"       {sys.argv[0]} history import http://GALAXY_SERVER_URL")
@@ -212,7 +215,7 @@ def himport(context: Context, args: list):
                 with open(config, 'r') as f:
                     datasets = yaml.safe_load(f)
             # Then load the user histories.yml, if any
-            userfile = os.path.join(Path.home(),".abm", "histories.yml")
+            userfile = os.path.join(Path.home(), ".abm", "histories.yml")
             if os.path.exists(userfile):
                 if datasets is None:
                     datasets = {}
@@ -263,7 +266,7 @@ def create(context: Context, args: list):
     print(json.dumps(id, indent=4))
 
 
-def delete(context: Context, args:list):
+def delete(context: Context, args: list):
     if len(args) != 1:
         print('ERROR: please provide the history ID')
         return
@@ -275,7 +278,7 @@ def delete(context: Context, args:list):
     print(f"Deleted history {args[0]}")
 
 
-def copy(context:Context, args:list):
+def copy(context: Context, args: list):
     if len(args) != 2:
         print("ERROR: Invalid parameters. Provide a history ID and new history name.")
         return
@@ -290,7 +293,7 @@ def copy(context:Context, args:list):
     print(json.dumps(new_history, indent=4))
 
 
-def purge(context: Context, args:list):
+def purge(context: Context, args: list):
     if len(args) != 1:
         print("ERROR: Please pass a string used to filter histories to be deleted.")
         print("Use 'abm <cloud> history purge *' to remove ALL histories.")
@@ -321,7 +324,9 @@ def tag(context: Context, args: list):
         replace = True
         args.remove('-r')
     if len(args) < 2:
-        print("ERROR: Invalid command. Please provide the history ID and one or more tags.")
+        print(
+            "ERROR: Invalid command. Please provide the history ID and one or more tags."
+        )
         return
 
     gi = connect(context)
@@ -331,6 +336,7 @@ def tag(context: Context, args: list):
         args += history['tags']
     gi.histories.update_history(hid, tags=args)
     print(f"Set history tags to: {', '.join(args)}")
+
 
 def summarize(context: Context, args: list):
     if len(args) == 0:
@@ -363,6 +369,7 @@ def summarize(context: Context, args: list):
         #         all_jobs.append(job)
     # summarize_metrics(gi, gi.jobs.get_jobs(history_id=args[0]))
     summarize_metrics(gi, all_jobs)
+
 
 def wait(context: Context, args: list):
     state = ''

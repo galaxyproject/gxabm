@@ -1,5 +1,7 @@
 from pprint import pprint
-from .common import connect, Context
+
+from .common import Context, connect
+
 
 def list(context: Context, args: list):
     if len(args) == 0:
@@ -12,7 +14,9 @@ def list(context: Context, args: list):
 
 def create(context: Context, args: list):
     if len(args) < 2:
-        print("ERROR: Invalid parameters.  Required the library ID, folder name and folder description (optional")
+        print(
+            "ERROR: Invalid parameters.  Required the library ID, folder name and folder description (optional"
+        )
         return
     library_id = args[0]
     folder_name = args[1]
@@ -26,5 +30,3 @@ def create(context: Context, args: list):
 
 def delete(context: Context, args: list):
     print("This functionality has not been implemented yet.")
-
-

@@ -1,5 +1,6 @@
 from pprint import pprint
-from .common import connect, datasets, Context
+
+from .common import Context, connect, datasets
 
 
 def list(context: Context, args: list):
@@ -32,7 +33,9 @@ def delete(context: Context, args: list):
 
 def upload(context: Context, args: list):
     if len(args) != 3:
-        print("ERROR: Invalid parameters. Specify the library and folder names and the dataset to upload")
+        print(
+            "ERROR: Invalid parameters. Specify the library and folder names and the dataset to upload"
+        )
         return
     gi = connect(context)
     libraries = gi.libraries.get_libraries(name=args[0])
@@ -51,7 +54,9 @@ def upload(context: Context, args: list):
         return
     folder_id = folders[0]['id']
     dataset_url = datasets['dna'][int(args[2])]
-    result = gi.libraries.upload_file_from_url(library_id, dataset_url, folder_id=folder_id)
+    result = gi.libraries.upload_file_from_url(
+        library_id, dataset_url, folder_id=folder_id
+    )
     pprint(result)
     return
 
@@ -72,4 +77,3 @@ def download(context: Context, args: list):
 
 def show(context: Context, args: list):
     print("library show not implemented")
-

@@ -1,9 +1,7 @@
 import json
-
 from pprint import pprint
 
 from bioblend.galaxy import GalaxyInstance
-
 from common import Context, connect
 
 
@@ -42,7 +40,7 @@ def get_api_key(context: Context, args: list):
     return key
 
 
-def create(context: Context, args:list):
+def create(context: Context, args: list):
     if len(args) != 3:
         print("ERROR: Please specify the username, email, and password")
         return
@@ -60,16 +58,11 @@ def create(context: Context, args:list):
     user_record = gi.users.create_local_user(name, email, password)
     id = user_record['id']
     key = gi.users.create_user_apikey(id)
-    result = {
-        'name': name,
-        'email': email,
-        'id': id,
-        'key': key
-    }
+    result = {'name': name, 'email': email, 'id': id, 'key': key}
     print(json.dumps(result, indent=4))
 
 
-def show(context: Context, args:list):
+def show(context: Context, args: list):
     if len(args) == 0:
         print("ERROR: no user email given")
         return
@@ -84,7 +77,7 @@ def show(context: Context, args:list):
     print(json.dumps(result, indent=4))
 
 
-def usage(context:Context, args:list):
+def usage(context: Context, args: list):
     if len(args) == 0:
         print("ERROR: no user email given")
         return
@@ -117,5 +110,7 @@ def _get_user_id(gi: GalaxyInstance, name_or_email: str) -> str:
         print("WARNING: no such user")
         return None
     if len(user_list) > 1:
-        print("WARNING: more than one user with that email address. Returning the first")
+        print(
+            "WARNING: more than one user with that email address. Returning the first"
+        )
     return user_list[0]['id']

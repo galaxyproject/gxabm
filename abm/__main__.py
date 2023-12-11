@@ -7,17 +7,20 @@ Copyright 2023 The Galaxy Project. All rights reserved.
 
 """
 
-import yaml
-import sys
-import os
 import logging
-from lib.common import Context
+import os
+import sys
 from pprint import pprint
-from abm import getVersion
 
+import yaml
 # These imports are required because we need Python to be load them to the
 # symbol table so the parse_menu method can find them in globals()
-from lib import job, dataset, workflow, history, library, folder, benchmark, helm, kubectl, config, experiment, users, cloudlaunch, invocation
+from lib import (benchmark, cloudlaunch, config, dataset, experiment, folder,
+                 helm, history, invocation, job, kubectl, library, users,
+                 workflow)
+from lib.common import Context
+
+from abm import getVersion
 
 log = logging.getLogger('abm')
 handler = logging.StreamHandler()
@@ -29,10 +32,11 @@ handler.setFormatter(formatter)
 log.addHandler(handler)
 
 
-#VERSION = '2.0.0-dev'
+# VERSION = '2.0.0-dev'
 
 BOLD = '\033[1m'
 CLEAR = '\033[0m'
+
 
 def bold(text: str):
     """
@@ -50,16 +54,18 @@ version_args = ['-v', '--version', 'version']
 # Commands that do not depend on a cloud instance
 stand_alone_commands = []
 
+
 def head(text):
     print(bold(text))
 
 
-def command_list(commands:list):
+def command_list(commands: list):
     return '|'.join(bold(c) for c in commands)
 
 
 def copyright():
     print(f"    Copyright 2023 The Galaxy Project. All Rights Reserved.\n")
+
 
 def print_main_help(menu_data):
     print()
@@ -79,7 +85,9 @@ def print_main_help(menu_data):
     print("            print this help screen and exit")
     print()
     head("    NOTES")
-    print(f"        Available SUBCOMMANDS and OPTIONS depend on the command. Use the {bold('help')} subcommand")
+    print(
+        f"        Available SUBCOMMANDS and OPTIONS depend on the command. Use the {bold('help')} subcommand"
+    )
     print(f"        to learn more about each of the commands. For example:\n")
     print(f"        $> abm workflow help\n")
     copyright()
@@ -92,7 +100,7 @@ def print_help(menu_data, command):
             submenu = menu_item
             break
     if submenu is None:
-        #print_main_help(menu_data)
+        # print_main_help(menu_data)
         print(f"No help for {command} is available")
         return
 
@@ -106,7 +114,9 @@ def print_help(menu_data, command):
     print(f"        {submenu['help']}\n")
     head("    SUBCOMMANDS")
     for menu_item in submenu['menu']:
-        print(f"        {'|'.join(bold(x) for x in menu_item['name'])} {menu_item['params'] if 'params' in menu_item else ''}")
+        print(
+            f"        {'|'.join(bold(x) for x in menu_item['name'])} {menu_item['params'] if 'params' in menu_item else ''}"
+        )
         print(f"            {menu_item['help']}")
     print(f"        {bold('help')}")
     print("            print this help screen and exit")
@@ -181,6 +191,7 @@ def version():
     print(f"    Galaxy Automated Benchmarking v{version}")
     copyright()
 
+
 def _get_logopt(args: list):
     OPTS = ['-log', '--log', '-logging', '--logging']
     for i in range(len(args)):
@@ -193,12 +204,20 @@ def entrypoint():
     # Check if log level is being set
     logopt = _get_logopt(sys.argv)
     if logopt >= 0:
-        if logopt+1 >= len(sys.argv):
+        if logopt + 1 >= len(sys.argv):
             print("ERROR: no log level provided")
             return
 
         level = sys.argv[logopt + 1].upper()
-        if level not in ['DEBUG', 'INFO', 'WARN', 'WARNING', 'ERROR', 'FATAL', 'CRITICAL']:
+        if level not in [
+            'DEBUG',
+            'INFO',
+            'WARN',
+            'WARNING',
+            'ERROR',
+            'FATAL',
+            'CRITICAL',
+        ]:
             print(f"ERROR: Invalid logging level {sys.argv[logopt + 1]}")
             return
         print(f"Setting the log level to {level}")

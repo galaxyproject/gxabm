@@ -1,15 +1,18 @@
+import argparse
+import json
+import logging
 import os
 import sys
-import json
+
 import yaml
-import logging
-import argparse
-from lib import Keys, INVOCATIONS_DIR, METRICS_DIR
-from lib.common import connect, Context, _get_dataset_data, _make_dataset_element, print_json
 from bioblend.galaxy import GalaxyInstance, dataset_collections
+from lib import INVOCATIONS_DIR, METRICS_DIR, Keys
+from lib.common import (Context, _get_dataset_data, _make_dataset_element,
+                        connect, print_json)
 from lib.history import wait_for
 
 log = logging.getLogger('abm')
+
 
 def run_cli(context: Context, args: list):
     """
@@ -32,7 +35,7 @@ def run_cli(context: Context, args: list):
     parser.add_argument('-p', '--prefix')
     parser.add_argument('-e', '--experiment')
     a = parser.parse_args(args)
-    #workflow_path = args[0]
+    # workflow_path = args[0]
     if not os.path.exists(a.workflow_path):
         print(f'ERROR: can not find workflow configuration {a.workflow_path}')
         return
@@ -45,14 +48,12 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
     #     if len(args) > 2:
     #         experiment = args[2].replace(' ', '_').lower()
 
-
     if os.path.exists(INVOCATIONS_DIR):
         if not os.path.isdir(INVOCATIONS_DIR):
             print('ERROR: Can not save invocation status, directory name in use.')
             sys.exit(1)
     else:
         os.mkdir(INVOCATIONS_DIR)
-
 
     if os.path.exists(METRICS_DIR):
         if not os.path.isdir(METRICS_DIR):
@@ -99,12 +100,12 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
                     print(f'ERROR: Invalid input specification for {spec[Keys.NAME]}')
                     return False
                 dsname = spec[Keys.NAME]
-                #dsid = find_dataset_id(gi, dsname)
+                # dsid = find_dataset_id(gi, dsname)
                 dsdata = _get_dataset_data(gi, dsname)
                 dsid = dsdata['id']
                 ref_data_size.append(dsdata['size'])
                 print(f"Reference input dataset {dsid}")
-                inputs[input[0]] = {'id': dsid, 'src': 'hda', 'size':dsdata['size']}
+                inputs[input[0]] = {'id': dsid, 'src': 'hda', 'size': dsdata['size']}
                 input_names.append(dsname)
 
         count = 0
@@ -127,7 +128,9 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
                 for spec in run[Keys.INPUTS]:
                     input = gi.workflows.get_workflow_inputs(wfid, spec[Keys.NAME])
                     if input is None or len(input) == 0:
-                        print(f'ERROR: Invalid input specification for {spec[Keys.NAME]}')
+                        print(
+                            f'ERROR: Invalid input specification for {spec[Keys.NAME]}'
+                        )
                         return False
 
                     if 'value' in spec:
@@ -136,12 +139,14 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
                     elif 'collection' in spec:
                         dsname = spec['collection']
                         input_names.append(dsname)
-                        #inputs.append(dsname)
+                        # inputs.append(dsname)
                         # dsid = find_dataset_id(gi, dsname)
                         dsid = find_collection_id(gi, dsname)
                         dsdata = _get_dataset_data(gi, dsid)
                         if dsdata is None:
-                            raise  Exception(f"ERROR: unable to resolve {dsname} to a dataset.")
+                            raise Exception(
+                                f"ERROR: unable to resolve {dsname} to a dataset."
+                            )
                         dsid = dsdata['id']
                         dssize = dsdata['size']
                         input_data_size.append(dssize)
@@ -159,7 +164,11 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
                             dssize = dsdata['size']
                             input_data_size.append(dssize)
                             print(f"Input dataset ID: {name} [{dsid}] {dssize}")
-                            inputs[input[0]] = {'id': dsid, 'src': 'hdca', 'size': dssize}
+                            inputs[input[0]] = {
+                                'id': dsid,
+                                'src': 'hdca',
+                                'size': dssize,
+                            }
                         else:
                             histories = gi.histories.get_histories(name=spec['history'])
                             if len(histories) == 0:
@@ -172,32 +181,41 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
                                 elements = []
                                 size = 0
                                 for key in item.keys():
-                                    #print(f"Getting dataset for {key} = {item[key]}")
+                                    # print(f"Getting dataset for {key} = {item[key]}")
                                     value = _get_dataset_data(gi, item[key])
                                     size += value['size']
-                                    elements.append(_make_dataset_element(key, value['id']))
+                                    elements.append(
+                                        _make_dataset_element(key, value['id'])
+                                    )
                                 description = dataset_collections.CollectionDescription(
                                     name=name,
                                     # type='paired',
-                                    elements=elements
+                                    elements=elements,
                                 )
                                 pairs += 1
                                 # print(json.dumps(description.__dict__, indent=4))
                                 # pprint(description)
                                 collection = gi.histories.create_dataset_collection(
-                                    history_id=hid,
-                                    collection_description=description
+                                    history_id=hid, collection_description=description
                                 )
-                                print(f"Input dataset paired list: {collection['id']} {size}")
-                                inputs[input[0]] = {'id': collection['id'], 'src':'hdca', 'size':size}
+                                print(
+                                    f"Input dataset paired list: {collection['id']} {size}"
+                                )
+                                inputs[input[0]] = {
+                                    'id': collection['id'],
+                                    'src': 'hdca',
+                                    'size': size,
+                                }
                     elif Keys.DATASET_ID in spec:
                         dsname = spec[Keys.DATASET_ID]
                         input_names.append(dsname)
-                        #inputs.append(dsname)
+                        # inputs.append(dsname)
                         # dsid = find_dataset_id(gi, dsname)
                         dsdata = _get_dataset_data(gi, dsname)
                         if dsdata is None:
-                            raise  Exception(f"ERROR: unable to resolve {dsname} to a dataset.")
+                            raise Exception(
+                                f"ERROR: unable to resolve {dsname} to a dataset."
+                            )
                         dsid = dsdata['id']
                         dssize = dsdata['size']
                         input_data_size.append(dssize)
@@ -206,9 +224,11 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
                     else:
                         raise Exception(f'Invalid input value')
             print(f"Running workflow {wfid} in history {new_history_name}")
-            invocation = gi.workflows.invoke_workflow(wfid, inputs=inputs, history_name=new_history_name)
+            invocation = gi.workflows.invoke_workflow(
+                wfid, inputs=inputs, history_name=new_history_name
+            )
             id = invocation['id']
-            #invocations = gi.invocations.wait_for_invocation(id, 86400, 10, False)
+            # invocations = gi.invocations.wait_for_invocation(id, 86400, 10, False)
             try:
                 invocations = gi.invocations.wait_for_invocation(id, 86400, 10, False)
             except:
@@ -234,7 +254,7 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
             invocations['inputs'] = ' '.join(input_names)
             invocations['ref_data_size'] = ref_data_size
             invocations['input_data_size'] = input_data_size
-            #TODO Change this output path. (Change it to what? KS)
+            # TODO Change this output path. (Change it to what? KS)
             output_path = os.path.join(invocations_dir, id + '.json')
             with open(output_path, 'w') as f:
                 json.dump(invocations, f, indent=4)
@@ -242,7 +262,6 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
             wait_for_jobs(context, gi, invocations)
     print("Benchmarking run complete")
     return True
-
 
 
 def translate(context: Context, args: list):
@@ -308,7 +327,9 @@ def validate(context: Context, args: list):
             wfid = None
 
         if wfid is None:
-            print(f"The workflow '{workflow[Keys.WORKFLOW_ID]}' does not exist on this server.")
+            print(
+                f"The workflow '{workflow[Keys.WORKFLOW_ID]}' does not exist on this server."
+            )
             return
         else:
             print(f"Workflow: {workflow[Keys.WORKFLOW_ID]} -> {wfid}")
@@ -324,24 +345,30 @@ def validate(context: Context, args: list):
                 if input is None or len(input) == 0:
                     print(f'ERROR: Invalid input specification for {spec[Keys.NAME]}')
                     errors += 1
-                    #sys.exit(1)
+                    # sys.exit(1)
                 else:
                     dsid = find_dataset_id(gi, spec[Keys.DATASET_ID])
                     if dsid is None:
-                        print(f"ERROR: Reference dataset not found {spec[Keys.DATASET_ID]}")
+                        print(
+                            f"ERROR: Reference dataset not found {spec[Keys.DATASET_ID]}"
+                        )
                         errors += 1
                     else:
-                        print(f"Reference input dataset {spec[Keys.DATASET_ID]} -> {dsid}")
+                        print(
+                            f"Reference input dataset {spec[Keys.DATASET_ID]} -> {dsid}"
+                        )
                         inputs[input[0]] = {'id': dsid, 'src': 'hda'}
 
-        #count = 0
+        # count = 0
         for run in workflow[Keys.RUNS]:
-            #count += 1
+            # count += 1
             if Keys.INPUTS in run and run[Keys.INPUTS] is not None:
                 for spec in run[Keys.INPUTS]:
                     input = gi.workflows.get_workflow_inputs(wfid, spec[Keys.NAME])
                     if input is None or len(input) == 0:
-                        print(f'ERROR: Invalid input specification for {spec[Keys.NAME]}')
+                        print(
+                            f'ERROR: Invalid input specification for {spec[Keys.NAME]}'
+                        )
                         errors += 1
                     else:
                         key = None
@@ -369,11 +396,15 @@ def validate(context: Context, args: list):
                             inputs[input[0]] = {'id': dsid, 'src': 'hda'}
 
         if errors == 0:
-            print("This workflow configuration is valid and can be executed on this server.")
+            print(
+                "This workflow configuration is valid and can be executed on this server."
+            )
         else:
             print("---------------------------------")
             print("WARNING")
-            print("The above problems need to be corrected before this workflow configuration can be used.")
+            print(
+                "The above problems need to be corrected before this workflow configuration can be used."
+            )
             print("---------------------------------")
         total_errors += errors
 
@@ -381,7 +412,7 @@ def validate(context: Context, args: list):
 
 
 def wait_for_jobs(context, gi: GalaxyInstance, invocations: dict):
-    """ Blocks until all jobs defined in the *invocations* to complete.
+    """Blocks until all jobs defined in the *invocations* to complete.
 
     :param gi: The *GalaxyInstance** running the jobs
     :param invocations:
@@ -409,7 +440,7 @@ def wait_for_jobs(context, gi: GalaxyInstance, invocations: dict):
             'status': job['state'],
             'server': context.GALAXY_SERVER,
             'ref_data_size': invocations['ref_data_size'],
-            'input_data_size': invocations['input_data_size']
+            'input_data_size': invocations['input_data_size'],
         }
         output_path = os.path.join(output_dir, f"{job['id']}.json")
         with open(output_path, "w") as f:
@@ -483,7 +514,7 @@ def find_workflow_id(gi, name_or_id):
         return wf[0]['id']
     except:
         pass
-    #print(f"Warning: unable to find workflow {name_or_id}")
+    # print(f"Warning: unable to find workflow {name_or_id}")
     return None
 
 
@@ -496,7 +527,9 @@ def find_dataset_id(gi, name_or_id):
         pass
 
     try:
-        datasets = gi.datasets.get_datasets(name=name_or_id)  # , deleted=True, purged=True)
+        datasets = gi.datasets.get_datasets(
+            name=name_or_id
+        )  # , deleted=True, purged=True)
         for ds in datasets:
             if ds['state'] == 'ok' and not ds['deleted'] and ds['visible']:
                 return ds['id']
@@ -506,15 +539,12 @@ def find_dataset_id(gi, name_or_id):
     except:
         print('Caught an exception')
         print(sys.exc_info())
-    #print(f"Warning: unable to find dataset {name_or_id}")
+    # print(f"Warning: unable to find dataset {name_or_id}")
     return None
 
 
 def find_collection_id(gi, name):
-    kwargs = {
-        'limit': 10000,
-        'offset': 0
-    }
+    kwargs = {'limit': 10000, 'offset': 0}
     datasets = gi.datasets.get_datasets(**kwargs)
     if len(datasets) == 0:
         print('No datasets found')
@@ -522,13 +552,19 @@ def find_collection_id(gi, name):
     for dataset in datasets:
         # print(f"Checking if dataset {dataset['name']} == {name}")
         if dataset['type'] == 'collection' and dataset['name'].strip() == name:
-            if dataset['populated_state'] == 'ok' and not dataset['deleted'] and dataset['visible']:
+            if (
+                dataset['populated_state'] == 'ok'
+                and not dataset['deleted']
+                and dataset['visible']
+            ):
                 return dataset['id']
     return None
 
 
 from pprint import pprint
-def test(context:Context, args:list):
+
+
+def test(context: Context, args: list):
     id = 'c90fffcf98b31cd3'
     gi = connect(context)
     inputs = gi.workflows.get_workflow_inputs(id, 'PE fastq input')
