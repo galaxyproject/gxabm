@@ -1,15 +1,19 @@
 import json
 import os
 import sys
-import yaml
-
-from lib.common import connect, parse_profile, Context, summarize_metrics, find_history, print_json
-from pprint import pprint
+import time
 from pathlib import Path
+from pprint import pprint
+
+import yaml
+from bioblend.galaxy.objects import GalaxyInstance
+from lib.common import (Context, connect, find_history, parse_profile,
+                        print_json, summarize_metrics)
 
 #
 # History related functions
 #
+
 
 def longest_name(histories: list):
     longest = 0
@@ -29,21 +33,23 @@ def print_histories(histories: list):
     if len(histories) == 0:
         print("There are no available histories.")
         return
-    
+
     id_width = len(histories[0]['id'])
     name_width = longest_name(histories)
 
-    print(f"{'ID':<{id_width}} {'Name':<{name_width}} Deleted Public  Tags" )
+    print(f"{'ID':<{id_width}} {'Name':<{name_width}} Deleted Public  Tags")
     for history in histories:
-        print(f"{history['id']:<{id_width}} {history['name']:<{name_width}} {pad(history['deleted'])} {pad(history['published'])} {', '.join(history['tags'])}")
+        print(
+            f"{history['id']:<{id_width}} {history['name']:<{name_width}} {pad(history['deleted'])} {pad(history['published'])} {', '.join(history['tags'])}"
+        )
 
 
-def list(context: Context, args: list):
+def _list(context: Context, args: list):
     gi = connect(context)
     print_histories(gi.histories.get_histories())
 
     if len(args) > 0:
-        if args[0] in [ 'all', '-a', '--all' ]:
+        if args[0] in ['all', '-a', '--all']:
             print('Histories Published by all users')
             print_histories(gi.histories.get_published_histories())
 
@@ -125,7 +131,7 @@ def export(context: Context, args: list):
     if '--no-wait' in args:
         wait = False
         args.remove('--no-wait')
-    if  '-n' in args:
+    if '-n' in args:
         wait = False
         args.remove('-w')
     if len(args) == 0:
@@ -184,7 +190,7 @@ def _import(context: Context, args: list):
 
 
 def himport(context: Context, args: list):
-    def error_message(msg = 'Invalid command'):
+    def error_message(msg='Invalid command'):
         print(f"ERROR: {msg}")
         print(f"USAGE: {sys.argv[0]} history import SERVER HISTORY_ID JEHA_ID")
         print(f"       {sys.argv[0]} history import http://GALAXY_SERVER_URL")
@@ -209,7 +215,7 @@ def himport(context: Context, args: list):
                 with open(config, 'r') as f:
                     datasets = yaml.safe_load(f)
             # Then load the user histories.yml, if any
-            userfile = os.path.join(Path.home(),".abm", "histories.yml")
+            userfile = os.path.join(Path.home(), ".abm", "histories.yml")
             if os.path.exists(userfile):
                 if datasets is None:
                     datasets = {}
@@ -260,7 +266,7 @@ def create(context: Context, args: list):
     print(json.dumps(id, indent=4))
 
 
-def delete(context: Context, args:list):
+def delete(context: Context, args: list):
     if len(args) != 1:
         print('ERROR: please provide the history ID')
         return
@@ -272,7 +278,7 @@ def delete(context: Context, args:list):
     print(f"Deleted history {args[0]}")
 
 
-def copy(context:Context, args:list):
+def copy(context: Context, args: list):
     if len(args) != 2:
         print("ERROR: Invalid parameters. Provide a history ID and new history name.")
         return
@@ -287,7 +293,7 @@ def copy(context:Context, args:list):
     print(json.dumps(new_history, indent=4))
 
 
-def purge(context: Context, args:list):
+def purge(context: Context, args: list):
     if len(args) != 1:
         print("ERROR: Please pass a string used to filter histories to be deleted.")
         print("Use 'abm <cloud> history purge *' to remove ALL histories.")
@@ -318,7 +324,9 @@ def tag(context: Context, args: list):
         replace = True
         args.remove('-r')
     if len(args) < 2:
-        print("ERROR: Invalid command. Please provide the history ID and one or more tags.")
+        print(
+            "ERROR: Invalid command. Please provide the history ID and one or more tags."
+        )
         return
 
     gi = connect(context)
@@ -328,6 +336,7 @@ def tag(context: Context, args: list):
         args += history['tags']
     gi.histories.update_history(hid, tags=args)
     print(f"Set history tags to: {', '.join(args)}")
+
 
 def summarize(context: Context, args: list):
     if len(args) == 0:
@@ -360,3 +369,81 @@ def summarize(context: Context, args: list):
         #         all_jobs.append(job)
     # summarize_metrics(gi, gi.jobs.get_jobs(history_id=args[0]))
     summarize_metrics(gi, all_jobs)
+
+
+def wait(context: Context, args: list):
+    state = ''
+    if len(args) == 0:
+        print("ERROR: No history ID provided")
+        return
+
+    gi = connect(context)
+    history_id = find_history(gi, args[0])
+    if history_id is None:
+        print("ERROR: No such history")
+        return
+    wait_for(gi, history_id)
+
+
+def wait_for(gi: GalaxyInstance, history_id: str):
+    errored = []
+    waiting = True
+    job_states = JobStates()
+    while waiting:
+        restart = []
+        status_counts = dict()
+        terminal = 0
+        job_list = gi.jobs.get_jobs(history_id=history_id)
+        for job in job_list:
+            job_states.update(job)
+            state = job['state']
+            id = job['id']
+            # Count how many jobs are in each state.
+            if state not in status_counts:
+                status_counts[state] = 1
+            else:
+                status_counts[state] += 1
+            # Count jobs in a terminal state and mark failed jobs for a restart
+            if state == 'ok':
+                terminal += 1
+            elif state == 'error':
+                terminal += 1
+                if id not in errored:
+                    restart.append(id)
+                    errored.append(id)
+        if len(restart) > 0:
+            for job in restart:
+                print(f"Restaring job {job}")
+                try:
+                    gi.jobs.rerun_job(job, remap=True)
+                except:
+                    try:
+                        gi.jobs.rerun_job(job, remap=False)
+                    except:
+                        print(f"Failed to restart job {job}")
+                        waiting = False
+        elif len(job_list) == terminal:
+            print("All jobs are in a terminal state")
+            waiting = False
+        if waiting:
+            time.sleep(30)
+            # elif state == 'paused':
+            #     paused += 1
+            # print(f"{job['id']}\t{job['state']}\t{job['update_time']}\t{job['tool_id']}")
+
+
+class JobStates:
+    def __init__(self):
+        self._jobs = dict()
+
+    def update(self, job):
+        id = job['id']
+        state = job['state']
+        tool = job['tool_id']
+        if '/' in tool:
+            tool = tool.split('/')[-2]
+        if id not in self._jobs:
+            print(f"Job {id} {tool} state {state}")
+        elif state != self._jobs[id]:
+            print(f"Job {id} {tool} {self._jobs[id]} -> {state}")
+        self._jobs[id] = state

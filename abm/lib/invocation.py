@@ -1,4 +1,5 @@
-from common import Context, connect, summarize_metrics, print_json
+from common import Context, connect, print_json, summarize_metrics
+
 
 def doList(context: Context, args: list):
     wid = None

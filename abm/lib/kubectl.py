@@ -1,7 +1,7 @@
 import json
-
 from pprint import pprint
-from common import get_env, run, find_executable, Context
+
+from common import Context, find_executable, get_env, run
 
 
 def pods(context: Context, args: list):

@@ -1,9 +1,10 @@
-from common import load_profiles, save_profiles, get_yaml_parser, Context
-
 import os
-import yaml
 from pathlib import Path
-from common import print_json, print_yaml
+
+import yaml
+from common import (Context, get_yaml_parser, load_profiles, print_json,
+                    print_yaml, save_profiles)
+
 
 def list(context: Context, args: list):
     profiles = load_profiles()
@@ -21,7 +22,7 @@ def create(context: Context, args: list):
     if profile_name in profiles:
         print("ERROR: a cloud configuration with that name already exists.")
         return
-    profile = { 'url': "", 'key': '', 'kube': args[1]}
+    profile = {'url': "", 'key': '', 'kube': args[1]}
     profiles[profile_name] = profile
     save_profiles(profiles)
     print_json(profile)
@@ -83,6 +84,7 @@ def show(context: Context, args: list):
         return
     print_json(profiles[args[0]])
 
+
 def workflows(context: Context, args: list):
     userfile = os.path.join(Path.home(), ".abm", "workflows.yml")
     if len(args) == 0 or args[0] in ['list', 'ls']:
@@ -90,12 +92,16 @@ def workflows(context: Context, args: list):
         if workflows is None:
             return
         print(f"Workflows defined in {userfile}")
-        for key,url in workflows.items():
+        for key, url in workflows.items():
             print(f"{key:10} {url}")
-    elif args[0] in ['delete', 'del','rm']:
-        print(f"Deleting workflows is not supported at this time. Please edit {userfile} directly.")
+    elif args[0] in ['delete', 'del', 'rm']:
+        print(
+            f"Deleting workflows is not supported at this time. Please edit {userfile} directly."
+        )
     elif args[0] in ['add', 'new']:
-        print(f"Adding workflows is not supported at this time. Please edit {userfile} directly.")
+        print(
+            f"Adding workflows is not supported at this time. Please edit {userfile} directly."
+        )
     else:
         print(f"ERROR: Unrecognized command {args[0]}")
 
@@ -107,15 +113,18 @@ def datasets(context: Context, args: list):
         if datasets is None:
             return
         print(f"Datasets defined in {userfile}")
-        for key,url in datasets.items():
+        for key, url in datasets.items():
             print(f"{key:10} {url}")
-    elif args[0] in ['delete', 'del','rm']:
-        print(f"Deleting datasets is not supported at this time. Please edit {userfile} directly.")
+    elif args[0] in ['delete', 'del', 'rm']:
+        print(
+            f"Deleting datasets is not supported at this time. Please edit {userfile} directly."
+        )
     elif args[0] in ['add', 'new']:
-        print(f"Adding datasets is not supported at this time. Please edit {userfile} directly.")
+        print(
+            f"Adding datasets is not supported at this time. Please edit {userfile} directly."
+        )
     else:
         print(f"ERROR: Unrecognized command {args[0]}")
-
 
 
 def histories(context: Context, args: list):
@@ -125,12 +134,16 @@ def histories(context: Context, args: list):
         if histories is None:
             return
         print(f"Datasets defined in {userfile}")
-        for key,url in histories.items():
+        for key, url in histories.items():
             print(f"{key:10} {url}")
-    elif args[0] in ['delete', 'del','rm']:
-        print(f"Deleting history entries is not supported at this time. Please edit {userfile} directly.")
+    elif args[0] in ['delete', 'del', 'rm']:
+        print(
+            f"Deleting history entries is not supported at this time. Please edit {userfile} directly."
+        )
     elif args[0] in ['add', 'new']:
-        print(f"Adding dataset entries is not supported at this time. Please edit {userfile} directly.")
+        print(
+            f"Adding dataset entries is not supported at this time. Please edit {userfile} directly."
+        )
     else:
         print(f"ERROR: Unrecognized command {args[0]}")
 
@@ -149,6 +162,7 @@ def histories(context: Context, args: list):
 #         print(f"Please configure {userfile} to enable workflow imports.")
 #         return None
 #     return _load_config(userfile)
+
 
 def _load_config(filepath):
     if not os.path.exists(filepath):

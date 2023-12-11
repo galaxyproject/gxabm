@@ -1,19 +1,17 @@
 import json
-
-from bioblend.galaxy import dataset_collections
-from common import connect, Context, print_json, _get_dataset_data, _make_dataset_element, find_history
-from pprint import pprint
-from pathlib import Path
-
 import os
+from pathlib import Path
+from pprint import pprint
+
 import yaml
+from bioblend.galaxy import dataset_collections
+from common import (Context, _get_dataset_data, _make_dataset_element, connect,
+                    find_history, print_json)
+
 
 def list(context: Context, args: list):
     gi = connect(context)
-    kwargs = {
-        'limit': 10000,
-        'offset': 0
-    }
+    kwargs = {'limit': 10000, 'offset': 0}
     if len(args) > 0:
         if args[0] in ['-s', '--state']:
             if len(args) != 2:
@@ -23,7 +21,7 @@ def list(context: Context, args: list):
         else:
             print(f"ERROR: Invalid parameter: {args[0]}")
             return
-    #datasets = gi.datasets.get_datasets(limit=10000, offset=0)  # , deleted=True, purged=True)
+    # datasets = gi.datasets.get_datasets(limit=10000, offset=0)  # , deleted=True, purged=True)
     datasets = gi.datasets.get_datasets(**kwargs)
     if len(datasets) == 0:
         print('No datasets found')
@@ -32,7 +30,9 @@ def list(context: Context, args: list):
     print('ID\tHistory\tType\tDeleted\tState\tName')
     for dataset in datasets:
         state = dataset['state'] if 'state' in dataset else 'unknown'
-        print(f"{dataset['id']}\t{dataset['history_id']}\t{dataset['history_content_type']}\t{dataset['deleted']}\t{state}\t{dataset['name']}")
+        print(
+            f"{dataset['id']}\t{dataset['history_id']}\t{dataset['history_content_type']}\t{dataset['deleted']}\t{state}\t{dataset['name']}"
+        )
 
 
 def clean(context: Context, args: list):
@@ -41,7 +41,9 @@ def clean(context: Context, args: list):
     else:
         invalid_states = args
     gi = connect(context)
-    datasets = gi.datasets.get_datasets(limit=10000, offset=0)  # , deleted=True, purged=True)
+    datasets = gi.datasets.get_datasets(
+        limit=10000, offset=0
+    )  # , deleted=True, purged=True)
     if len(datasets) == 0:
         print('No datasets found')
         return
@@ -118,7 +120,7 @@ def collection(context: Context, args: list):
         elif arg == '-n' or arg == '--name':
             collection_name = args.pop(0)
         elif '=' in arg:
-            name,value = arg.split('=')
+            name, value = arg.split('=')
             dataset = _get_dataset_data(gi, value)
             if dataset is None:
                 print(f"ERROR: dataset not found {value}")
@@ -136,10 +138,8 @@ def collection(context: Context, args: list):
     result = gi.histories.create_dataset_collection(
         history_id=hid,
         collection_description=dataset_collections.CollectionDescription(
-            name=collection_name,
-            type=type,
-            elements=elements
-        )
+            name=collection_name, type=type, elements=elements
+        ),
     )
     print(json.dumps(result, indent=4))
 
@@ -181,7 +181,7 @@ def import_from_config(context: Context, args: list):
         gi = connect(context)
     if history is not None:
         history = find_history(gi, history)
-        
+
     response = gi.tools.put_url(url, history, **kwargs)
     print(json.dumps(response, indent=4))
 
@@ -224,10 +224,7 @@ def rename(context: Context, args: list):
         return
     gi = connect(context)
     response = gi.histories.update_dataset(args[0], args[1], name=args[2])
-    result = {
-        'state': response['state'],
-        'name': response['name']
-    }
+    result = {'state': response['state'], 'name': response['name']}
     print(json.dumps(result, indent=4))
 
 

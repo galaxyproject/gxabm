@@ -1,12 +1,12 @@
-import os
-import sys
-import subprocess
-from ruamel.yaml import YAML
 import json
-import bioblend.galaxy
-from bioblend.galaxy import dataset_collections
+import os
+import subprocess
+import sys
 
+import bioblend.galaxy
 import lib
+from bioblend.galaxy import dataset_collections
+from ruamel.yaml import YAML
 
 PROFILE_SEARCH_PATH = ['~/.abm/profile.yml', '.abm-profile.yml']
 
@@ -17,10 +17,11 @@ datasets = {
         "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR592/SRR592109/SRR592109_2.fastq.gz",
         "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR233/SRR233167/SRR233167_2.fastq.gz",
         "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR047/ERR047678/ERR047678_1.fastq.gz",
-        "ftp://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/data/AshkenazimTrio/HG003_NA24149_father/NIST_Illumina_2x250bps/reads/D2_S1_L002_R1_002.fastq.gz"
+        "ftp://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/data/AshkenazimTrio/HG003_NA24149_father/NIST_Illumina_2x250bps/reads/D2_S1_L002_R1_002.fastq.gz",
     ],
-    "rna": []
+    "rna": [],
 }
+
 
 class Context:
     def __init__(self, *args):
@@ -39,8 +40,9 @@ class Context:
             self.API_KEY = args[1]
             self.KUBECONFIG = args[2]
         else:
-            raise Exception(f'Invalid args for Context. Expected one or three, found {len(args)}')
-
+            raise Exception(
+                f'Invalid args for Context. Expected one or three, found {len(args)}'
+            )
 
 
 def print_json(obj, indent=2):
@@ -51,7 +53,7 @@ def print_yaml(obj):
     get_yaml_parser().dump(obj, sys.stdout)
 
 
-def connect(context:Context):
+def connect(context: Context):
     """
     Create a connection to the Galaxy instance
 
@@ -69,7 +71,6 @@ def connect(context:Context):
     gi.max_get_attempts = 3
     gi.get_retry_delay = 1
     return gi
-
 
 
 def _set_active_profile(profile_name: str):
@@ -132,7 +133,9 @@ def parse_profile(profile_name: str):
         print(f'ERROR: {profile_name} is not the name of a valid profile.')
         keys = list(profiles.keys())
         if len(keys) > 0:
-            quoted_keys = ', '.join([f"'{k}'" for k in keys[0:-2]]) + f", and '{keys[-1]}'"
+            quoted_keys = (
+                ', '.join([f"'{k}'" for k in keys[0:-2]]) + f", and '{keys[-1]}'"
+            )
             print(f'The defined profile names are: {quoted_keys}')
         return None, None, None
     profile = profiles[profile_name]
@@ -141,7 +144,7 @@ def parse_profile(profile_name: str):
     return (profile['url'], profile['key'], None)
 
 
-def run(command, env:dict= None):
+def run(command, env: dict = None):
     if env is None:
         env = os.environ
     # if env is not None:
@@ -159,7 +162,7 @@ def run(command, env:dict= None):
 
 def get_env(context: Context):
     copy = os.environ.copy()
-    for key,value in context.__dict__.items():
+    for key, value in context.__dict__.items():
         if value is not None:
             copy[key] = value
     return copy
@@ -189,33 +192,34 @@ def find_executable(name):
 #     "swaptotal",
 #     "uname"
 
+
 def summarize_metrics(gi, jobs: list):
-    header= [
-    "id",
-    "history_id",
-    "history_name",
-    "state",
-    "tool_id",
-    "invocation_id",
-    "workflow_id",
-    "cpuacct.usage",
-    # "end_epoch",
-    "galaxy_memory_mb",
-    "galaxy_slots",
-    # "memory.failcnt",
-    "memory.limit_in_bytes",
-    "memory.max_usage_in_bytes",
-    # "memory.memsw.limit_in_bytes",
-    # "memory.memsw.max_usage_in_bytes",
-    # "memory.oom_control.oom_kill_disable",
-    # "memory.oom_control.under_oom",
-    "memory.soft_limit_in_bytes",
-    "memtotal",
-    "processor_count",
-    "runtime_seconds",
-    # "start_epoch",
-    # "swaptotal",
-    # "uname"
+    header = [
+        "id",
+        "history_id",
+        "history_name",
+        "state",
+        "tool_id",
+        "invocation_id",
+        "workflow_id",
+        "cpuacct.usage",
+        # "end_epoch",
+        "galaxy_memory_mb",
+        "galaxy_slots",
+        # "memory.failcnt",
+        "memory.limit_in_bytes",
+        "memory.max_usage_in_bytes",
+        # "memory.memsw.limit_in_bytes",
+        # "memory.memsw.max_usage_in_bytes",
+        # "memory.oom_control.oom_kill_disable",
+        # "memory.oom_control.under_oom",
+        "memory.soft_limit_in_bytes",
+        "memtotal",
+        "processor_count",
+        "runtime_seconds",
+        # "start_epoch",
+        # "swaptotal",
+        # "uname"
     ]
 
     print(','.join(header))
@@ -223,12 +227,12 @@ def summarize_metrics(gi, jobs: list):
         job_metrics = gi.jobs.get_metrics(job['id'])
         row = []
         metrics = metrics_to_dict(job_metrics, header)
-        metrics['id'] = job['id']
-        metrics['history_id'] = job['history_id']
-        metrics['history_name'] = job['history_name']
-        metrics['state'] = job['state']
-        metrics['tool_id'] = job['tool_id']
-        metrics['invocation_id'] = job['invocation_id']
+        metrics['id'] = job.get('id', 'unknown')
+        metrics['history_id'] = job.get('history_id', 'unknown')
+        metrics['history_name'] = job.get('history_name', 'unknown')
+        metrics['state'] = job.get('state', 'unknown')
+        metrics['tool_id'] = job.get('tool_id', 'unknown')
+        metrics['invocation_id'] = job.get('invocation_id', 'unknown')
         for key in header:
             if key in metrics:
                 row.append(metrics[key])
@@ -237,7 +241,7 @@ def summarize_metrics(gi, jobs: list):
         print(','.join(row), end='\n')
 
 
-def metrics_to_dict(metrics: list, accept:list):
+def metrics_to_dict(metrics: list, accept: list):
     result = dict()
     for m in metrics:
         key = m['name']
@@ -276,7 +280,7 @@ def _get_dataset_data(gi, name_or_id):
         return {
             'id': data['id'],
             'size': data['file_size'],
-            'history': data['history_id']
+            'history': data['history_id'],
         }
 
     try:
@@ -286,7 +290,9 @@ def _get_dataset_data(gi, name_or_id):
         pass
 
     try:
-        datasets = gi.datasets.get_datasets(name=name_or_id)  # , deleted=True, purged=True)
+        datasets = gi.datasets.get_datasets(
+            name=name_or_id
+        )  # , deleted=True, purged=True)
         for ds in datasets:
             # print_json(ds)
             state = True
@@ -305,5 +311,3 @@ def _get_dataset_data(gi, name_or_id):
 def _make_dataset_element(name, value):
     # print(f"Making dataset element for {name} = {value}({type(value)})")
     return dataset_collections.HistoryDatasetElement(name=name, id=value)
-
-

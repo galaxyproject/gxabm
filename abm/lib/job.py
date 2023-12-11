@@ -1,9 +1,9 @@
 import json
-import time
-
-from .common import connect, Context, print_json, find_history
-from pprint import pprint
 import logging
+import time
+from pprint import pprint
+
+from .common import Context, connect, find_history, print_json
 
 log = logging.getLogger('abm')
 
@@ -53,7 +53,7 @@ def show(context: Context, args: list):
     print(json.dumps(job, indent=4))
 
 
-def wait(context:Context, args: list):
+def wait(context: Context, args: list):
     if len(args) != 1:
         print("ERROR: Invalid parameters. Job ID is required")
         return
@@ -89,22 +89,26 @@ def metrics(context: Context, args: list):
             job_list = gi.jobs.get_jobs(history_id=history_id)
             metrics = []
             for job in job_list:
-                metrics.append({
-                    'job_id': job['id'],
-                    'job_state': job['state'],
-                    'tool_id': job['tool_id'],
-                    'job_metrics': gi.jobs.get_metrics(job['id'])
-                })
+                metrics.append(
+                    {
+                        'job_id': job['id'],
+                        'job_state': job['state'],
+                        'tool_id': job['tool_id'],
+                        'job_metrics': gi.jobs.get_metrics(job['id']),
+                    }
+                )
         else:
             print(f"ERROR: Unrecognized argument {arg}")
     else:
         job = gi.jobs.show_job(args[0])
-        metrics = [{
-            'job_id': job['id'],
-            'job_state': job['state'],
-            'tool_id': job['tool_id'],
-            'job_metrics': gi.jobs.get_metrics(args[0])
-        }]
+        metrics = [
+            {
+                'job_id': job['id'],
+                'job_state': job['state'],
+                'tool_id': job['tool_id'],
+                'job_metrics': gi.jobs.get_metrics(args[0]),
+            }
+        ]
     print(json.dumps(metrics, indent=4))
     # metrics = {}
     # for m in gi.jobs.get_metrics(args[0]):
@@ -134,14 +138,18 @@ def cancel(context: Context, args: list):
                 return
     if state or history:
         if len(jobs) > 0:
-            print("ERROR: To many parameters. Either filter by state or history, or list job IDs")
+            print(
+                "ERROR: To many parameters. Either filter by state or history, or list job IDs"
+            )
             return
-        jobs = [ job['id'] for job in gi.jobs.get_jobs(state=state, history_id=history) ]
+        jobs = [job['id'] for job in gi.jobs.get_jobs(state=state, history_id=history)]
     for job in jobs:
         if gi.jobs.cancel_job(job):
             print(f"Job {job} canceled")
         else:
-            print(f"ERROR: Unable to cancel {job}, job was already in a terminal state.")
+            print(
+                f"ERROR: Unable to cancel {job}, job was already in a terminal state."
+            )
 
 
 def problems(context: Context, args: list):
@@ -153,9 +161,16 @@ def problems(context: Context, args: list):
 
 
 def rerun(context: Context, args: list):
+    remap = False
+    if '-r' in args:
+        remap = True
+        args.remove('-r')
+    if '--remap' in args:
+        remap = True
+        args.remove('--remap')
     if len(args) == 0:
         print("ERROR: no job ID provided")
         return
     gi = connect(context)
-    result = gi.jobs.rerun_job(args[0], remap=True)
+    result = gi.jobs.rerun_job(args[0], remap=remap)
     print_json(result)

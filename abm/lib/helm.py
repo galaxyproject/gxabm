@@ -1,17 +1,21 @@
+import argparse
+import json
 import os
 import time
-import argparse
-from common import run, find_executable, get_env, Context
+
+from common import Context, find_executable, get_env, run
 
 
 def rollback(context: Context, args: list):
     helm = find_executable('helm')
-    #helm = 'helm'
+    # helm = 'helm'
     if helm is None:
         print('ERROR: helm is not available on the $PATH')
         return
 
-    print(f"Rolling back deployment on {context.GALAXY_SERVER} KUBECONFIG: {context.KUBECONFIG}")
+    print(
+        f"Rolling back deployment on {context.GALAXY_SERVER} KUBECONFIG: {context.KUBECONFIG}"
+    )
     if len(args) > 0:
         command = f"{helm} rollback " + ' '.join(args)
     else:
@@ -39,7 +43,7 @@ def update(context: Context, args: list):
     print(f"Applying rules {values} to {context.GALAXY_SERVER}")
     print(f"Helm update namespace: {namespace}")
     print(f"Helm update chart: {chart}")
-    #command = f'{helm} upgrade galaxy {chart} -n {namespace} --reuse-values --set-file jobs.rules."container_mapper_rules\.yml".content={rules}'
+    # command = f'{helm} upgrade galaxy {chart} -n {namespace} --reuse-values --set-file jobs.rules."container_mapper_rules\.yml".content={rules}'
     command = f'{helm} upgrade galaxy {chart} -n {namespace} --reuse-values -f {values}'
     env = get_env(context)
     try:
@@ -54,8 +58,8 @@ def update(context: Context, args: list):
 
     print('Waiting for the new deployments to come online')
     # Give kubernetes a moment to start processing the update.
-    time.sleep(30)
-    wait_until_ready(namespace, env)
+    time.sleep(5)
+    wait_until_ready(namespace)
     return True
 
 
@@ -87,11 +91,10 @@ def update_cli(context: Context, args: list):
 
 def wait(context: Context, args: list):
     namespace = args[0] if len(args) > 0 else 'galaxy'
-    env = get_env(context)
-    wait_until_ready(namespace, get_env(context))
+    wait_until_ready(namespace)  # , get_env(context))
 
 
-def filter(lines:list, item:str):
+def filter(lines: list, item: str):
     result = []
     for line in lines:
         if item in line:
@@ -99,7 +102,7 @@ def filter(lines:list, item:str):
     return result
 
 
-def wait_for(kubectl:str, namespace:str, name: str, env: dict):
+def wait_for(kubectl: str, namespace: str, name: str, env: dict):
     print(f"Waiting for {name} on {env['GALAXY_SERVER']} to be in the Running state")
     waiting = True
     while waiting:
@@ -122,16 +125,31 @@ def wait_for(kubectl:str, namespace:str, name: str, env: dict):
     print(f"{name} is running")
 
 
-def wait_until_ready(namespace: str, env: dict):
+# def wait_until_ready(namespace: str, env: dict):
+#     kubectl = find_executable('kubectl')
+#     if kubectl is None:
+#         print('ERROR: kubectl is not available on the $PATH')
+#         return
+#     wait_for(kubectl, namespace, 'galaxy-job', env)
+#     wait_for(kubectl, namespace, 'galaxy-web', env)
+#     wait_for(kubectl, namespace, 'galaxy-workflow', env)
+def wait_until_ready(namespace: str):
     kubectl = find_executable('kubectl')
-    if kubectl is None:
-        print('ERROR: kubectl is not available on the $PATH')
-        return
-    wait_for(kubectl, namespace, 'galaxy-job', env)
-    wait_for(kubectl, namespace, 'galaxy-web', env)
-    wait_for(kubectl, namespace, 'galaxy-workflow', env)
+    data = run(f"{kubectl} get deployment -n {namespace} -o json")
+    deployment_data = json.loads(data)
+    deployments = list()
+    for deployment in deployment_data['items']:
+        metadata = deployment['metadata']
+        name = metadata['name']
+        if 'job' in name or 'web' in name or 'workflow' in name:
+            deployments.append(name)
+    for deployment in deployments:
+        print(
+            run(
+                f"{kubectl} rollout status deployment -n {namespace} {deployment} --watch"
+            )
+        )
 
 
-def list(context: Context, args: list):
+def _list(context: Context, args: list):
     print("Not implemented")
-

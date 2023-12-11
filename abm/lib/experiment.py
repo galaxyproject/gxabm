@@ -1,20 +1,21 @@
+import json
+import logging
 import os
 import threading
-
-import yaml
-import json
-import helm
-import benchmark
-import logging
 import traceback
-from common import load_profiles, Context
-from time import perf_counter
 from datetime import timedelta
+from time import perf_counter
+
+import benchmark
+import helm
+import yaml
+from common import Context, load_profiles
 
 INVOCATIONS_DIR = "invocations"
 METRICS_DIR = "metrics"
 
 log = logging.getLogger('abm')
+
 
 def run(context: Context, args: list):
     """
@@ -78,12 +79,16 @@ def run_on_cloud(cloud: str, config: dict):
             for n in range(config['runs']):
                 history_name_prefix = f"{n+1} {cloud} {conf}"
                 for workflow_conf in config['benchmark_confs']:
-                    benchmark.run(context, workflow_conf, history_name_prefix, config['name'])
+                    benchmark.run(
+                        context, workflow_conf, history_name_prefix, config['name']
+                    )
     else:
         for n in range(config['runs']):
             history_name_prefix = f"{n+1} {cloud}"
             for workflow_conf in config['benchmark_confs']:
-                benchmark.run(context, workflow_conf, history_name_prefix, config['name'])
+                benchmark.run(
+                    context, workflow_conf, history_name_prefix, config['name']
+                )
 
 
 def test(context: Context, args: list):
@@ -94,7 +99,7 @@ def test(context: Context, args: list):
         print(data)
 
 
-def parse_toolid(id:str) -> str:
+def parse_toolid(id: str) -> str:
     parts = id.split('/')
     if len(parts) < 2:
         return f"{id},unknown"
@@ -135,7 +140,7 @@ def summarize(context: Context, args: list):
             make_row = make_model_row
             header_row = "job_id,tool_id,tool_version,state,memory.max_usage_in_bytes,cpuacct.usage,process_count,galaxy_slots,runtime_seconds,ref_data_size,input_data_size_1,input_data_size_2"
         else:
-            print(f"Input dir {arg}")
+            # print(f"Input dir {arg}")
             input_dirs.append(arg)
 
     if len(input_dirs) == 0:
@@ -154,22 +159,33 @@ def summarize(context: Context, args: list):
                 with open(input_path, 'r') as f:
                     data = json.load(f)
                 if data['metrics']['tool_id'] == 'upload1':
-                    #print('Ignoring upload tool')
+                    # print('Ignoring upload tool')
                     continue
                 row = make_row(data)
-                print(separator.join([ str(x) for x in row]))
+                print(separator.join([str(x) for x in row]))
             except Exception as e:
                 # Silently fail to allow the remainder of the table to be generated.
                 print(f"Unable to process {input_path}")
                 print(e)
-                traceback.print_exc( )
-                #pass
+                traceback.print_exc()
+                # pass
 
 
-accept_metrics = ['galaxy_slots', 'galaxy_memory_mb', 'runtime_seconds', 'cpuacct.usage','memory.limit_in_bytes', 'memory.max_usage_in_bytes']  #,'memory.soft_limit_in_bytes']
+accept_metrics = [
+    'galaxy_slots',
+    'galaxy_memory_mb',
+    'runtime_seconds',
+    'cpuacct.usage',
+    'memory.limit_in_bytes',
+    'memory.max_usage_in_bytes',
+]  # ,'memory.soft_limit_in_bytes']
+
 
 def make_table_row(data: dict):
-    row = [ str(data[key]) for key in ['run', 'cloud', 'job_conf', 'workflow_id', 'history_id', 'inputs']]
+    row = [
+        str(data[key])
+        for key in ['run', 'cloud', 'job_conf', 'workflow_id', 'history_id', 'inputs']
+    ]
     row.append(parse_toolid(data['metrics']['tool_id']))
     row.append(data['metrics']['state'])
     for e in _get_metrics(data['metrics']['job_metrics']):
@@ -186,7 +202,7 @@ def make_model_row(data: dict):
     row.append(tool_id.split('/')[-1])
     row.append(metrics['state'])
     job_metrics = parse_job_metrics(metrics['job_metrics'])
-    row.append(job_metrics.get('memory.max_usage_in_bytes',0))
+    row.append(job_metrics.get('memory.max_usage_in_bytes', 0))
     row.append(job_metrics.get('cpuacct.usage', 0))
     row.append(job_metrics.get('processor_count', 0))
     row.append(job_metrics.get('galaxy_slots', 0))
@@ -199,6 +215,7 @@ def make_model_row(data: dict):
         row.append(size)
     return row
 
+
 def _get_metrics(metrics: list):
     row = [''] * len(accept_metrics)
     for job_metrics in metrics:
@@ -209,6 +226,7 @@ def _get_metrics(metrics: list):
             except:
                 pass
     return row
+
 
 def add_metrics_to_row(metrics_list: list, row: list):
     for job_metrics in metrics_list:

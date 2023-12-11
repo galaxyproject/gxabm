@@ -6,6 +6,10 @@ clean:
 	@if [ -e dist/ ] ; then rm -rf dist/ ; fi
 	@if [ -e gxabm.egg-info ] ; then rm -rf gxabm.egg-info ; fi
 
+format:
+	black -S abm/
+	isort abm/
+	
 test-deploy:
 	twine upload -r pypitest dist/*
     

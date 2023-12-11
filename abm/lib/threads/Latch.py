@@ -1,18 +1,17 @@
 import threading
 
+
 class CountdownLatch:
-    def __init__(self, count = 1):
+    def __init__(self, count=1):
         self.count = count
         self.lock = threading.Condition
 
-
-    def count_down(self, count = 1):
+    def count_down(self, count=1):
         self.lock.acquire(True)
         self.count -= count
         if self.count <= 0:
             self.lock.notifyAll()
         self.lock.release()
-
 
     def wait(self):
         self.lock.acquire(True)
