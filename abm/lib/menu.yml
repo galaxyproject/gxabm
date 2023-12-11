@@ -69,8 +69,8 @@
       handler: workflow.inputs
     - name: [summary, summarize]
       handler: workflow.summarize
-      help: generate a CSV with job metrics for all workflow runs
-      params: ID [ID ...]
+      help: generate a CSV or markdown table with job metrics for all workflow runs
+      params: "ID [ID ...] [--markdown]"
     - name: ['test']
       handler: workflow.test
       help: run some test code
@@ -158,8 +158,8 @@
       help: show detailed information about a history
     - name: [summarize, summary, table]
       handler: history.summarize
-      params: "ID [ID...]"
-      help: Generate a CSV table with runtime metrics for all jobs in the history.
+      params: "ID [ID...] [--markdown]"
+      help: Generate a CSV or markdown table with runtime metrics for all jobs in the history.
     - name: [publish, pub]
       handler: history.publish
       help: publish the given history
@@ -250,7 +250,7 @@
     - name: [summarize, summary]
       help: summarize metrics to a CSV or TSV file.
       handler: experiment.summarize
-      params: "[-c, --csv, -t, --tsv]"
+      params: "[-c, --csv, -t, --tsv, --markdown]"
     - name: [test]
       help: playground code
       handler: experiment.test
@@ -263,8 +263,8 @@
       handler: invocation.doList
       params: "[-w|--workflow ID] [-h|--history ID]"
     - name: [summarize]
-      help: generate a CSV of job metrics for an invocation
-      params: ID
+      help: generate a CSV or markdown table of job metrics for an invocation
+      params: "ID [--markdown]"
       handler: invocation.summarize
 - name: [helm]
   help: execute a helm command

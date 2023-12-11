@@ -244,6 +244,14 @@ def summarize_metrics(gi, jobs: list):
     return table
 
 
+def print_markdown_table(table: list) -> None:
+    print('| ID | History | Tool | CPU | Memory | Runtime |')
+    print('|---|---|---|---|---|---|')
+    for row in table[1:]:
+        line = ' | '.join( row[i] for i in [0,2,4,7,11,15])
+        print(f'| {line} |')
+
+
 def metrics_to_dict(metrics: list, accept: list):
     result = dict()
     for m in metrics:

@@ -25,6 +25,11 @@ def doList(context: Context, args: list):
 
 
 def summarize(context: Context, args: list):
+    markdown = False
+    if '--markdown' in args:
+        markdown = True
+        args.remove('--markdown')
+
     if len(args) == 0:
         print("ERROR: Provide one or more invocation ID values.")
         return

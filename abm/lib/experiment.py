@@ -114,31 +114,37 @@ def summarize(context: Context, args: list):
     :param args[0]: The path to the directory containing metrics filees
     :return: None
     """
+    markdown = False
     separator = None
     input_dirs = []
     make_row = make_table_row
     header_row = "Run,Cloud,Job Conf,Workflow,History,Inputs,Tool,Tool Version,State,Slots,Memory,Runtime (Sec),CPU,Memory Limit (Bytes),Memory Max usage (Bytes)"
     for arg in args:
         if arg in ['-t', '--tsv']:
-            if separator is not None:
+            if separator is not None or markdown:
                 print('ERROR: The output format is specified more than once')
                 return
             print('tsv')
             separator = '\t'
         elif arg in ['-c', '--csv']:
-            if separator is not None:
+            if separator is not None or markdown:
                 print('ERROR: The output format is specified more than once')
                 return
             separator = ','
             print('csv')
         elif arg in ['-m', '--model']:
-            if separator is not None:
+            if separator is not None or markdown:
                 print('ERROR: The output format is specified more than once')
                 return
             print('making a model')
             separator = ','
             make_row = make_model_row
             header_row = "job_id,tool_id,tool_version,state,memory.max_usage_in_bytes,cpuacct.usage,process_count,galaxy_slots,runtime_seconds,ref_data_size,input_data_size_1,input_data_size_2"
+        elif arg == '--markdown':
+            if separator is not None or markdown:
+                print('ERROR: The output format is specified more than once')
+                return
+            markdown = True
         else:
             # print(f"Input dir {arg}")
             input_dirs.append(arg)
@@ -149,7 +155,11 @@ def summarize(context: Context, args: list):
     if separator is None:
         separator = ','
 
-    print(header_row)
+    if markdown:
+        print("|Run|Job Conf|Tool|Tool Version|State|Runtime (Sec)|CPU|Max Memory|")
+        print("|---|---|---|---|---|---|---|---|")
+    else:
+        print(header_row)
     for input_dir in input_dirs:
         for file in os.listdir(input_dir):
             input_path = os.path.join(input_dir, file)
@@ -162,7 +172,11 @@ def summarize(context: Context, args: list):
                     # print('Ignoring upload tool')
                     continue
                 row = make_row(data)
-                print(separator.join([str(x) for x in row]))
+                if markdown:
+                    line = ' | '.join(row[i] for i in [0,2,6,7,8,11,12,14])
+                    print(f'| {line} |')
+                else:
+                    print(separator.join([str(x) for x in row]))
             except Exception as e:
                 # Silently fail to allow the remainder of the table to be generated.
                 print(f"Unable to process {input_path}")
