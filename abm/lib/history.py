@@ -8,7 +8,7 @@ from pprint import pprint
 import yaml
 from bioblend.galaxy.objects import GalaxyInstance
 from lib.common import (Context, connect, find_history, parse_profile,
-                        print_json, summarize_metrics)
+                        print_json, summarize_metrics, print_markdown_table)
 
 #
 # History related functions
@@ -339,6 +339,11 @@ def tag(context: Context, args: list):
 
 
 def summarize(context: Context, args: list):
+    markdown = False
+    if '--markdown' in args:
+        markdown = True
+        args.remove('--markdown')
+
     if len(args) == 0:
         print("ERROR: Provide one or more history ID values.")
         return
@@ -368,7 +373,12 @@ def summarize(context: Context, args: list):
         #             job['workflow_id'] = invocation['workflow_id']
         #         all_jobs.append(job)
     # summarize_metrics(gi, gi.jobs.get_jobs(history_id=args[0]))
-    summarize_metrics(gi, all_jobs)
+    table = summarize_metrics(gi, all_jobs)
+    if markdown:
+        print_markdown_table(table)
+    else:
+        for row in table:
+            print(','.join(row))
 
 
 def wait(context: Context, args: list):

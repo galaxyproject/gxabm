@@ -1,4 +1,4 @@
-from common import Context, connect, print_json, summarize_metrics
+from common import Context, connect, print_json, summarize_metrics, print_markdown_table
 
 
 def doList(context: Context, args: list):
@@ -25,6 +25,11 @@ def doList(context: Context, args: list):
 
 
 def summarize(context: Context, args: list):
+    markdown = False
+    if '--markdown' in args:
+        markdown = True
+        args.remove('--markdown')
+
     if len(args) == 0:
         print("ERROR: Provide one or more invocation ID values.")
         return
@@ -36,4 +41,9 @@ def summarize(context: Context, args: list):
         job['invocation_id'] = id
         job['workflow_id'] = ''
         all_jobs.append(job)
-    summarize_metrics(gi, all_jobs)
+    table = summarize_metrics(gi, all_jobs)
+    if markdown:
+        print_markdown_table(table)
+    else:
+        for row in table:
+            print(','.join(row))

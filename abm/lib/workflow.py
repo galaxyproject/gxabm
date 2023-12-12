@@ -7,7 +7,7 @@ from pprint import pprint
 import planemo
 import requests
 import yaml
-from common import Context, connect, summarize_metrics
+from common import Context, connect, summarize_metrics, print_markdown_table
 from planemo.galaxy.workflows import install_shed_repos
 from planemo.runnable import for_path, for_uri
 
@@ -236,6 +236,11 @@ def rename(context: Context, args: list):
 
 
 def summarize(context: Context, args: list):
+    markdown = False
+    if '--markdown' in args:
+        markdown = True
+        args.remove('--markdown')
+
     if len(args) == 0:
         print("ERROR: Provide one or more workflow ID values.")
         return
@@ -250,4 +255,9 @@ def summarize(context: Context, args: list):
             job['invocation_id'] = id
             job['workflow_id'] = wid
             all_jobs.append(job)
-    summarize_metrics(gi, all_jobs)
+    table = summarize_metrics(gi, all_jobs)
+    if markdown:
+        print_markdown_table(table)
+    else:
+        for row in table:
+            print(','.join(row))

@@ -194,6 +194,7 @@ def find_executable(name):
 
 
 def summarize_metrics(gi, jobs: list):
+    table = []
     header = [
         "id",
         "history_id",
@@ -221,24 +222,46 @@ def summarize_metrics(gi, jobs: list):
         # "swaptotal",
         # "uname"
     ]
-
-    print(','.join(header))
+    table.append(header)
+    # print(','.join(header))
     for job in jobs:
         job_metrics = gi.jobs.get_metrics(job['id'])
         row = []
+        toolid = job.get('tool_id', 'unknown')
+        if '/' in toolid:
+            parts = toolid.split('/')
+            toolid = f'{parts[-2]}/{parts[-1]}'
         metrics = metrics_to_dict(job_metrics, header)
         metrics['id'] = job.get('id', 'unknown')
         metrics['history_id'] = job.get('history_id', 'unknown')
         metrics['history_name'] = job.get('history_name', 'unknown')
         metrics['state'] = job.get('state', 'unknown')
-        metrics['tool_id'] = job.get('tool_id', 'unknown')
+        metrics['tool_id'] = toolid
         metrics['invocation_id'] = job.get('invocation_id', 'unknown')
         for key in header:
             if key in metrics:
                 row.append(metrics[key])
             else:
                 row.append('')
-        print(','.join(row), end='\n')
+        # print(','.join(row), end='\n')
+        table.append(row)
+    return table
+
+
+def print_markdown_table(table: list) -> None:
+    print('| Tool ID | History | State | CPU (sec) | Memory (GB) | Runtime (sec)|')
+    print('|---|---|---|---:|---:|---:|')
+    GB = 1024 * 1024 * 1024
+    for row in table[1:]:
+        history = row[2]
+        state = row[3]
+        tool_id = row[4]
+        cpu = float(row[7]) / 10**9
+        memory = float(row[11]) / GB
+        runtime = float(row[15])
+        # line = ' | '.join( row[i] for i in [0,2,3,4,7,11,15])
+        # print(f'| {line} |')
+        print(f'| {tool_id} | {history} | {state} | {cpu:5.1f} | {memory:3.3f} | {runtime:5.1f} |')
 
 
 def metrics_to_dict(metrics: list, accept: list):
