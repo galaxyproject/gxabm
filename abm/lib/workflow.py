@@ -7,7 +7,7 @@ from pprint import pprint
 import planemo
 import requests
 import yaml
-from common import Context, connect, summarize_metrics
+from common import Context, connect, summarize_metrics, print_markdown_table
 from planemo.galaxy.workflows import install_shed_repos
 from planemo.runnable import for_path, for_uri
 
@@ -256,5 +256,8 @@ def summarize(context: Context, args: list):
             job['workflow_id'] = wid
             all_jobs.append(job)
     table = summarize_metrics(gi, all_jobs)
-    for row in table:
-        print(','.join(row))
+    if markdown:
+        print_markdown_table(table)
+    else:
+        for row in table:
+            print(','.join(row))

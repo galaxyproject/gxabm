@@ -227,12 +227,16 @@ def summarize_metrics(gi, jobs: list):
     for job in jobs:
         job_metrics = gi.jobs.get_metrics(job['id'])
         row = []
+        toolid = job.get('tool_id', 'unknown')
+        if '/' in toolid:
+            parts = toolid.split('/')
+            toolid = f'{parts[-2]}/{parts[-1]}'
         metrics = metrics_to_dict(job_metrics, header)
         metrics['id'] = job.get('id', 'unknown')
         metrics['history_id'] = job.get('history_id', 'unknown')
         metrics['history_name'] = job.get('history_name', 'unknown')
         metrics['state'] = job.get('state', 'unknown')
-        metrics['tool_id'] = job.get('tool_id', 'unknown')
+        metrics['tool_id'] = toolid
         metrics['invocation_id'] = job.get('invocation_id', 'unknown')
         for key in header:
             if key in metrics:
@@ -245,10 +249,10 @@ def summarize_metrics(gi, jobs: list):
 
 
 def print_markdown_table(table: list) -> None:
-    print('| ID | History | Tool | CPU | Memory | Runtime |')
-    print('|---|---|---|---|---|---|')
+    print('| ID | History | State |Tool | CPU | Memory | Runtime |')
+    print('|---|---|---|---|---|---|---|')
     for row in table[1:]:
-        line = ' | '.join( row[i] for i in [0,2,4,7,11,15])
+        line = ' | '.join( row[i] for i in [0,2,3,4,7,11,15])
         print(f'| {line} |')
 
 

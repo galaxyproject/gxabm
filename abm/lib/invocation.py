@@ -1,4 +1,4 @@
-from common import Context, connect, print_json, summarize_metrics
+from common import Context, connect, print_json, summarize_metrics, print_markdown_table
 
 
 def doList(context: Context, args: list):
@@ -42,5 +42,8 @@ def summarize(context: Context, args: list):
         job['workflow_id'] = ''
         all_jobs.append(job)
     table = summarize_metrics(gi, all_jobs)
-    for row in table:
-        print(','.join(row))
+    if markdown:
+        print_markdown_table(table)
+    else:
+        for row in table:
+            print(','.join(row))
