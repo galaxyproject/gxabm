@@ -4,6 +4,7 @@ import os
 import threading
 import traceback
 from datetime import timedelta
+from pprint import pprint
 from time import perf_counter
 
 import benchmark
@@ -156,10 +157,11 @@ def summarize(context: Context, args: list):
         separator = ','
 
     if markdown:
-        print("|Run|Job Conf|Tool|Tool Version|State|Runtime (Sec)|CPU|Max Memory|")
-        print("|---|---|---|---|---|---|---|---|")
+        print("|Run|Job Conf|Tool|State|Runtime (Sec)|CPU (Sec) |Max Memory (GB)|")
+        print("|---|---|---|---|---:|---:|---:|")
     else:
         print(header_row)
+    GB = 1024 * 1024 * 1024
     for input_dir in input_dirs:
         for file in os.listdir(input_dir):
             input_path = os.path.join(input_dir, file)
@@ -173,8 +175,13 @@ def summarize(context: Context, args: list):
                     continue
                 row = make_row(data)
                 if markdown:
-                    line = ' | '.join(row[i] for i in [0,2,6,7,8,11,12,14])
-                    print(f'| {line} |')
+                    runtime = '' if len(row[10]) == 0 else f"{float(row[10]):4.1f}"
+                    cpu = '' if len(row[11]) == 0 else f"{float(row[11])/10**9:4.1f}"
+                    memory = '' if len(row[13]) == 0 else f"{float(row[13])/GB:4.3f}"
+                    # print(runtime, cpu, memory)
+                    print(f"| {row[0]} | {row[2]} | {row[6]} | {row[7]} | {runtime} | {cpu} | {memory} |")
+                    # line = ' | '.join(row[i] for i in [0,2,6,7,10,11,13])
+                    # print(f'| {line} |')
                 else:
                     print(separator.join([str(x) for x in row]))
             except Exception as e:
