@@ -70,6 +70,8 @@ def run_on_cloud(cloud: str, config: dict):
     namespace = 'galaxy'
     chart = 'anvil/galaxykubeman'
     start = config['start_at']
+    if start < 0:
+        start = 1
     end = start + config['runs']
     if 'galaxy' in config:
         namespace = config['galaxy']['namespace']
