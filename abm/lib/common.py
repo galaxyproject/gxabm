@@ -249,19 +249,19 @@ def summarize_metrics(gi, jobs: list):
 
 
 def print_markdown_table(table: list) -> None:
-    print('| Tool ID | History | State | CPU (sec) | Memory (GB) | Runtime (sec)|')
+    print('| Tool ID | History | State | Memory (GB) | Runtime (sec)|')
     print('|---|---|---|---:|---:|---:|')
     GB = 1024 * 1024 * 1024
     for row in table[1:]:
         history = row[2]
         state = row[3]
         tool_id = row[4]
-        cpu = float(row[7]) / 10**9
-        memory = float(row[11]) / GB
-        runtime = float(row[15])
+        # cpu = '' if row[7] == '' else float(row[7]) / 10**9
+        memory = '' if row[11] == '' else f"{float(row[11]) / GB:3.3f}"
+        runtime = '' if row[15] == '' else f"{float(row[15]):5.1f}"
         # line = ' | '.join( row[i] for i in [0,2,3,4,7,11,15])
         # print(f'| {line} |')
-        print(f'| {tool_id} | {history} | {state} | {cpu:5.1f} | {memory:3.3f} | {runtime:5.1f} |')
+        print(f'| {tool_id} | {history} | {state} | {memory} | {runtime} |')
 
 
 def metrics_to_dict(metrics: list, accept: list):
