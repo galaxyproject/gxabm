@@ -1,3 +1,4 @@
+import argparse
 import json
 import logging
 import os
@@ -26,18 +27,20 @@ def run(context: Context, args: list):
 
     :return: True if the benchmarks completed sucessfully. False otherwise.
     """
+    parser = argparse.ArgumentParser()
+    parser.add_argument('benchmark_path')
+    parser.add_argument('-r', '--run-number', default=-1)
+    argv = parser.parse_args(args)
 
-    if len(args) == 0:
-        print("ERROR: No benchmarking configuration provided.")
-        return False
+    benchmark_path = argv.benchmark_path
 
-    benchmark_path = args[0]
     if not os.path.exists(benchmark_path):
         print(f"ERROR: Benchmarking configuration not found {benchmark_path}")
         return False
 
     with open(benchmark_path, 'r') as f:
         config = yaml.safe_load(f)
+    config['start_at'] = argv.run_number
 
     profiles = load_profiles()
     # latch = CountdownLatch(len(config['cloud']))
@@ -66,6 +69,10 @@ def run_on_cloud(cloud: str, config: dict):
     context = Context(cloud)
     namespace = 'galaxy'
     chart = 'anvil/galaxykubeman'
+    start = config['start_at']
+    if start < 0:
+        start = 1
+    end = start + config['runs']
     if 'galaxy' in config:
         namespace = config['galaxy']['namespace']
         chart = config['galaxy']['chart']

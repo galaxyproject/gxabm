@@ -208,7 +208,7 @@
     - name: [wait]
       help: Wait for a job to finish running
       handler: job.wait
-      params: ID
+      params: "ID [-T|--timeout SECONDS]"
     - name: [ metrics, stats ]
       help: display runtime metrics for the job, or a list of jobs contained in a history
       handler: job.metrics
@@ -244,9 +244,9 @@
   standalone: true
   menu:
     - name: [run]
-      help: run all benchmarks in an experiment
+      help: run all benchmarks in an experiment. Use --run-number to specify staring counter.
       handler: experiment.run
-      params: PATH
+      params: "PATH [-r|--run-number N]"
     - name: [summarize, summary]
       help: summarize metrics to a CSV or TSV file.
       handler: experiment.summarize
