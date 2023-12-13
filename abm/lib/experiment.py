@@ -1,3 +1,4 @@
+import argparse
 import json
 import logging
 import os
@@ -120,35 +121,68 @@ def summarize(context: Context, args: list):
     input_dirs = []
     make_row = make_table_row
     header_row = "Run,Cloud,Job Conf,Workflow,History,Inputs,Tool,Tool Version,State,Slots,Memory,Runtime (Sec),CPU,Memory Limit (Bytes),Memory Max usage (Bytes)"
-    for arg in args:
-        if arg in ['-t', '--tsv']:
-            if separator is not None or markdown:
-                print('ERROR: The output format is specified more than once')
-                return
-            print('tsv')
-            separator = '\t'
-        elif arg in ['-c', '--csv']:
-            if separator is not None or markdown:
-                print('ERROR: The output format is specified more than once')
-                return
-            separator = ','
-            print('csv')
-        elif arg in ['-m', '--model']:
-            if separator is not None or markdown:
-                print('ERROR: The output format is specified more than once')
-                return
-            print('making a model')
-            separator = ','
-            make_row = make_model_row
-            header_row = "job_id,tool_id,tool_version,state,memory.max_usage_in_bytes,cpuacct.usage,process_count,galaxy_slots,runtime_seconds,ref_data_size,input_data_size_1,input_data_size_2"
-        elif arg == '--markdown':
-            if separator is not None or markdown:
-                print('ERROR: The output format is specified more than once')
-                return
-            markdown = True
-        else:
-            # print(f"Input dir {arg}")
-            input_dirs.append(arg)
+    # for arg in args:
+    #     if arg in ['-t', '--tsv']:
+    #         if separator is not None or markdown:
+    #             print('ERROR: The output format is specified more than once')
+    #             return
+    #         print('tsv')
+    #         separator = '\t'
+    #     elif arg in ['-c', '--csv']:
+    #         if separator is not None or markdown:
+    #             print('ERROR: The output format is specified more than once')
+    #             return
+    #         separator = ','
+    #         print('csv')
+    #     elif arg in ['-m', '--model']:
+    #         if separator is not None or markdown:
+    #             print('ERROR: The output format is specified more than once')
+    #             return
+    #         print('making a model')
+    #         separator = ','
+    #         make_row = make_model_row
+    #         header_row = "job_id,tool_id,tool_version,state,memory.max_usage_in_bytes,cpuacct.usage,process_count,galaxy_slots,runtime_seconds,ref_data_size,input_data_size_1,input_data_size_2"
+    #     elif arg == '--markdown':
+    #         if separator is not None or markdown:
+    #             print('ERROR: The output format is specified more than once')
+    #             return
+    #         markdown = True
+    #     else:
+    #         # print(f"Input dir {arg}")
+    #         input_dirs.append(arg)
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('dirs', nargs='*')
+    parser.add_argument('-c', '--csv', action='store_true')
+    parser.add_argument('-t', '--tsv', action='store_true')
+    parser.add_argument('-m', '--model', action='store_true')
+    parser.add_argument('--markdown', action='store_true')
+    parser.add_argument('-s', '--sort-by', choices=['cpu', 'runtime', 'memory'])
+    argv = parser.parse_args(args)
+
+    count = 0
+    if argv.csv:
+        separator = ','
+        count += 1
+    if argv.tsv:
+        separator = '\t'
+        count += 1
+    if argv.model:
+        separator = ','
+        make_row = make_model_row
+        count += 1
+    if argv.markdown:
+        markdown = True
+        count += 1
+
+    if count == 0:
+        print("ERROR: no output format selected")
+        return
+    if count > 1:
+        print("ERROR: multiple output formats selected")
+        return
+
+    input_dirs = argv.dirs
 
     if len(input_dirs) == 0:
         input_dirs.append('metrics')
@@ -161,7 +195,9 @@ def summarize(context: Context, args: list):
         print("|---|---|---|---|---:|---:|---:|")
     else:
         print(header_row)
-    GB = 1024 * 1024 * 1024
+
+    table = list()
+    GB = float(1073741824)
     for input_dir in input_dirs:
         for file in os.listdir(input_dir):
             input_path = os.path.join(input_dir, file)
@@ -174,22 +210,39 @@ def summarize(context: Context, args: list):
                     # print('Ignoring upload tool')
                     continue
                 row = make_row(data)
-                if markdown:
-                    runtime = '' if len(row[10]) == 0 else f"{float(row[10]):4.1f}"
-                    cpu = '' if len(row[11]) == 0 else f"{float(row[11])/10**9:4.1f}"
-                    memory = '' if len(row[13]) == 0 else f"{float(row[13])/GB:4.3f}"
-                    # print(runtime, cpu, memory)
-                    print(f"| {row[0]} | {row[2]} | {row[6]} | {row[7]} | {runtime} | {cpu} | {memory} |")
-                    # line = ' | '.join(row[i] for i in [0,2,6,7,10,11,13])
-                    # print(f'| {line} |')
-                else:
-                    print(separator.join([str(x) for x in row]))
+                table.append(row)
             except Exception as e:
                 # Silently fail to allow the remainder of the table to be generated.
                 print(f"Unable to process {input_path}")
                 print(e)
                 traceback.print_exc()
                 # pass
+
+    def comparator(row):
+        print('key', row[key])
+        print('type', type(row[key]))
+        return row[key]
+
+    if argv.sort_by:
+        key = 0
+        if argv.sort_by == 'runtime':
+            key = 10
+        elif argv.sort_by == 'cpu':
+            key = 11
+        elif argv.sort_by == 'memory':
+            key = 13
+        table.sort(key=lambda row: -1 if row[key] == '' else float(row[key]), reverse=True)
+
+    if markdown:
+        for row in table:
+            runtime = '' if len(row[10]) == 0 else f"{float(row[10]):4.1f}"
+            cpu = '' if len(row[11]) == 0 else f"{float(row[11])/10**9:4.1f}"
+            memory = '' if len(row[13]) == 0 else f"{float(row[13])/GB:4.3f}"
+            # memory = float(row[13]) / GB
+            print(f"| {row[0]} | {row[2]} | {row[6]} | {row[7]} | {runtime} | {cpu} | {memory} |")
+    else:
+        for row in table:
+            print(separator.join([str(x) for x in row]))
 
 
 accept_metrics = [
