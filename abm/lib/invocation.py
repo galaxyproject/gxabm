@@ -1,4 +1,6 @@
-from common import Context, connect, print_json, summarize_metrics, print_markdown_table
+import argparse
+from common import Context, connect, print_json, summarize_metrics, print_markdown_table, get_float_key, get_str_key, \
+    print_table_header
 
 
 def doList(context: Context, args: list):
@@ -25,14 +27,11 @@ def doList(context: Context, args: list):
 
 
 def summarize(context: Context, args: list):
-    markdown = False
-    if '--markdown' in args:
-        markdown = True
-        args.remove('--markdown')
-
-    if len(args) == 0:
-        print("ERROR: Provide one or more invocation ID values.")
-        return
+    parser = argparse.ArgumentParser()
+    parser.add_argument('id', nargs=1)
+    parser.add_argument('--markdown', action='store_true')
+    parser.add_argument('-s', '--sort-by', choices=['runtime', 'memory', 'tool'])
+    argv = parser.parse_args(args)
     gi = connect(context)
     id = args[0]
     all_jobs = []
@@ -42,8 +41,20 @@ def summarize(context: Context, args: list):
         job['workflow_id'] = ''
         all_jobs.append(job)
     table = summarize_metrics(gi, all_jobs)
-    if markdown:
+    if argv.sort_by:
+        reverse = True
+        get_key = None
+        if argv.sort_by == 'runtime':
+            get_key = get_float_key(15)
+        elif argv.sort_by == 'memory':
+            get_key = get_float_key(11)
+        elif argv.sort_by == 'tool':
+            get_key = get_str_key(4)
+            reverse = False
+        table.sort(key=get_key, reverse=reverse)
+    if argv.markdown:
         print_markdown_table(table)
     else:
+        print_table_header()
         for row in table:
             print(','.join(row))

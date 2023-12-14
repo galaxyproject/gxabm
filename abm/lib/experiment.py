@@ -11,7 +11,7 @@ from time import perf_counter
 import benchmark
 import helm
 import yaml
-from common import Context, load_profiles, print_markdown_table
+from common import Context, load_profiles, print_markdown_table, get_str_key, get_float_key
 
 INVOCATIONS_DIR = "invocations"
 METRICS_DIR = "metrics"
@@ -124,38 +124,8 @@ def summarize(context: Context, args: list):
     """
     markdown = False
     separator = None
-    input_dirs = []
     make_row = make_table_row
     header_row = "Run,Cloud,Job Conf,Workflow,History,Inputs,Tool,Tool Version,State,Slots,Memory,Runtime (Sec),CPU,Memory Limit (Bytes),Memory Max usage (Bytes)"
-    # for arg in args:
-    #     if arg in ['-t', '--tsv']:
-    #         if separator is not None or markdown:
-    #             print('ERROR: The output format is specified more than once')
-    #             return
-    #         print('tsv')
-    #         separator = '\t'
-    #     elif arg in ['-c', '--csv']:
-    #         if separator is not None or markdown:
-    #             print('ERROR: The output format is specified more than once')
-    #             return
-    #         separator = ','
-    #         print('csv')
-    #     elif arg in ['-m', '--model']:
-    #         if separator is not None or markdown:
-    #             print('ERROR: The output format is specified more than once')
-    #             return
-    #         print('making a model')
-    #         separator = ','
-    #         make_row = make_model_row
-    #         header_row = "job_id,tool_id,tool_version,state,memory.max_usage_in_bytes,cpuacct.usage,process_count,galaxy_slots,runtime_seconds,ref_data_size,input_data_size_1,input_data_size_2"
-    #     elif arg == '--markdown':
-    #         if separator is not None or markdown:
-    #             print('ERROR: The output format is specified more than once')
-    #             return
-    #         markdown = True
-    #     else:
-    #         # print(f"Input dir {arg}")
-    #         input_dirs.append(arg)
 
     parser = argparse.ArgumentParser()
     parser.add_argument('dirs', nargs='*')
@@ -163,7 +133,7 @@ def summarize(context: Context, args: list):
     parser.add_argument('-t', '--tsv', action='store_true')
     parser.add_argument('-m', '--model', action='store_true')
     parser.add_argument('--markdown', action='store_true')
-    parser.add_argument('-s', '--sort-by', choices=['cpu', 'runtime', 'memory'])
+    parser.add_argument('-s', '--sort-by', choices=['runtime', 'memory', 'tool'])
     argv = parser.parse_args(args)
 
     count = 0
@@ -197,8 +167,8 @@ def summarize(context: Context, args: list):
         separator = ','
 
     if markdown:
-        print("|Run|Job Conf|Tool|State|Runtime (Sec)|CPU (Sec) |Max Memory (GB)|")
-        print("|---|---|---|---|---:|---:|---:|")
+        print("|Run|Inputs|Job Conf|Tool|State|Runtime (Sec)|Max Memory (GB)|")
+        print("|---|---|---|---|---|---:|---:|")
     else:
         print(header_row)
 
@@ -218,34 +188,38 @@ def summarize(context: Context, args: list):
                 row = make_row(data)
                 table.append(row)
             except Exception as e:
-                # Silently fail to allow the remainder of the table to be generated.
                 print(f"Unable to process {input_path}")
                 print(e)
                 traceback.print_exc()
+                # Silently fail to allow the remainder of the table to be generated.
                 # pass
 
-    def comparator(row):
-        print('key', row[key])
-        print('type', type(row[key]))
-        return row[key]
-
+    reverse = True
     if argv.sort_by:
-        key = 0
+        comp = get_str_key(6)
         if argv.sort_by == 'runtime':
-            key = 10
-        elif argv.sort_by == 'cpu':
-            key = 11
+            # key = 10
+            comp = get_float_key(10)
+        # elif argv.sort_by == 'cpu':
+        #     comp = get_float_comparator(11)
+        #     #key = 11
         elif argv.sort_by == 'memory':
-            key = 13
-        table.sort(key=lambda row: -1 if row[key] == '' else float(row[key]), reverse=True)
+            comp = get_float_key(13)
+            # key = 13
+        elif argv.sort_by == 'tool':
+            # print('Getting string key accessor.')
+            comp = get_str_key(6)
+            reverse = False
+        # table.sort(key=lambda row: -1 if row[key] == '' else float(row[key]), reverse=True)
+        table.sort(key=comp, reverse=reverse)
 
     if markdown:
         for row in table:
             runtime = '' if len(row[10]) == 0 else f"{float(row[10]):4.1f}"
-            cpu = '' if len(row[11]) == 0 else f"{float(row[11])/10**9:4.1f}"
+            # cpu = '' if len(row[11]) == 0 else f"{float(row[11])/10**9:4.1f}"
             memory = '' if len(row[13]) == 0 else f"{float(row[13])/GB:4.3f}"
             # memory = float(row[13]) / GB
-            print(f"| {row[0]} | {row[2]} | {row[6]} | {row[7]} | {runtime} | {cpu} | {memory} |")
+            print(f"| {row[0]} | {row[5].split(' ')[0]} |{row[2]} | {row[6]} | {row[7]} | {runtime}  | {memory} |")
     else:
         for row in table:
             print(separator.join([str(x) for x in row]))
