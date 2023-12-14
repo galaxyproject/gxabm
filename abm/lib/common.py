@@ -192,37 +192,41 @@ def find_executable(name):
 #     "swaptotal",
 #     "uname"
 
+table_header = [
+    "id",
+    "history_id",
+    "history_name",
+    "state",
+    "tool_id",
+    "invocation_id",
+    "workflow_id",
+    "cpuacct.usage",
+    # "end_epoch",
+    "galaxy_memory_mb",
+    "galaxy_slots",
+    # "memory.failcnt",
+    "memory.limit_in_bytes",
+    "memory.max_usage_in_bytes",
+    # "memory.memsw.limit_in_bytes",
+    # "memory.memsw.max_usage_in_bytes",
+    # "memory.oom_control.oom_kill_disable",
+    # "memory.oom_control.under_oom",
+    "memory.soft_limit_in_bytes",
+    "memtotal",
+    "processor_count",
+    "runtime_seconds",
+    # "start_epoch",
+    # "swaptotal",
+    # "uname"
+]
+
+def print_table_header():
+    print(','.join(table_header))
+
 
 def summarize_metrics(gi, jobs: list):
     table = []
-    header = [
-        "id",
-        "history_id",
-        "history_name",
-        "state",
-        "tool_id",
-        "invocation_id",
-        "workflow_id",
-        "cpuacct.usage",
-        # "end_epoch",
-        "galaxy_memory_mb",
-        "galaxy_slots",
-        # "memory.failcnt",
-        "memory.limit_in_bytes",
-        "memory.max_usage_in_bytes",
-        # "memory.memsw.limit_in_bytes",
-        # "memory.memsw.max_usage_in_bytes",
-        # "memory.oom_control.oom_kill_disable",
-        # "memory.oom_control.under_oom",
-        "memory.soft_limit_in_bytes",
-        "memtotal",
-        "processor_count",
-        "runtime_seconds",
-        # "start_epoch",
-        # "swaptotal",
-        # "uname"
-    ]
-    table.append(header)
+    # table.append(header)
     # print(','.join(header))
     for job in jobs:
         job_metrics = gi.jobs.get_metrics(job['id'])
@@ -231,14 +235,14 @@ def summarize_metrics(gi, jobs: list):
         if '/' in toolid:
             parts = toolid.split('/')
             toolid = f'{parts[-2]}/{parts[-1]}'
-        metrics = metrics_to_dict(job_metrics, header)
+        metrics = metrics_to_dict(job_metrics, table_header)
         metrics['id'] = job.get('id', 'unknown')
         metrics['history_id'] = job.get('history_id', 'unknown')
         metrics['history_name'] = job.get('history_name', 'unknown')
         metrics['state'] = job.get('state', 'unknown')
         metrics['tool_id'] = toolid
         metrics['invocation_id'] = job.get('invocation_id', 'unknown')
-        for key in header:
+        for key in table_header:
             if key in metrics:
                 row.append(metrics[key])
             else:
@@ -334,3 +338,18 @@ def _get_dataset_data(gi, name_or_id):
 def _make_dataset_element(name, value):
     # print(f"Making dataset element for {name} = {value}({type(value)})")
     return dataset_collections.HistoryDatasetElement(name=name, id=value)
+
+def get_float_key(column: int):
+    def get_key(row: list):
+        if row[column] == '':
+            return -1
+        return float(row[column])
+    return get_key
+
+def get_str_key(column: int):
+    # print(f"Getting string key for column {column}")
+    def get_key(row: list):
+        # print(f"Sorting by column {column} key {row[column]}")
+        return row[column]
+    return get_key
+

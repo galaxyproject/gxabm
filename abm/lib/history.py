@@ -1,3 +1,4 @@
+import argparse
 import json
 import os
 import sys
@@ -8,7 +9,8 @@ from pprint import pprint
 import yaml
 from bioblend.galaxy.objects import GalaxyInstance
 from lib.common import (Context, connect, find_history, parse_profile,
-                        print_json, summarize_metrics, print_markdown_table)
+                        print_json, summarize_metrics, print_markdown_table,
+                        get_float_key, get_str_key, print_table_header)
 
 #
 # History related functions
@@ -339,18 +341,20 @@ def tag(context: Context, args: list):
 
 
 def summarize(context: Context, args: list):
-    markdown = False
-    if '--markdown' in args:
-        markdown = True
-        args.remove('--markdown')
+    parser = argparse.ArgumentParser()
+    parser.add_argument('id_list', nargs='+')
+    parser.add_argument('--markdown', action='store_true')
+    parser.add_argument('-s', '--sort-by', choices=['runtime', 'memory', 'tool'])
+    argv = parser.parse_args(args)
 
-    if len(args) == 0:
+    if len(argv.id_list) == 0:
         print("ERROR: Provide one or more history ID values.")
         return
     gi = connect(context)
     all_jobs = []
-    while len(args) > 0:
-        hid = find_history(gi, args.pop(0))
+    id_list = argv.id_list
+    while len(id_list) > 0:
+        hid = find_history(gi, id_list.pop(0))
         history = gi.histories.show_history(history_id=hid)
         jobs = gi.jobs.get_jobs(history_id=hid)
         for job in jobs:
@@ -358,25 +362,23 @@ def summarize(context: Context, args: list):
             job['history_id'] = hid
             job['history_name'] = history['name']
             job['workflow_id'] = ''
-            # if 'workflow_id' in invocation:
-            #     job['workflow_id'] = invocation['workflow_id']
             all_jobs.append(job)
-        # invocations = gi.invocations.get_invocations(history_id=hid)
-        # for invocation in invocations:
-        #     id = invocation['id']
-        #     #jobs = gi.jobs.get_jobs(history_id=hid, invocation_id=id)
-        #     jobs = gi.jobs.get_jobs(history_id=hid)
-        #     for job in jobs:
-        #         job['invocation_id'] = id
-        #         job['history_id'] = hid
-        #         if 'workflow_id' in invocation:
-        #             job['workflow_id'] = invocation['workflow_id']
-        #         all_jobs.append(job)
-    # summarize_metrics(gi, gi.jobs.get_jobs(history_id=args[0]))
     table = summarize_metrics(gi, all_jobs)
-    if markdown:
+    if argv.sort_by:
+        reverse = True
+        get_key = None
+        if argv.sort_by == 'runtime':
+            get_key = get_float_key(15)
+        elif argv.sort_by == 'memory':
+            get_key = get_float_key(11)
+        elif argv.sort_by == 'tool':
+            get_key = get_str_key(4)
+            reverse = False
+        table.sort(key=get_key, reverse=reverse)
+    if argv.markdown:
         print_markdown_table(table)
     else:
+        print_table_header()
         for row in table:
             print(','.join(row))
 
@@ -437,9 +439,6 @@ def wait_for(gi: GalaxyInstance, history_id: str):
             waiting = False
         if waiting:
             time.sleep(30)
-            # elif state == 'paused':
-            #     paused += 1
-            # print(f"{job['id']}\t{job['state']}\t{job['update_time']}\t{job['tool_id']}")
 
 
 class JobStates:
