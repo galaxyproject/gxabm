@@ -42,7 +42,7 @@ def summarize(context: Context, args: list):
     parser.add_argument('-s', '--sort-by', choices=['runtime', 'memory', 'tool'])
     argv = parser.parse_args(args)
     gi = connect(context)
-    id = args[0]
+    id = argv.id[0]
     all_jobs = []
     jobs = gi.jobs.get_jobs(invocation_id=id)
     for job in jobs:
