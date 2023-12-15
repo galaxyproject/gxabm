@@ -70,7 +70,7 @@
     - name: [summary, summarize]
       handler: workflow.summarize
       help: generate a CSV or markdown table with job metrics for all workflow runs
-      params: "ID [ID ...] [--markdown]"
+      params: "ID [ID ...] [--markdown] [-s|--sort-by (tool,runtime,memory)"
     - name: ['test']
       handler: workflow.test
       help: run some test code
@@ -158,7 +158,7 @@
       help: show detailed information about a history
     - name: [summarize, summary, table]
       handler: history.summarize
-      params: "ID [ID...] [--markdown]"
+      params: "ID [ID...] [--markdown] [-s|--sort-by (tool,runtime,memory)]"
       help: Generate a CSV or markdown table with runtime metrics for all jobs in the history.
     - name: [publish, pub]
       handler: history.publish
@@ -248,9 +248,9 @@
       handler: experiment.run
       params: "PATH [-r|--run-number N]"
     - name: [summarize, summary]
-      help: summarize metrics to a CSV or TSV file.
+      help: summarize metrics to a CSV, TSV or markdown file.
       handler: experiment.summarize
-      params: "[-c, --csv, -t, --tsv, --markdown]"
+      params: "[-c, --csv, -t, --tsv, --markdown] [-s|--sort-by (tool,runtime,memory)]"
     - name: [test]
       help: playground code
       handler: experiment.test
@@ -268,7 +268,7 @@
       handler: invocation.show
     - name: [summarize]
       help: generate a CSV or markdown table of job metrics for an invocation
-      params: "ID [--markdown]"
+      params: "ID [--markdown] [-s|--sort-by (tool, runtime, memory)]"
       handler: invocation.summarize
 - name: [helm]
   help: execute a helm command
