@@ -2,6 +2,7 @@ import json
 import os
 import subprocess
 import sys
+from math import ceil
 
 import bioblend.galaxy
 import lib
@@ -270,12 +271,18 @@ def print_markdown_table(table: list) -> None:
     print('|---|---|---:|---:|---:|')
     GB = 1024 * 1024 * 1024
     for row in table[1:]:
+        # memory = ''
+        # if row[11] != '':
+        #     memory = float(row[11]) / GB
+        #     if memory < 0.1:
+        #         memory = 0.1
+        #     memory = f"{memory:3.1f}"
         history = row[2]
         state = row[3]
         tool_id = row[4]
         # cpu = '' if row[7] == '' else float(row[7]) / 10**9
-        memory = '' if row[11] == '' else f"{float(row[11]) / GB:3.3f}"
-        runtime = '' if row[15] == '' else f"{float(row[15]):5.1f}"
+        memory = '' if row[11] == '' else f"{max(0.1, float(row[11]) / GB):3.1f}"
+        runtime = '' if row[15] == '' else f"{max(1, float(row[15])):5.0f}"
         print(f'| {tool_id} | {history} | {state} | {memory} | {runtime} |')
 
 
