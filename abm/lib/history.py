@@ -16,6 +16,8 @@ from lib.common import (Context, connect, find_history, parse_profile,
 # History related functions
 #
 
+# The number of times a failed job will be restarted.
+RESTART_MAX = 3
 
 def longest_name(histories: list):
     longest = 0
@@ -397,10 +399,21 @@ def wait(context: Context, args: list):
     wait_for(gi, history_id)
 
 
+def kill_all_jobs(gi: GalaxyInstance, job_list:list):
+    cancel_states = ['new', 'running', 'paused']
+    for job in job_list:
+        if job['state'] in cancel_states:
+            print(f"Cancelling job {job['tool_id']}")
+            gi.jobs.cancel_job(job['id'])
+        else:
+            print(f"Job {job['id']} for tool {job['tool_id']} is in state {job['state']}")
+
+
 def wait_for(gi: GalaxyInstance, history_id: str):
     errored = []
     waiting = True
     job_states = JobStates()
+    restart_counts = dict()
     while waiting:
         restart = []
         status_counts = dict()
@@ -421,9 +434,18 @@ def wait_for(gi: GalaxyInstance, history_id: str):
             elif state == 'error':
                 terminal += 1
                 if id not in errored:
-                    restart.append(id)
+                    tool = job['tool_id']
+                    if tool in restart_counts:
+                        restart_counts[tool] += 1
+                    else:
+                        restart_counts[tool] = 1
+                    if restart_counts[tool] < RESTART_MAX:
+                        restart.append(id)
+                    else:
+                        kill_all_jobs(gi, job_list)
+                        waiting = False
                     errored.append(id)
-        if len(restart) > 0:
+        if len(restart) > 0 and waiting:
             for job in restart:
                 print(f"Restaring job {job}")
                 try:
