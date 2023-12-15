@@ -262,6 +262,10 @@
       help: list all invocations.
       handler: invocation.doList
       params: "[-w|--workflow ID] [-h|--history ID]"
+    - name: [show]
+      help: display information about the workflow invocation
+      params: ID
+      handler: invocation.show
     - name: [summarize]
       help: generate a CSV or markdown table of job metrics for an invocation
       params: "ID [--markdown]"
