@@ -1,6 +1,6 @@
 import argparse
 from common import Context, connect, print_json, summarize_metrics, print_markdown_table, get_float_key, get_str_key, \
-    print_table_header
+    print_table_header, print_yaml
 
 
 def doList(context: Context, args: list):
@@ -24,6 +24,15 @@ def doList(context: Context, args: list):
         workflow = invocation['workflow_id']
         history = invocation['history_id']
         print(f'{id}\t{state}\t{workflow}\t{history}')
+
+
+def show(context: Context, args: list):
+    if len(args) == 0:
+        print("ERROR: no invocation ID was provided")
+        return
+    gi = connect(context)
+    invocation = gi.invocations.show_invocation(args[0])
+    print_yaml(invocation)
 
 
 def summarize(context: Context, args: list):
