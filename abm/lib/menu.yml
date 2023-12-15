@@ -248,7 +248,7 @@
       handler: experiment.run
       params: "PATH [-r|--run-number N]"
     - name: [summarize, summary]
-      help: summarize metrics to a CSV or TSV file.
+      help: summarize metrics to a CSV, TSV or markdown file.
       handler: experiment.summarize
       params: "[-c, --csv, -t, --tsv, --markdown] [-s|--sort-by (tool,runtime,memory)]"
     - name: [test]
