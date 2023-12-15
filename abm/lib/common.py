@@ -224,6 +224,18 @@ def print_table_header():
     print(','.join(table_header))
 
 
+history_name_cache = dict()
+def get_history_name(gi, hid: str) -> str:
+    if hid in history_name_cache:
+        return history_name_cache[hid]
+    history = gi.histories.show_history(hid)
+    if history is None:
+        return 'unknown'
+    name = history['name']
+    history_name_cache[hid] = name
+    return name
+
+
 def summarize_metrics(gi, jobs: list):
     table = []
     # table.append(header)
@@ -237,8 +249,9 @@ def summarize_metrics(gi, jobs: list):
             toolid = f'{parts[-2]}/{parts[-1]}'
         metrics = metrics_to_dict(job_metrics, table_header)
         metrics['id'] = job.get('id', 'unknown')
-        metrics['history_id'] = job.get('history_id', 'unknown')
-        metrics['history_name'] = job.get('history_name', 'unknown')
+        hid = job.get('history_id', 'unknown')
+        metrics['history_id'] = hid
+        metrics['history_name'] = get_history_name(gi, hid)
         metrics['state'] = job.get('state', 'unknown')
         metrics['tool_id'] = toolid
         metrics['invocation_id'] = job.get('invocation_id', 'unknown')
