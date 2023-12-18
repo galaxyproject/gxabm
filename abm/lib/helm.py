@@ -59,7 +59,7 @@ def update(context: Context, args: list):
     print('Waiting for the new deployments to come online')
     # Give kubernetes a moment to start processing the update.
     time.sleep(5)
-    wait_until_ready(namespace)
+    wait_until_ready(namespace, env)
     return True
 
 
@@ -133,9 +133,9 @@ def wait_for(kubectl: str, namespace: str, name: str, env: dict):
 #     wait_for(kubectl, namespace, 'galaxy-job', env)
 #     wait_for(kubectl, namespace, 'galaxy-web', env)
 #     wait_for(kubectl, namespace, 'galaxy-workflow', env)
-def wait_until_ready(namespace: str):
+def wait_until_ready(namespace: str, env: dict):
     kubectl = find_executable('kubectl')
-    data = run(f"{kubectl} get deployment -n {namespace} -o json")
+    data = run(f"{kubectl} get deployment -n {namespace} -o json", env)
     deployment_data = json.loads(data)
     deployments = list()
     for deployment in deployment_data['items']:
@@ -146,7 +146,7 @@ def wait_until_ready(namespace: str):
     for deployment in deployments:
         print(
             run(
-                f"{kubectl} rollout status deployment -n {namespace} {deployment} --watch"
+                f"{kubectl} rollout status deployment -n {namespace} {deployment} --watch", env
             )
         )
 
