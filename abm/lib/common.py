@@ -24,6 +24,21 @@ datasets = {
 }
 
 
+def try_for(f, limit=3):
+    count = 0
+    running = True
+    result = None
+    while running:
+        try:
+            count += 1
+            result = f()
+            running = False
+        except Exception as e:
+            if count >= limit:
+                raise e
+    return result
+
+
 class Context:
     def __init__(self, *args):
         if len(args) == 1:
