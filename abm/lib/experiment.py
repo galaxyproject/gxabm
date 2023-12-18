@@ -42,7 +42,8 @@ def run(context: Context, args: list):
     with open(benchmark_path, 'r') as f:
         config = yaml.safe_load(f)
     config['start_at'] = argv.run_number
-
+    print(f"Starting with run number {argv.run_number}")
+    
     profiles = load_profiles()
     # latch = CountdownLatch(len(config['cloud']))
     threads = []
@@ -70,7 +71,7 @@ def run_on_cloud(cloud: str, config: dict):
     context = Context(cloud)
     namespace = 'galaxy'
     chart = 'anvil/galaxykubeman'
-    start = config['start_at']
+    start = int(config['start_at'])
     if start < 0:
         start = 1
     end = start + config['runs']
