@@ -8,7 +8,7 @@ import yaml
 from bioblend.galaxy import GalaxyInstance, dataset_collections
 from lib import INVOCATIONS_DIR, METRICS_DIR, Keys
 from lib.common import (Context, _get_dataset_data, _make_dataset_element,
-                        connect, print_json)
+                        connect, print_json, try_for)
 from lib.history import wait_for
 
 log = logging.getLogger('abm')
@@ -224,16 +224,20 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
                     else:
                         raise Exception(f'Invalid input value')
             print(f"Running workflow {wfid} in history {new_history_name}")
-            invocation = gi.workflows.invoke_workflow(
+            f = lambda : gi.workflows.invoke_workflow(
                 wfid, inputs=inputs, history_name=new_history_name
             )
+            invocation = try_for(f, 3)
             id = invocation['id']
             # invocations = gi.invocations.wait_for_invocation(id, 86400, 10, False)
+            f = lambda: gi.invocations.wait_for_invocation(id, 86400, 10, False)
             try:
-                invocations = gi.invocations.wait_for_invocation(id, 86400, 10, False)
-            except:
+                invocations = try_for(f, 2)
+            except Exception as e:
+                print(f"Exception waiting for invocations")
                 pprint(invocation)
                 sys.exc_info()
+                raise e
             print("Waiting for jobs")
             if history_prefix is not None:
                 parts = history_prefix.split()
