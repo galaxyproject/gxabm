@@ -10,7 +10,7 @@ import yaml
 from bioblend.galaxy.objects import GalaxyInstance
 from lib.common import (Context, connect, find_history, parse_profile,
                         print_json, summarize_metrics, print_markdown_table,
-                        get_float_key, get_str_key, print_table_header)
+                        get_float_key, get_str_key, print_table_header, try_for)
 
 #
 # History related functions
@@ -418,7 +418,7 @@ def wait_for(gi: GalaxyInstance, history_id: str):
         restart = []
         status_counts = dict()
         terminal = 0
-        job_list = gi.jobs.get_jobs(history_id=history_id)
+        job_list = try_for(lambda: gi.jobs.get_jobs(history_id=history_id))
         for job in job_list:
             job_states.update(job)
             state = job['state']
