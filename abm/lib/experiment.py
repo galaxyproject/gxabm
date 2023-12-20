@@ -43,7 +43,7 @@ def run(context: Context, args: list):
         config = yaml.safe_load(f)
     config['start_at'] = argv.run_number
     print(f"Starting with run number {argv.run_number}")
-    
+
     profiles = load_profiles()
     # latch = CountdownLatch(len(config['cloud']))
     threads = []
@@ -72,6 +72,7 @@ def run_on_cloud(cloud: str, config: dict):
     namespace = 'galaxy'
     chart = 'anvil/galaxykubeman'
     start = int(config['start_at'])
+    print(f"Staring run number {start}")
     if start < 0:
         start = 1
     end = start + config['runs']
@@ -86,14 +87,14 @@ def run_on_cloud(cloud: str, config: dict):
                 log.warning(f"job configuration not found: rules/{conf}.yml")
                 continue
             for workflow_conf in config['benchmark_confs']:
-                for n in range(config['runs']):
+                for n in range(start, end):
                     history_name_prefix = f"{n+1} {cloud} {conf}"
                     benchmark.run(
                         context, workflow_conf, history_name_prefix, config['name']
                     )
     else:
         for workflow_conf in config['benchmark_confs']:
-            for n in range(config['runs']):
+            for n in range(start, end):
                 history_name_prefix = f"{n+1} {cloud}"
                 benchmark.run(
                     context, workflow_conf, history_name_prefix, config['name']
