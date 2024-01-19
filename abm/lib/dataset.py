@@ -1,3 +1,4 @@
+import argparse
 import json
 import os
 from pathlib import Path
@@ -9,18 +10,34 @@ from common import (Context, _get_dataset_data, _make_dataset_element, connect,
                     find_history, print_json)
 
 
-def list(context: Context, args: list):
+def list(context: Context, argv: list):
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-s', '--state', help='list jobs in this state')
+    parser.add_argument('--history', help='show jobs in the given history')
+    parser.add_argument('-t', '--tool', help='only show jobs generate by this tool')
+    args = parser.parse_args(argv)
+    kwargs = {'limit': 10000, 'offset': 0, 'deleted': False}
     gi = connect(context)
-    kwargs = {'limit': 10000, 'offset': 0}
-    if len(args) > 0:
-        if args[0] in ['-s', '--state']:
-            if len(args) != 2:
-                print("ERROR: Invalid command.")
-                return
-            kwargs['state'] = args[1]
-        else:
-            print(f"ERROR: Invalid parameter: {args[0]}")
+    if args.state:
+        kwargs['state'] = args.state
+    if args.history:
+        hid = find_history(gi, args.history)
+        if hid is None:
+            print("ERROR: No such history")
             return
+        kwargs['history_id'] = hid
+    if args.tool:
+        kwargs['tool_id'] = args.tool
+
+    # if len(args) > 0:
+    #     if args[0] in ['-s', '--state']:
+    #         if len(args) != 2:
+    #             print("ERROR: Invalid command.")
+    #             return
+    #         kwargs['state'] = args[1]
+    #     else:
+    #         print(f"ERROR: Invalid parameter: {args[0]}")
+    #         return
     # datasets = gi.datasets.get_datasets(limit=10000, offset=0)  # , deleted=True, purged=True)
     datasets = gi.datasets.get_datasets(**kwargs)
     if len(datasets) == 0:
