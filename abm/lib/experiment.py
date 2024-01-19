@@ -88,14 +88,14 @@ def run_on_cloud(cloud: str, config: dict):
                 continue
             for workflow_conf in config['benchmark_confs']:
                 for n in range(start, end):
-                    history_name_prefix = f"{n+1} {cloud} {conf}"
+                    history_name_prefix = f"{n} {cloud} {conf}"
                     benchmark.run(
                         context, workflow_conf, history_name_prefix, config['name']
                     )
     else:
         for workflow_conf in config['benchmark_confs']:
             for n in range(start, end):
-                history_name_prefix = f"{n+1} {cloud}"
+                history_name_prefix = f"{n} {cloud}"
                 benchmark.run(
                     context, workflow_conf, history_name_prefix, config['name']
                 )
