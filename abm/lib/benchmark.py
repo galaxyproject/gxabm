@@ -16,13 +16,10 @@ log = logging.getLogger('abm')
 
 def run_cli(context: Context, args: list):
     """
-    Runs a single workflow defined by *args[0]*
+    Command line handler to run a single benchmark.
 
-    :param args: a list that contains:
-    args[0] - the path to the benchmark configuration file
-    args[1] - the prefix to use when creating the new history in Galaxy
-    args[2] - the name of the experiment, if part of one. This is used to
-              generate output folder names.
+    :param context: a context object the defines how to connect to the Galaxy server.
+    :param args: parameters from the command line
 
     :return: True if the workflows completed sucessfully. False otherwise.
     """
@@ -43,11 +40,15 @@ def run_cli(context: Context, args: list):
 
 
 def run(context: Context, workflow_path, history_prefix: str, experiment: str):
-    # if len(args) > 1:
-    #     history_prefix = args[1]
-    #     if len(args) > 2:
-    #         experiment = args[2].replace(' ', '_').lower()
+    """
+    Does the actual work of running a benchmark.
 
+    :param context: a context object the defines how to connect to the Galaxy server.
+    :param workflow_path: path to the ABM workflow file. (benchmark really). NOTE this is NOT the Galaxy .ga file.
+    :param history_prefix: a prefix value used when generating new history names.
+    :param experiment: the name of the experiment (arbitrary string). Used to generate new history names.
+    :return: True if the workflow run completed successfully. False otherwise.
+    """
     if os.path.exists(INVOCATIONS_DIR):
         if not os.path.isdir(INVOCATIONS_DIR):
             print('ERROR: Can not save invocation status, directory name in use.')
@@ -76,7 +77,7 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
     workflows = parse_workflow(workflow_path)
     if not workflows:
         print(f"Unable to load any workflow definitions from {workflow_path}")
-        return
+        return False
 
     print(f"Found {len(workflows)} workflow definitions")
     for workflow in workflows:
@@ -173,7 +174,7 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
                             histories = gi.histories.get_histories(name=spec['history'])
                             if len(histories) == 0:
                                 print(f"ERROR: History {spec['history']} not foune")
-                                return
+                                return False
                             hid = histories[0]['id']
                             pairs = 0
                             paired_list = spec['paired']
@@ -416,7 +417,7 @@ def validate(context: Context, args: list):
 
 
 def wait_for_jobs(context, gi: GalaxyInstance, invocations: dict):
-    """Blocks until all jobs defined in the *invocations* to complete.
+    """Blocks until all jobs defined in *invocations* to complete.
 
     :param gi: The *GalaxyInstance** running the jobs
     :param invocations:

@@ -12,9 +12,9 @@ from common import (Context, _get_dataset_data, _make_dataset_element, connect,
 
 def list(context: Context, argv: list):
     parser = argparse.ArgumentParser()
-    parser.add_argument('-s', '--state', help='list jobs in this state')
-    parser.add_argument('--history', help='show jobs in the given history')
-    parser.add_argument('-t', '--tool', help='only show jobs generate by this tool')
+    parser.add_argument('-s', '--state', help='list datasets in this state')
+    parser.add_argument('--history', help='show datasets in the given history')
+    parser.add_argument('-t', '--tool', help='only show datasets generate by this tool')
     args = parser.parse_args(argv)
     kwargs = {'limit': 10000, 'offset': 0, 'deleted': False}
     gi = connect(context)
