@@ -270,6 +270,14 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
 
 
 def translate(context: Context, args: list):
+    """
+    Translates the human readable names of datasets and workflows in to the Galaxy
+    ID that is unique to each server.
+
+    :param context: the conext object used to connect to the Galaxy server
+    :param args: [0] the path to the benchmarking YAML file to translate
+    :return: Nothing. Prints the translated workflow file to stdout.
+    """
     if len(args) == 0:
         print('ERROR: no workflow configuration specified')
         return
@@ -312,6 +320,14 @@ def translate(context: Context, args: list):
 
 
 def validate(context: Context, args: list):
+    """
+    Checks to see if the workflow and all datasets defined in the benchmark can
+    be found on the server.
+
+    :param context: the context object used to connect to the Galaxy instance
+    :param args: [0] the benchmark YAML file to be validated.
+    :return:
+    """
     if len(args) == 0:
         print('ERROR: no workflow configuration specified')
         return
@@ -417,10 +433,10 @@ def validate(context: Context, args: list):
 
 
 def wait_for_jobs(context, gi: GalaxyInstance, invocations: dict):
-    """Blocks until all jobs defined in *invocations* to complete.
+    """Blocks until all jobs defined in *invocations* are complete (in a terminal state).
 
     :param gi: The *GalaxyInstance** running the jobs
-    :param invocations:
+    :param invocations: a dictionary containing information about the jobs invoked
     :return:
     """
     wfid = invocations['workflow_id']
@@ -490,6 +506,11 @@ def wait_for_jobs(context, gi: GalaxyInstance, invocations: dict):
 
 
 def parse_workflow(workflow_path: str):
+    """
+    Loads the benchmark YAML file.
+    :param workflow_path: the path to the file to be loaded.
+    :return: a dictionary containing the benchmark.
+    """
     if not os.path.exists(workflow_path):
         print(f'ERROR: could not find workflow file {workflow_path}')
         return None
@@ -508,6 +529,14 @@ def parse_workflow(workflow_path: str):
 
 
 def find_workflow_id(gi, name_or_id):
+    """
+    Resolves the human-readable name for a workflow into the unique ID on the
+    Galaxy instance.
+
+    :param gi: the connection object to the Galaxy instance
+    :param name_or_id: the name of the workflow
+    :return: The Galaxy workflow ID or None if the workflow could not be located
+    """
     try:
         wf = gi.workflows.show_workflow(name_or_id)
         return wf['id']
@@ -524,7 +553,14 @@ def find_workflow_id(gi, name_or_id):
 
 
 def find_dataset_id(gi, name_or_id):
-    # print(f"Finding dataset {name_or_id}")
+    """
+    Resolves the human-readable name if a dataset into the unique ID on the
+    Galaxy instance
+
+    :param gi: the connection object to the Galaxy instance
+    :param name_or_id: the name of the dataset.
+    :return: the Galaxy dataset ID or None if the dataset could not be located.
+    """
     try:
         ds = gi.datasets.show_dataset(name_or_id)
         return ds['id']
@@ -549,6 +585,14 @@ def find_dataset_id(gi, name_or_id):
 
 
 def find_collection_id(gi, name):
+    """
+    Resolves a human-readable collection name into the unique Galaxy ID.
+
+    :param gi: the connection object to the Galaxy instance
+    :param name: the name of the collection to resolve
+    :return: The unique Galaxy ID of the collection or None if the collection
+    can not be located.
+    """
     kwargs = {'limit': 10000, 'offset': 0}
     datasets = gi.datasets.get_datasets(**kwargs)
     if len(datasets) == 0:
@@ -570,6 +614,13 @@ from pprint import pprint
 
 
 def test(context: Context, args: list):
+    """
+    Allows running testing code from the command line.
+
+    :param context: a connection object to a Galaxy instance
+    :param args: varies
+    :return: varies, typically None.
+    """
     id = 'c90fffcf98b31cd3'
     gi = connect(context)
     inputs = gi.workflows.get_workflow_inputs(id, 'PE fastq input')
