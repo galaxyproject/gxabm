@@ -75,6 +75,7 @@ def run_on_cloud(cloud: str, config: dict):
     print(f"Staring run number {start}")
     if start < 0:
         start = 1
+    print(f"Staring run number {start}")
     end = start + config['runs']
     if 'galaxy' in config:
         namespace = config['galaxy']['namespace']
