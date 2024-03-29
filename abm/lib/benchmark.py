@@ -184,7 +184,11 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
                                 for key in item.keys():
                                     # print(f"Getting dataset for {key} = {item[key]}")
                                     value = _get_dataset_data(gi, item[key])
-                                    size += value['size']
+                                    if value is None:
+                                        print(f"ERROR: Unable to find dataset {item[key]}")
+                                        return
+                                    if size in value:
+                                        size += value['size']
                                     elements.append(
                                         _make_dataset_element(key, value['id'])
                                     )

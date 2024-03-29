@@ -37,7 +37,7 @@
       help: 'download a workflow'
       params: ID PATH
     - name: ['list', 'ls']
-      handler: workflow.list
+      handler: workflow.do_list
       help: 'list workflows available on the serer'
     - name: [show]
       handler: workflow.show
@@ -92,7 +92,7 @@
       params: KEY [--hs|--hist|--history HISTORY_ID | -c|--create "History name"]
       help: imports a dataset to the server from a URL specified in the datasets.yml config file.
     - name: ['list', 'ls']
-      handler: dataset.list
+      handler: dataset.do_list
       help: lists all the datasets on the server
     - name: ['find']
       handler: dataset.find
@@ -191,7 +191,7 @@
   menu:
     - name: [ list, ls ]
       help: list all jobs, or jobs in a particular state. Can filter by a history.
-      handler: job.list
+      handler: job.do_list
       params: "[-s|--state ok|running|error|waiting] [-h|--history historyID]"
     - name: [ show ]
       help: show detailed information about a job
@@ -222,7 +222,7 @@
   menu:
     - name: [list, ls]
       help: list all users on the Galaxy instance
-      handler: users.list
+      handler: users.do_list
     - name: [api_key, apikey, key]
       help: obtain the API key for the specified user
       handler: users.api_key
@@ -303,7 +303,7 @@
   menu:
     - name: [list, ls]
       help: list configured servers
-      handler: config.list
+      handler: config.do_list
     - name: [show, sh]
       help: disply URL, API key, and kube config for a specific cloud.
       handler: config.show
@@ -341,7 +341,7 @@
   standalone: true
   menu:
     - name: [list, ls]
-      handler: cloudlaunch.list
+      handler: cloudlaunch.do_list
       help: list deployments on all cloud providers
     - name: [create, launch, new]
       handler: cloudlaunch.create
@@ -356,7 +356,7 @@
   menu:
     - name: [list, ls]
       help: list all libraries on the server
-      handler: library.list
+      handler: library.do_list
     - name: [show]
       help: show detailed information about a library
       handler: library.show
@@ -373,7 +373,7 @@
   help: manage folders in data libraries
   menu:
     - name: [list, ls]
-      handler: folder.list
+      handler: folder.do_list
       help: list the folders in a data library
       params: LIBRARY_ID
     - name: [create, new]

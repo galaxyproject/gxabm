@@ -15,7 +15,7 @@ from planemo.runnable import for_path, for_uri
 log = logging.getLogger('abm')
 
 
-def list(context: Context, args: list):
+def do_list(context: Context, args: list):
     gi = connect(context)
     workflows = gi.workflows.get_workflows(published=True)
     if len(workflows) == 0:
