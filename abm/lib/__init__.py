@@ -4,14 +4,16 @@ import sys
 
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 
-# from common import parse_profile
-
+# Where the workflow invocation data returned by Galaxy will be saved.
 INVOCATIONS_DIR = "invocations"
+#  Where workflow runtime metrics will be saved.
 METRICS_DIR = "metrics"
 
+# Global instance of a YAML parser so we can reuse it if needed.
 parser = None
 
 
+# Keys used in various dictionaries.
 class Keys:
     NAME = 'name'
     RUNS = 'runs'

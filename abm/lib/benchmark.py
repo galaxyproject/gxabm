@@ -16,13 +16,10 @@ log = logging.getLogger('abm')
 
 def run_cli(context: Context, args: list):
     """
-    Runs a single workflow defined by *args[0]*
+    Command line handler to run a single benchmark.
 
-    :param args: a list that contains:
-    args[0] - the path to the benchmark configuration file
-    args[1] - the prefix to use when creating the new history in Galaxy
-    args[2] - the name of the experiment, if part of one. This is used to
-              generate output folder names.
+    :param context: a context object the defines how to connect to the Galaxy server.
+    :param args: parameters from the command line
 
     :return: True if the workflows completed sucessfully. False otherwise.
     """
@@ -43,11 +40,15 @@ def run_cli(context: Context, args: list):
 
 
 def run(context: Context, workflow_path, history_prefix: str, experiment: str):
-    # if len(args) > 1:
-    #     history_prefix = args[1]
-    #     if len(args) > 2:
-    #         experiment = args[2].replace(' ', '_').lower()
+    """
+    Does the actual work of running a benchmark.
 
+    :param context: a context object the defines how to connect to the Galaxy server.
+    :param workflow_path: path to the ABM workflow file. (benchmark really). NOTE this is NOT the Galaxy .ga file.
+    :param history_prefix: a prefix value used when generating new history names.
+    :param experiment: the name of the experiment (arbitrary string). Used to generate new history names.
+    :return: True if the workflow run completed successfully. False otherwise.
+    """
     if os.path.exists(INVOCATIONS_DIR):
         if not os.path.isdir(INVOCATIONS_DIR):
             print('ERROR: Can not save invocation status, directory name in use.')
@@ -76,7 +77,7 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
     workflows = parse_workflow(workflow_path)
     if not workflows:
         print(f"Unable to load any workflow definitions from {workflow_path}")
-        return
+        return False
 
     print(f"Found {len(workflows)} workflow definitions")
     for workflow in workflows:
@@ -173,7 +174,7 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
                             histories = gi.histories.get_histories(name=spec['history'])
                             if len(histories) == 0:
                                 print(f"ERROR: History {spec['history']} not foune")
-                                return
+                                return False
                             hid = histories[0]['id']
                             pairs = 0
                             paired_list = spec['paired']
@@ -273,6 +274,14 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
 
 
 def translate(context: Context, args: list):
+    """
+    Translates the human readable names of datasets and workflows in to the Galaxy
+    ID that is unique to each server.
+
+    :param context: the conext object used to connect to the Galaxy server
+    :param args: [0] the path to the benchmarking YAML file to translate
+    :return: Nothing. Prints the translated workflow file to stdout.
+    """
     if len(args) == 0:
         print('ERROR: no workflow configuration specified')
         return
@@ -315,6 +324,14 @@ def translate(context: Context, args: list):
 
 
 def validate(context: Context, args: list):
+    """
+    Checks to see if the workflow and all datasets defined in the benchmark can
+    be found on the server.
+
+    :param context: the context object used to connect to the Galaxy instance
+    :param args: [0] the benchmark YAML file to be validated.
+    :return:
+    """
     if len(args) == 0:
         print('ERROR: no workflow configuration specified')
         return
@@ -420,10 +437,10 @@ def validate(context: Context, args: list):
 
 
 def wait_for_jobs(context, gi: GalaxyInstance, invocations: dict):
-    """Blocks until all jobs defined in the *invocations* to complete.
+    """Blocks until all jobs defined in *invocations* are complete (in a terminal state).
 
     :param gi: The *GalaxyInstance** running the jobs
-    :param invocations:
+    :param invocations: a dictionary containing information about the jobs invoked
     :return:
     """
     wfid = invocations['workflow_id']
@@ -493,6 +510,11 @@ def wait_for_jobs(context, gi: GalaxyInstance, invocations: dict):
 
 
 def parse_workflow(workflow_path: str):
+    """
+    Loads the benchmark YAML file.
+    :param workflow_path: the path to the file to be loaded.
+    :return: a dictionary containing the benchmark.
+    """
     if not os.path.exists(workflow_path):
         print(f'ERROR: could not find workflow file {workflow_path}')
         return None
@@ -511,6 +533,14 @@ def parse_workflow(workflow_path: str):
 
 
 def find_workflow_id(gi, name_or_id):
+    """
+    Resolves the human-readable name for a workflow into the unique ID on the
+    Galaxy instance.
+
+    :param gi: the connection object to the Galaxy instance
+    :param name_or_id: the name of the workflow
+    :return: The Galaxy workflow ID or None if the workflow could not be located
+    """
     try:
         wf = gi.workflows.show_workflow(name_or_id)
         return wf['id']
@@ -527,7 +557,14 @@ def find_workflow_id(gi, name_or_id):
 
 
 def find_dataset_id(gi, name_or_id):
-    # print(f"Finding dataset {name_or_id}")
+    """
+    Resolves the human-readable name if a dataset into the unique ID on the
+    Galaxy instance
+
+    :param gi: the connection object to the Galaxy instance
+    :param name_or_id: the name of the dataset.
+    :return: the Galaxy dataset ID or None if the dataset could not be located.
+    """
     try:
         ds = gi.datasets.show_dataset(name_or_id)
         return ds['id']
@@ -552,6 +589,14 @@ def find_dataset_id(gi, name_or_id):
 
 
 def find_collection_id(gi, name):
+    """
+    Resolves a human-readable collection name into the unique Galaxy ID.
+
+    :param gi: the connection object to the Galaxy instance
+    :param name: the name of the collection to resolve
+    :return: The unique Galaxy ID of the collection or None if the collection
+    can not be located.
+    """
     kwargs = {'limit': 10000, 'offset': 0}
     datasets = gi.datasets.get_datasets(**kwargs)
     if len(datasets) == 0:
@@ -573,6 +618,13 @@ from pprint import pprint
 
 
 def test(context: Context, args: list):
+    """
+    Allows running testing code from the command line.
+
+    :param context: a connection object to a Galaxy instance
+    :param args: varies
+    :return: varies, typically None.
+    """
     id = 'c90fffcf98b31cd3'
     gi = connect(context)
     inputs = gi.workflows.get_workflow_inputs(id, 'PE fastq input')

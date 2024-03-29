@@ -9,8 +9,10 @@ import lib
 from bioblend.galaxy import dataset_collections
 from ruamel.yaml import YAML
 
+# Where we will look for our configuration file.
 PROFILE_SEARCH_PATH = ['~/.abm/profile.yml', '.abm-profile.yml']
 
+# Deprecated. Do not use.
 datasets = {
     "dna": [
         "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR013/ERR013101/ERR013101_1.fastq.gz",
@@ -25,6 +27,14 @@ datasets = {
 
 
 def try_for(f, limit=3):
+    """
+    Tries to invoke the function f. If the function f fails it will be retried
+    *limit* number of times.
+
+    :param f: the function to invoke
+    :param limit: how many times the function will be retried
+    :return: the result of calling f()
+    """
     count = 0
     running = True
     result = None
@@ -40,6 +50,13 @@ def try_for(f, limit=3):
 
 
 class Context:
+    """
+    The context object that contains information to connect to a Galaxy instance.
+
+    GALAXY_SERVER: the URL of the Galaxy server to connect to
+    API_KEY      : a user's API key to make API calls on the Galaxy instance
+    KUBECONFIG:  : the kubeconfig file needed to make changes via Helm
+    """
     def __init__(self, *args):
         if len(args) == 1:
             arg = args[0]
@@ -90,7 +107,12 @@ def connect(context: Context):
 
 
 def _set_active_profile(profile_name: str):
-    # print(f"Parsing profile for {profile_name}")
+    """
+    Unused.
+
+    :param profile_name:
+    :return:
+    """
     lib.GALAXY_SERVER, lib.API_KEY, lib.KUBECONFIG = parse_profile(profile_name)
     return lib.GALAXY_SERVER != None
 
@@ -100,6 +122,11 @@ def get_context(profile_name: str):
 
 
 def get_yaml_parser():
+    """
+    Returns a singleton instance of a YAML parser.
+
+    :return: a YAML parser.
+    """
     if lib.parser is None:
         lib.parser = YAML()
     return lib.parser
@@ -124,6 +151,12 @@ def load_profiles():
 
 
 def save_profiles(profiles: dict):
+    """
+    Write the ABM configuration file.
+
+    :param profiles: the configuration to be saved.
+    :return: None
+    """
     yaml = get_yaml_parser()
     for profile_path in PROFILE_SEARCH_PATH:
         path = os.path.expanduser(profile_path)
@@ -161,15 +194,16 @@ def parse_profile(profile_name: str):
 
 
 def run(command, env: dict = None):
+    """
+    Runs a command on the local machine.  Used to invoke the helm and kubectl
+    executables.
+
+    :param command: the command to be invoked
+    :param env: environment variables for the command.
+    :return:
+    """
     if env is None:
         env = os.environ
-    # if env is not None:
-    #     for name,value in env.items():
-    #         os.environ[name] = value
-    # if lib.KUBECONFIG is not None:
-    #     os.environ['KUBECONFIG'] = lib.KUBECONFIG
-    # local_env = os.environ.copy()
-    # local_env.update(env)
     result = subprocess.run(command.split(), capture_output=True, env=env)
     if result.returncode != 0:
         raise RuntimeError(result.stderr.decode('utf-8').strip())
@@ -177,6 +211,11 @@ def run(command, env: dict = None):
 
 
 def get_env(context: Context):
+    """
+    Creates a copy of the environment variables as returned by os.environ.
+    :param context: Ignored
+    :return: a dictionary of the environment variables
+    """
     copy = os.environ.copy()
     for key, value in context.__dict__.items():
         if value is not None:
@@ -185,6 +224,13 @@ def get_env(context: Context):
 
 
 def find_executable(name):
+    """
+    Used the which command on the local machine to find the full path to an
+    executable.
+
+    :param name: the name of a command line executable or script.
+    :return: the full path to the executable or an empty string if the executable is not found.
+    """
     return run(f"which {name}")
 
 
@@ -208,6 +254,7 @@ def find_executable(name):
 #     "swaptotal",
 #     "uname"
 
+# Columns to be defined when generating CSV files.
 table_header = [
     "id",
     "history_id",
@@ -237,6 +284,11 @@ table_header = [
 ]
 
 def print_table_header():
+    """
+    Prints the table header suitable for inclusion in CSV files.
+
+    :return: None. The table header is printed to stdout.
+    """
     print(','.join(table_header))
 
 

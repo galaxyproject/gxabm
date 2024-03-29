@@ -8,6 +8,8 @@ import requests
 from cloudlaunch_cli.main import create_api_client
 from common import Context
 
+# DEPRECATED - Cloudlaunch is no longer used to manage Galaxy clusters.
+
 BOLD = '\033[1m'
 CLEAR = '\033[0m'
 
