@@ -5,7 +5,7 @@ from bioblend.galaxy import GalaxyInstance
 from common import Context, connect
 
 
-def list(context: Context, args: list):
+def do_list(context: Context, args: list):
     # TODO the master API key needs to be parameterized or specified in a config file.
     context.API_KEY = "galaxypassword"
     gi = connect(context)

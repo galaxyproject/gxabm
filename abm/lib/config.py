@@ -6,7 +6,7 @@ from common import (Context, get_yaml_parser, load_profiles, print_json,
                     print_yaml, save_profiles)
 
 
-def list(context: Context, args: list):
+def do_list(context: Context, args: list):
     profiles = load_profiles()
     print(f"Loaded {len(profiles)} profiles")
     for profile in profiles:

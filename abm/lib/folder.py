@@ -3,7 +3,7 @@ from pprint import pprint
 from .common import Context, connect
 
 
-def list(context: Context, args: list):
+def do_list(context: Context, args: list):
     if len(args) == 0:
         print("ERROR: no library ID was provided")
         return

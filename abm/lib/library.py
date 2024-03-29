@@ -3,7 +3,7 @@ from pprint import pprint
 from .common import Context, connect, datasets
 
 
-def list(context: Context, args: list):
+def do_list(context: Context, args: list):
     gi = connect(context)
     if len(args) == 0:
         for library in gi.libraries.get_libraries():
