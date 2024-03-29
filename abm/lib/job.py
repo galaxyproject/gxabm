@@ -8,7 +8,7 @@ from .common import Context, connect, find_history, print_json
 log = logging.getLogger('abm')
 
 
-def list(context: Context, args: list):
+def do_list(context: Context, args: list):
     state = ''
     history_id = None
     log.debug('Processing args')

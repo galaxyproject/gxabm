@@ -10,7 +10,7 @@ from common import (Context, _get_dataset_data, _make_dataset_element, connect,
                     find_history, print_json)
 
 
-def list(context: Context, argv: list):
+def do_list(context: Context, argv: list):
     parser = argparse.ArgumentParser()
     parser.add_argument('-s', '--state', help='list jobs in this state')
     parser.add_argument('--history', help='show jobs in the given history')
