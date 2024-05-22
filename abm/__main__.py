@@ -3,7 +3,7 @@
 """
 The Automated Benchmarking Tool
 
-Copyright 2023 The Galaxy Project. All rights reserved.
+Copyright 2024 The Galaxy Project. All rights reserved.
 
 """
 
@@ -64,7 +64,7 @@ def command_list(commands: list):
 
 
 def copyright():
-    print(f"    Copyright 2023 The Galaxy Project. All Rights Reserved.\n")
+    print(f"    Copyright 2024 The Galaxy Project. All Rights Reserved.\n")
 
 
 def print_main_help(menu_data):
