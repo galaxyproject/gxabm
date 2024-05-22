@@ -297,7 +297,7 @@
     - name: [url]
       help: derive the URL to access this Galaxy instance
       handler: kubectl.url
-- name: [config, conf, cfg]
+- name: [config, configuration, conf, cfg]
   help: manage configuration profiles
   standalone: true
   menu:
