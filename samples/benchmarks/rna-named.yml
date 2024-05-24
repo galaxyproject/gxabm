@@ -1,0 +1,14 @@
+- workflow_id: d6d3c2119c4849e4
+  output_history_base_name: RNA-seq
+  reference_data:
+    - name: Reference Transcript (FASTA)
+      dataset_id: 50a269b7a99356aa
+  runs:
+    - history_name: 1
+      inputs:
+      - name: FASTQ RNA Dataset
+        dataset_id: 28fa757e56346a34
+    - history_name: 2
+      inputs:
+      - name: FASTQ RNA Dataset
+        dataset_id: 1faa2d3b2ed5c436

@@ -214,7 +214,7 @@ def himport(context: Context, args: list):
         else:
             datasets = None
             config = f'{os.path.dirname(os.path.abspath(__file__))}/histories.yml'
-            # First load the histories.yml file that is pacakged with abm
+            # First load the histories.yml file that is packaged with abm
             if os.path.exists(config):
                 with open(config, 'r') as f:
                     datasets = yaml.safe_load(f)
