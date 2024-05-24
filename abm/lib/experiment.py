@@ -45,7 +45,6 @@ def run(context: Context, args: list):
     print(f"Starting with run number {argv.run_number}")
 
     profiles = load_profiles()
-    # latch = CountdownLatch(len(config['cloud']))
     threads = []
     start = perf_counter()
     for cloud in config['cloud']:

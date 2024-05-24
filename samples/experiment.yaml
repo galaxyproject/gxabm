@@ -1,0 +1,11 @@
+name: Benchmarking DNA
+runs: 3
+workflow_conf:
+  - benchmarks/example.yml
+  - benchmarks/dna-named.yml
+  - benchmarks/rna-named.yml
+cloud:
+  - iu2
+job_configs:
+  - rules/4x8.yml
+  - rules/8x16.yml
