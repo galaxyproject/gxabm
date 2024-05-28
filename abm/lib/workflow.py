@@ -35,30 +35,48 @@ def delete(context: Context, args: list):
 
 
 def upload(context: Context, args: list):
-    if len(args) == 0:
-        print('ERROR: no workflow file given')
+    path = None
+    install = True
+    for arg in args:
+        if arg in ['-n', '--no-tools']:
+            print("Skipping tools")
+            install = False
+        else:
+            path = arg
+    if path is None:
+        print("ERROR: no workflow given")
         return
-    path = args[0]
+
     if path.startswith('http'):
         import_from_url(context, args)
         return
     if not os.path.exists(path):
         print(f'ERROR: file not found: {path}')
         return
+    print("Uploading workflow")
     gi = connect(context)
     print("Importing the workflow")
     pprint(gi.workflows.import_workflow_from_local_path(path, publish=True))
     runnable = for_path(path)
-    print("Installing tools")
-    result = install_shed_repos(runnable, gi, False)
-    pprint(result)
+    if install:
+        print("Installing tools")
+        result = install_shed_repos(runnable, gi, False)
+        pprint(result)
 
 
 def import_from_url(context: Context, args: list):
-    if len(args) == 0:
-        print("ERROR: no workflow URL given")
+    print("Importing workflow from URL")
+    url = None
+    install = True
+    for arg in args:
+        if arg in ['-n', '--no-tools']:
+            print("Skipping tools")
+            install = False
+        else:
+            url = arg
+    if url is None:
+        print("ERROR: no URL given")
         return
-    url = args[0]
 
     # There is a bug in ephemeris (for lack of a better term) that assumes all
     # Runnable objects can be found on the local file system
@@ -93,17 +111,27 @@ def import_from_url(context: Context, args: list):
     result = gi.workflows.import_workflow_dict(workflow, publish=True)
     print(json.dumps(result, indent=4))
     runnable = for_path(cached_file)
-    # runnable = for_uri(url)
-    print("Installing tools")
-    result = install_shed_repos(runnable, gi, False, install_tool_dependencies=True)
-    pprint(result)
+    if install:
+        print("Installing tools")
+        result = install_shed_repos(runnable, gi, False, install_tool_dependencies=True)
+        pprint(result)
 
 
 def import_from_config(context: Context, args: list):
-    if len(args) == 0:
+    print("Importing workflow from configuration")
+    key = None
+    install = True
+    for arg in args:
+        if arg in ['-n', '--no-tools']:
+            print("Skipping tools")
+            install = False
+        else:
+            key = arg
+    if key is None:
         print("ERROR: no workflow ID given")
         return
-    key = args[0]
+
+
     userfile = os.path.join(Path.home(), ".abm", "workflows.yml")
     if not os.path.exists(userfile):
         print("ERROR: this instance has not been configured to import workflows.")
@@ -116,7 +144,10 @@ def import_from_config(context: Context, args: list):
         return
 
     url = workflows[key]
-    import_from_url(context, [url])
+    argv = [url]
+    if not install:
+        argv.append('-n')
+    import_from_url(context, argv)
 
 
 def download(context: Context, args: list):
