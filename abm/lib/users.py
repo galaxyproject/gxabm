@@ -6,9 +6,7 @@ from common import Context, connect
 
 
 def do_list(context: Context, args: list):
-    # TODO the master API key needs to be parameterized or specified in a config file.
-    context.API_KEY = "galaxypassword"
-    gi = connect(context)
+    gi = connect(context, use_master_key=True)
     user_list = gi.users.get_users()
     pprint(user_list)
 
@@ -22,9 +20,7 @@ def get_api_key(context: Context, args: list):
         print("ERROR: no user email given")
         return
 
-    # TODO the master API key needs to be parameterized or specified in a config file.
-    context.API_KEY = "galaxypassword"
-    gi = connect(context)
+    gi = connect(context, use_master_key=True)
     user_list = gi.users.get_users(f_email=args[0])
     if user_list is None or len(user_list) == 0:
         print("WARNING: no such user")
@@ -52,9 +48,7 @@ def create(context: Context, args: list):
         print(f"ERROR: {email} does not look like a valid email address")
         return
 
-    # TODO the master API key needs to be parameterized or specified in a config file.
-    context.API_KEY = "galaxypassword"
-    gi = connect(context)
+    gi = connect(context, use_master_key=True)
     user_record = gi.users.create_local_user(name, email, password)
     id = user_record['id']
     key = gi.users.create_user_apikey(id)
@@ -67,9 +61,7 @@ def show(context: Context, args: list):
         print("ERROR: no user email given")
         return
 
-    # TODO the master API key needs to be parameterized or specified in a config file.
-    context.API_KEY = "galaxypassword"
-    gi = connect(context)
+    gi = connect(context, use_master_key=True)
     id = _get_user_id(gi, args[0])
     if id is None:
         return

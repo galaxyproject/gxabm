@@ -61,20 +61,26 @@ class Context:
         if len(args) == 1:
             arg = args[0]
             if type(arg) == str:
-                self.GALAXY_SERVER, self.API_KEY, self.KUBECONFIG = parse_profile(arg)
+                self.GALAXY_SERVER, self.API_KEY, self.KUBECONFIG, self.MASTER_KEY = parse_profile(arg)
             elif type(arg) == dict:
                 self.GALAXY_SERVER = arg['GALAXY_SERVER']
                 self.API_KEY = arg['API_KEY']
                 self.KUBECONFIG = arg['KUBECONFIG']
+                if 'MASTER_KEY' in arg:
+                    self.MASTER_KEY = arg['MASTER_KEY']
+                else:
+                    self.MASTER_KEY = None
             else:
                 raise Exception(f'Invalid arg for Context: {type(arg)}')
-        elif len(args) == 3:
+        elif len(args) == 3 or len(args) == 4:
             self.GALAXY_SERVER = args[0]
             self.API_KEY = args[1]
             self.KUBECONFIG = args[2]
+            if len(args) == 4:
+                self.MASTER_KEY = args[3]
         else:
             raise Exception(
-                f'Invalid args for Context. Expected one or three, found {len(args)}'
+                f'Invalid args for Context. Expected one or four, found {len(args)}'
             )
 
 
@@ -86,7 +92,7 @@ def print_yaml(obj):
     get_yaml_parser().dump(obj, sys.stdout)
 
 
-def connect(context: Context):
+def connect(context: Context, use_master_key=False):
     """
     Create a connection to the Galaxy instance
 
@@ -100,7 +106,14 @@ def connect(context: Context):
         print('ERROR: The Galaxy API key has not been set.  Please check your')
         print('       configuration in ~/.abm/profile.yml and try again.')
         sys.exit(1)
-    gi = bioblend.galaxy.GalaxyInstance(url=context.GALAXY_SERVER, key=context.API_KEY)
+    key = context.API_KEY
+    if use_master_key:
+        if context.MASTER_KEY is None:
+            print('ERROR: The Galaxy master key has not been set.  Please check your')
+            print('       configuration in ~/.abm/profile.yml and try again.')
+            sys.exit(1)
+        key = context.MASTER_KEY
+    gi = bioblend.galaxy.GalaxyInstance(url=context.GALAXY_SERVER, key=key)
     gi.max_get_attempts = 3
     gi.get_retry_delay = 1
     return gi
@@ -113,7 +126,7 @@ def _set_active_profile(profile_name: str):
     :param profile_name:
     :return:
     """
-    lib.GALAXY_SERVER, lib.API_KEY, lib.KUBECONFIG = parse_profile(profile_name)
+    lib.GALAXY_SERVER, lib.API_KEY, lib.KUBECONFIG, lib.MASTER_KEY = parse_profile(profile_name)
     return lib.GALAXY_SERVER != None
 
 
@@ -174,10 +187,11 @@ def parse_profile(profile_name: str):
     :param profile_name: path to the profile to parse
     :return: a tuple containing the Galaxy URL, API key, and path to the kubeconfig
     '''
+    nones = (None, None, None, None)
     profiles = load_profiles()
     if profiles is None:
         print(f'ERROR: Could not locate an abm profile file in {PROFILE_SEARCH_PATH}')
-        return None, None, None
+        return nones
     if profile_name not in profiles:
         print(f'ERROR: {profile_name} is not the name of a valid profile.')
         keys = list(profiles.keys())
@@ -186,11 +200,15 @@ def parse_profile(profile_name: str):
                 ', '.join([f"'{k}'" for k in keys[0:-2]]) + f", and '{keys[-1]}'"
             )
             print(f'The defined profile names are: {quoted_keys}')
-        return None, None, None
+        return nones
     profile = profiles[profile_name]
+    kube = None
+    master = 'galaxypassword'
     if 'kube' in profile:
-        return (profile['url'], profile['key'], os.path.expanduser(profile['kube']))
-    return (profile['url'], profile['key'], None)
+        kube = os.path.expanduser(profile['kube'])
+    if 'master' in profile:
+        master = profile['master']
+    return (profile['url'], profile['key'], kube, master)
 
 
 def run(command, env: dict = None):

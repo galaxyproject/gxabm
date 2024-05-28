@@ -1,6 +1,8 @@
 import os
 import sys
 
+import yaml
+
 sys.path.append(os.path.dirname(os.path.realpath(__file__)))
 
 

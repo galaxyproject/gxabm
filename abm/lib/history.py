@@ -235,7 +235,7 @@ def himport(context: Context, args: list):
                 return
             url = datasets[args[0]]
     elif len(args) == 3:
-        server, key = parse_profile(args[0])
+        server, key, kube, master = parse_profile(args[0])
         if server is None:
             error_message(f"Invalid server profile name: {args[0]}")
             return
