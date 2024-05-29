@@ -406,6 +406,7 @@ def find_history(gi, name_or_id):
 
 
 def _get_dataset_data(gi, name_or_id):
+    print(f"Getting dataset data for {name_or_id}")
     def make_result(data):
         return {
             'id': data['id'],
@@ -415,14 +416,18 @@ def _get_dataset_data(gi, name_or_id):
 
     try:
         ds = gi.datasets.show_dataset(name_or_id)
+        print(f"Got dataset data for {name_or_id} {ds['id']}")
         return make_result(ds)
     except Exception as e:
+        print(f"Failed to get dataset data for {name_or_id}")
         pass
 
     try:
+        print("Getting all datasets")
         datasets = gi.datasets.get_datasets(
             name=name_or_id
         )  # , deleted=True, purged=True)
+        print(f"List of datasets for {name_or_id} is {len(datasets)}")
         for ds in datasets:
             # print_json(ds)
             state = True
@@ -431,7 +436,11 @@ def _get_dataset_data(gi, name_or_id):
             if state and not ds['deleted'] and ds['visible']:
                 # The dict returned by get_datasets does not include the input
                 # file sizes so we need to make another call to show_datasets
+                print(f"Getting dataset data for {ds['id']}")
                 return make_result(gi.datasets.show_dataset(ds['id']))
+            else:
+                print(f"Skipping dataset {ds['id']}")
+                print_json(ds)
     except Exception as e:
         pass
 

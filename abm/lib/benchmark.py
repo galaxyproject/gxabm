@@ -145,11 +145,13 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
                         dsid = find_collection_id(gi, dsname)
                         dsdata = _get_dataset_data(gi, dsid)
                         if dsdata is None:
-                            raise Exception(
-                                f"ERROR: unable to resolve {dsname} to a dataset."
-                            )
-                        dsid = dsdata['id']
-                        dssize = dsdata['size']
+                            # raise Exception(
+                            #     f"ERROR: unable to resolve {dsname} to a dataset."
+                            # )
+                            dssize = 0
+                        else:
+                            dsid = dsdata['id']
+                            dssize = dsdata['size']
                         input_data_size.append(dssize)
                         print(f"Input collection ID: {dsname} [{dsid}] {dssize}")
                         inputs[input[0]] = {'id': dsid, 'src': 'hdca', 'size': dssize}
@@ -625,7 +627,16 @@ def test(context: Context, args: list):
     :param args: varies
     :return: varies, typically None.
     """
-    id = 'c90fffcf98b31cd3'
+    # id = 'c90fffcf98b31cd3'
+    # gi = connect(context)
+    # inputs = gi.workflows.get_workflow_inputs(id, 'PE fastq input')
+    # pprint(inputs)
+
     gi = connect(context)
-    inputs = gi.workflows.get_workflow_inputs(id, 'PE fastq input')
-    pprint(inputs)
+    print("Calling find_collection_id")
+    dsid = find_collection_id(gi, args[0])
+    print(f"Collection ID: {dsid}")
+    print("Calling _get_dataset_data")
+    dsdata = _get_dataset_data(gi, dsid)
+    pprint(dsdata)
+
