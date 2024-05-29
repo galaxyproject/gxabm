@@ -19,23 +19,20 @@ def main():
 		
 	with open(VERSION_FILE, 'r') as f:
 		version_string = f.read().strip()
-	
-	parts = version_string.split('.')
+
+	prefix = version_string
+	suffix = None
+	release = None
+	build = None
+	if '-' in version_string:
+		# This is a development build
+		prefix, suffix = version_string.split('-')
+		release,build = suffix.split('.')
+		build = int(build)
+	parts = prefix.split('.')
 	major = int(parts[0])
 	minor = int(parts[1])
-	release = None
-	if '-' in parts[2]:
-		revs = parts[2].split('-')
-		revision = int(revs[0])
-		if 'dev' in revs[1]:
-			release = 'dev'
-			build = int(revs[1].replace('dev', ''))
-		elif 'rc' in revs[1]:
-			release = 'rc'
-			build = int(revs[1].replace('rc', ''))
-	else:
-		revision = int(parts[2])
-		build = None
+	revision = int(parts[2])
 
 	if sys.argv[1] in ['major', 'minor', 'revision'] and release is not None:
 		print(f"ERROR: Cannot bump the {sys.argv[1]} version for a development build")
@@ -75,7 +72,7 @@ def main():
 	if build is None:
 		version_string = f"{major}.{minor}.{revision}"
 	else:
-		version_string = f"{major}.{minor}.{revision}-{release}{build}"
+		version_string = f"{major}.{minor}.{revision}-{release}.{build}"
 
 	with open(VERSION_FILE, 'w') as f:
 		f.write(version_string)
