@@ -282,23 +282,15 @@ table_header = [
     "invocation_id",
     "workflow_id",
     "cpuacct.usage",
-    # "end_epoch",
     "galaxy_memory_mb",
     "galaxy_slots",
-    # "memory.failcnt",
     "memory.limit_in_bytes",
-    "memory.max_usage_in_bytes",
-    # "memory.memsw.limit_in_bytes",
-    # "memory.memsw.max_usage_in_bytes",
-    # "memory.oom_control.oom_kill_disable",
-    # "memory.oom_control.under_oom",
+    # "memory.max_usage_in_bytes",
+    "memory.peak",
     "memory.soft_limit_in_bytes",
     "memtotal",
     "processor_count",
     "runtime_seconds",
-    # "start_epoch",
-    # "swaptotal",
-    # "uname"
 ]
 
 def print_table_header():
