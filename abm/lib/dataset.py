@@ -167,13 +167,15 @@ def import_from_config(context: Context, args: list):
     parser.add_argument('-f', '--file', help='use instead of the datasets.yml', required=False, default=None)
     parser.add_argument('--history', help='add datasets to the given history', required=False, default=None)
     parser.add_argument('-n', '--name', help='set the name of the dataset', required=False, default=None)
-    parser.add_argument('key', help='the key of the dataset to import')
+    parser.add_argument('keys', help='the key of the dataset to import', nargs='+')
     gi = None
-    key = None
     history = None
     kwargs = {}
     argv = parser.parse_args(args)
     if argv.name is not None:
+        if len(argv.keys) > 1:
+            print("ERROR: cannot specify --name with multiple keys")
+            return
         kwargs['file_name'] = argv.name
 
     if argv.create and argv.history is not None:
@@ -185,7 +187,6 @@ def import_from_config(context: Context, args: list):
         history = gi.histories.create_history(argv.key).get('id')
     if argv.history is not None:
         history = find_history(gi, argv.history)
-    key = argv.key
     if argv.file is not None:
         configfile = argv.file
         if not os.path.exists(configfile):
@@ -197,18 +198,18 @@ def import_from_config(context: Context, args: list):
             print("ERROR: ABM has not been configured to import datasets.")
             print(f"Please create {configfile}")
             return
-
     with open(configfile, 'r') as f:
         datasets = yaml.safe_load(f)
-    if not key in datasets:
-        print(f"ERROR: dataset {key} has not been defined.")
-        return
-    url = datasets[key]
-
     if gi is None:
         gi = connect(context)
-    response = gi.tools.put_url(url, history, **kwargs)
-    print(json.dumps(response, indent=4))
+    for key in argv.keys:
+        if not key in datasets:
+            print(f"ERROR: dataset {key} has not been defined.")
+        else:
+            url = datasets[key]
+            print(f"Importing {key} from {url}")
+            response = gi.tools.put_url(url, history, **kwargs)
+            print(json.dumps(response, indent=4))
 
 
 def _import_from_url(gi, history, url, **kwargs):
