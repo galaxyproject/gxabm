@@ -10,7 +10,7 @@ import yaml
 from bioblend.galaxy.objects import GalaxyInstance
 from lib.common import (Context, connect, find_history, parse_profile,
                         print_json, summarize_metrics, print_markdown_table,
-                        get_float_key, get_str_key, print_table_header, try_for)
+                        get_float_key, get_str_key, print_table_header, try_for, find_config)
 
 #
 # History related functions
@@ -194,55 +194,29 @@ def _import(context: Context, args: list):
 
 
 def himport(context: Context, args: list):
-    def error_message(msg='Invalid command'):
-        print(f"ERROR: {msg}")
-        print(f"USAGE: {sys.argv[0]} history import SERVER HISTORY_ID JEHA_ID")
-        print(f"       {sys.argv[0]} history import http://GALAXY_SERVER_URL")
-        print(f"       {sys.argv[0]} history import [dna|rna]")
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-n', '--no-wait', action='store_true', help='Do not wait for the import to complete', default=False)
+    parser.add_argument('-f', '--file', help='Use the specified histories.yml file', required=False, default=None)
+    parser.add_argument('identifier', help='The history alias or URL to import', required=True)
+    argv = parser.parse_args(args)
 
-    wait = True
-    if '-n' in args:
-        args.remove('-n')
-        wait = False
-    if '--no-wait' in args:
-        args.remove('--no-wait')
-        wait = False
-
-    if len(args) == 1:
-        if 'http' in args[0]:
-            url = args[0]
-        else:
-            datasets = None
-            config = f'{os.path.dirname(os.path.abspath(__file__))}/histories.yml'
-            # First load the histories.yml file that is packaged with abm
-            if os.path.exists(config):
-                with open(config, 'r') as f:
-                    datasets = yaml.safe_load(f)
-            # Then load the user histories.yml, if any
-            userfile = os.path.join(Path.home(), ".abm", "histories.yml")
-            if os.path.exists(userfile):
-                if datasets is None:
-                    datasets = {}
-                with open(userfile, 'r') as f:
-                    userdata = yaml.safe_load(f)
-                    for key, item in userdata.items():
-                        datasets[key] = item
-            if datasets is None:
-                error_message("No history URLs have been configured.")
-                return
-            if not args[0] in datasets:
-                error_message('Please specify a URL or name of the history to import')
-                return
-            url = datasets[args[0]]
-    elif len(args) == 3:
-        server, key, kube, master = parse_profile(args[0])
-        if server is None:
-            error_message(f"Invalid server profile name: {args[0]}")
-            return
-        url = f"{server}history/export_archive?id={args[1]}&jeha_id={args[2]}"
+    wait = not argv.no_wait
+    if argv.identifier.startswith('http'):
+        url = argv.identifier
     else:
-        error_message()
-        return
+        if argv.file is not None:
+            config = argv.file
+        else:
+            config = find_config("histories.yml")
+        if config is None:
+            print("ERROR: No histories.yml file found.")
+            return
+        with open(config, 'r') as f:
+            histories = yaml.safe_load(f)
+        if argv.identifier not in histories:
+            print(f"ERROR: No such history {argv.identifier}")
+            return
+        url = histories[argv.identifier]
 
     gi = connect(context)
     print(f"Importing history from {url}")
