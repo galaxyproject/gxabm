@@ -197,7 +197,7 @@ def himport(context: Context, args: list):
     parser = argparse.ArgumentParser()
     parser.add_argument('-n', '--no-wait', action='store_true', help='Do not wait for the import to complete', default=False)
     parser.add_argument('-f', '--file', help='Use the specified histories.yml file', required=False, default=None)
-    parser.add_argument('identifier', help='The history alias or URL to import', required=True)
+    parser.add_argument('identifier', help='The history alias or URL to import')
     argv = parser.parse_args(args)
 
     wait = not argv.no_wait

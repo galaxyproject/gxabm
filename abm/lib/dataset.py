@@ -7,7 +7,7 @@ from pprint import pprint
 import yaml
 from bioblend.galaxy import dataset_collections
 from common import (Context, _get_dataset_data, _make_dataset_element, connect,
-                    find_history, print_json, find_config)
+                    find_history, print_json, find_config, find_dataset)
 
 
 def do_list(context: Context, argv: list):
@@ -163,7 +163,7 @@ def collection(context: Context, args: list):
 
 def import_from_config(context: Context, args: list):
     parser = argparse.ArgumentParser()
-    parser.add_argument('-c', '--create', help='create a new history for the dataset', action='store_true')
+    parser.add_argument('-c', '--create', help='create a new history for the dataset', required=False, default=None)
     parser.add_argument('-f', '--file', help='use instead of the datasets.yml', required=False, default=None)
     parser.add_argument('--history', help='add datasets to the given history', required=False, default=None)
     parser.add_argument('-n', '--name', help='set the name of the dataset', required=False, default=None)
@@ -178,14 +178,15 @@ def import_from_config(context: Context, args: list):
             return
         kwargs['file_name'] = argv.name
 
-    if argv.create and argv.history is not None:
+    if argv.create is not None and argv.history is not None:
         print("ERROR: cannot specify both --create and --history")
         return
 
-    if argv.create:
+    if argv.create is not None:
         gi = connect(context)
-        history = gi.histories.create_history(argv.key).get('id')
+        history = gi.histories.create_history(argv.create).get('id')
     if argv.history is not None:
+        gi = connect(context)
         history = find_history(gi, argv.history)
     if argv.file is not None:
         configfile = argv.file
@@ -249,9 +250,17 @@ def rename(context: Context, args: list):
         print("ERROR: please provide the history ID, dataset ID, and new name.")
         return
     gi = connect(context)
-    response = gi.histories.update_dataset(args[0], args[1], name=args[2])
-    result = {'state': response['state'], 'name': response['name']}
-    print(json.dumps(result, indent=4))
+    hid = find_history(gi, args[0])
+    if hid is None:
+        print("ERROR: no such history")
+        return
+    dsid = find_dataset(gi, hid, args[1])
+    if dsid is None:
+        print("ERROR: no such dataset")
+        return
+    response = gi.histories.update_dataset(hid, dsid, name=args[2])
+    # result = {'state': response['state'], 'name': response['name']}
+    print(json.dumps(response, indent=4))
 
 
 def test(context: Context, args: list):
