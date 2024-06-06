@@ -8,7 +8,7 @@ from pprint import pprint
 import requests
 import yaml
 from common import Context, connect, summarize_metrics, print_markdown_table, get_float_key, get_str_key, \
-    print_table_header
+    print_table_header, find_config
 from planemo.galaxy.workflows import install_shed_repos
 from planemo.runnable import for_path, for_uri
 
@@ -118,26 +118,28 @@ def import_from_url(context: Context, args: list):
 
 
 def import_from_config(context: Context, args: list):
-    print("Importing workflow from configuration")
     key = None
     install = True
+    config = None
     for arg in args:
         if arg in ['-n', '--no-tools']:
             print("Skipping tools")
             install = False
+        elif arg in ['-f', '--file']:
+            config = arg
         else:
             key = arg
     if key is None:
         print("ERROR: no workflow ID given")
         return
 
-
-    userfile = os.path.join(Path.home(), ".abm", "workflows.yml")
-    if not os.path.exists(userfile):
+    if config is None:
+        config = find_config("workflows.yml")
+    if config is None:
         print("ERROR: this instance has not been configured to import workflows.")
-        print(f"Please configure {userfile} to enable workflow imports")
+        print(f"Please configure a workflows.yml file to enable imports")
         return
-    with open(userfile, 'r') as f:
+    with open(config, 'r') as f:
         workflows = yaml.safe_load(f)
     if not key in workflows:
         print(f"ERROR: no such workflow: {key}")

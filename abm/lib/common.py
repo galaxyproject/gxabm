@@ -2,6 +2,8 @@ import json
 import os
 import subprocess
 import sys
+from pathlib import Path
+
 from math import ceil
 
 import bioblend.galaxy
@@ -404,6 +406,40 @@ def find_history(gi, name_or_id):
     if len(history) == 0:
         return None
     return history[0]['id']
+
+
+def find_dataset(gi, history_id, name_or_id):
+    try:
+        dataset = gi.datasets.show_dataset(name=name_or_id)
+        return dataset['id']
+    except:
+        pass
+
+    try:
+        dataset = gi.datasets.show_dataset(name_or_id)
+        return dataset['id']
+    except:
+        pass
+    return None
+    # print("Calling get_datasets")
+    # datasets = gi.datasets.get_datasets(history_id=history_id, name=name_or_id)
+    # if datasets is None:
+    #     print("Not found")
+    #     return None
+    # if len(datasets) == 0:
+    #     print("No datasets found (len == 0)")
+    #     return None
+    # return datasets[0]['id']
+
+
+def find_config(name: str) -> str:
+    if os.path.exists(".abm"):
+        if os.path.exists(f".abm/{name}"):
+            return f".abm/{name}"
+    config = os.path.join(Path.home(), ".abm", name)
+    if os.path.exists(config):
+        return config
+    return None
 
 
 def _get_dataset_data(gi, name_or_id):

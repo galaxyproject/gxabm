@@ -89,8 +89,8 @@
       help: download a dataset from the server
     - name: ['import', 'imp']
       handler: dataset.import_from_config
-      params: KEY [--hs|--hist|--history HISTORY_ID | -c|--create "History name"]
-      help: imports a dataset to the server from a URL specified in the datasets.yml config file.
+      params: '[--hs|--hist|--history HISTORY_ID | -c|--create "History name"] KEY [KEY...]'
+      help: imports one or more datasets to the server from a URL specified in the datasets.yml config file.
     - name: ['list', 'ls']
       handler: dataset.do_list
       help: lists all the datasets on the server
