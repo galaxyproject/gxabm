@@ -456,7 +456,7 @@ def wait_for_jobs(context, gi: GalaxyInstance, invocations: dict):
     jobs = gi.jobs.get_jobs(history_id=hid)
     for job in jobs:
         data = gi.jobs.show_job(job['id'], full_details=True)
-        data['job_metrics'] = gi.jobs.get_job_metrics(job['id'])
+        data['job_metrics'] = gi.jobs.get_metrics(job['id'])
         metrics = {
             'run': run,
             'cloud': cloud,
