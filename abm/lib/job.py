@@ -10,36 +10,43 @@ log = logging.getLogger('abm')
 
 
 def do_list(context: Context, args: list):
-    state = ''
-    history_id = None
-    log.debug('Processing args')
-    log_state = False
-    while len(args) > 0:
-        arg = args.pop(0)
-        if arg in ['-s', '--state', 'state']:
-            if len(args) == 0:
-                print("ERROR: specify a state, eg 'ok', 'error'")
-                return
-            state = args.pop(0)
-            log_state = True
-        elif arg in ['-h', '--history']:
-            if len(args) == 0:
-                print("ERROR: history ID was not specified.")
-                return
-            history_id = args.pop(0)
-            log.debug(f"Getting jobs from history {history_id}")
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-s', '--state', help='list jobs in this state', required=False)
+    parser.add_argument('--history', help='show jobs in the given history', required=False)
+    parser.add_argument('-u', '--user', help='show jobs for this user', required=False)
+    argv = parser.parse_args(args)
+
+    # state = ''
+    # history_id = None
+    # log.debug('Processing args')
+    # log_state = False
+    # while len(args) > 0:
+    #     arg = args.pop(0)
+    #     if arg in ['-s', '--state', 'state']:
+    #         if len(args) == 0:
+    #             print("ERROR: specify a state, eg 'ok', 'error'")
+    #             return
+    #         state = args.pop(0)
+    #         log_state = True
+    #     elif arg in ['-h', '--history']:
+    #         if len(args) == 0:
+    #             print("ERROR: history ID was not specified.")
+    #             return
+    #         history_id = args.pop(0)
+    #         log.debug(f"Getting jobs from history {history_id}")
     log.debug('Connecting to the Galaxy server')
     gi = connect(context)
-    if log_state:
-        log.debug(f"Getting jobs with state {state}")
+
+    if argv.state:
+        log.debug(f"Getting jobs with state {argv.state}")
     else:
-        log.debug("Getting job list")
-    if history_id:
-        history_id = find_history(gi, history_id)
+        log.debug("Getting full job list")
+    if argv.history:
+        history_id = find_history(gi, argv.history)
         if history_id is None:
             print("ERROR: No such history")
             return
-    job_list = gi.jobs.get_jobs(state=state, history_id=history_id)
+    job_list = gi.jobs.get_jobs(state=argv.state, history_id=argv.history, user_id=argv.user)
     log.debug(f"Iterating over job list with {len(job_list)} items")
     for job in job_list:
         print(f"{job['id']}\t{job['state']}\t{job['update_time']}\t{job['tool_id']}")
