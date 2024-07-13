@@ -11,7 +11,8 @@ from time import perf_counter
 import benchmark
 import helm
 import yaml
-from common import Context, load_profiles, print_markdown_table, get_str_key, get_float_key
+from common import (Context, get_float_key, get_str_key, load_profiles,
+                    print_markdown_table)
 
 INVOCATIONS_DIR = "invocations"
 METRICS_DIR = "metrics"
@@ -221,7 +222,9 @@ def summarize(context: Context, args: list):
             # cpu = '' if len(row[11]) == 0 else f"{float(row[11])/10**9:4.1f}"
             memory = '' if len(row[13]) == 0 else f"{float(row[13])/GB:4.3f}"
             # memory = float(row[13]) / GB
-            print(f"| {row[0]} | {row[5].split(' ')[0]} |{row[2]} | {row[6]} | {row[7]} | {runtime}  | {memory} |")
+            print(
+                f"| {row[0]} | {row[5].split(' ')[0]} |{row[2]} | {row[6]} | {row[7]} | {runtime}  | {memory} |"
+            )
     else:
         for row in table:
             print(separator.join([str(x) for x in row]))

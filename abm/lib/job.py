@@ -1,8 +1,9 @@
+import argparse
 import datetime
 import json
 import logging
 import time
-import argparse
+
 from .common import Context, connect, find_history, print_json
 
 log = logging.getLogger('abm')
@@ -61,7 +62,7 @@ def wait(context: Context, args: list):
     timeout = params.timeout
     job_id = params.job_id
     gi = connect(context)
-    start_time = time.time() # we only interested in precision to the second
+    start_time = time.time()  # we only interested in precision to the second
     waiting = True
     while waiting:
         job = gi.jobs.show_job(job_id, full_details=False)

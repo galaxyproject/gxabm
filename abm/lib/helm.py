@@ -146,7 +146,8 @@ def wait_until_ready(namespace: str, env: dict):
     for deployment in deployments:
         print(
             run(
-                f"{kubectl} rollout status deployment -n {namespace} {deployment} --watch", env
+                f"{kubectl} rollout status deployment -n {namespace} {deployment} --watch",
+                env,
             )
         )
 

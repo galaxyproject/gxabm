@@ -187,7 +187,9 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
                                     # print(f"Getting dataset for {key} = {item[key]}")
                                     value = _get_dataset_data(gi, item[key])
                                     if value is None:
-                                        print(f"ERROR: Unable to find dataset {item[key]}")
+                                        print(
+                                            f"ERROR: Unable to find dataset {item[key]}"
+                                        )
                                         return
                                     if size in value:
                                         size += value['size']
@@ -231,7 +233,7 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
                     else:
                         raise Exception(f'Invalid input value')
             print(f"Running workflow {wfid} in history {new_history_name}")
-            f = lambda : gi.workflows.invoke_workflow(
+            f = lambda: gi.workflows.invoke_workflow(
                 wfid, inputs=inputs, history_name=new_history_name
             )
             invocation = try_for(f, 3)
@@ -640,4 +642,3 @@ def test(context: Context, args: list):
     print("Calling _get_dataset_data")
     dsdata = _get_dataset_data(gi, dsid)
     pprint(dsdata)
-

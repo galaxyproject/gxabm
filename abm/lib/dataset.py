@@ -7,7 +7,7 @@ from pprint import pprint
 import yaml
 from bioblend.galaxy import dataset_collections
 from common import (Context, _get_dataset_data, _make_dataset_element, connect,
-                    find_history, print_json, find_config, find_dataset)
+                    find_config, find_dataset, find_history, print_json)
 
 
 def do_list(context: Context, argv: list):
@@ -164,10 +164,29 @@ def collection(context: Context, args: list):
 
 def import_from_config(context: Context, args: list):
     parser = argparse.ArgumentParser()
-    parser.add_argument('-c', '--create', help='create a new history for the dataset', required=False, default=None)
-    parser.add_argument('-f', '--file', help='use instead of the datasets.yml', required=False, default=None)
-    parser.add_argument('--history', help='add datasets to the given history', required=False, default=None)
-    parser.add_argument('-n', '--name', help='set the name of the dataset', required=False, default=None)
+    parser.add_argument(
+        '-c',
+        '--create',
+        help='create a new history for the dataset',
+        required=False,
+        default=None,
+    )
+    parser.add_argument(
+        '-f',
+        '--file',
+        help='use instead of the datasets.yml',
+        required=False,
+        default=None,
+    )
+    parser.add_argument(
+        '--history',
+        help='add datasets to the given history',
+        required=False,
+        default=None,
+    )
+    parser.add_argument(
+        '-n', '--name', help='set the name of the dataset', required=False, default=None
+    )
     parser.add_argument('keys', help='the key of the dataset to import', nargs='+')
     gi = None
     history = None

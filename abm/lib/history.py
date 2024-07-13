@@ -8,9 +8,10 @@ from pprint import pprint
 
 import yaml
 from bioblend.galaxy.objects import GalaxyInstance
-from lib.common import (Context, connect, find_history, parse_profile,
-                        print_json, summarize_metrics, print_markdown_table,
-                        get_float_key, get_str_key, print_table_header, try_for, find_config)
+from lib.common import (Context, connect, find_config, find_history,
+                        get_float_key, get_str_key, parse_profile, print_json,
+                        print_markdown_table, print_table_header,
+                        summarize_metrics, try_for)
 
 #
 # History related functions
@@ -18,6 +19,7 @@ from lib.common import (Context, connect, find_history, parse_profile,
 
 # The number of times a failed job will be restarted.
 RESTART_MAX = 3
+
 
 def longest_name(histories: list):
     longest = 0
@@ -195,8 +197,20 @@ def _import(context: Context, args: list):
 
 def himport(context: Context, args: list):
     parser = argparse.ArgumentParser()
-    parser.add_argument('-n', '--no-wait', action='store_true', help='Do not wait for the import to complete', default=False)
-    parser.add_argument('-f', '--file', help='Use the specified histories.yml file', required=False, default=None)
+    parser.add_argument(
+        '-n',
+        '--no-wait',
+        action='store_true',
+        help='Do not wait for the import to complete',
+        default=False,
+    )
+    parser.add_argument(
+        '-f',
+        '--file',
+        help='Use the specified histories.yml file',
+        required=False,
+        default=None,
+    )
     parser.add_argument('identifier', help='The history alias or URL to import')
     argv = parser.parse_args(args)
 
@@ -373,14 +387,16 @@ def wait(context: Context, args: list):
     wait_for(gi, history_id)
 
 
-def kill_all_jobs(gi: GalaxyInstance, job_list:list):
+def kill_all_jobs(gi: GalaxyInstance, job_list: list):
     cancel_states = ['new', 'running', 'paused']
     for job in job_list:
         if job['state'] in cancel_states:
             print(f"Cancelling job {job['tool_id']}")
             gi.jobs.cancel_job(job['id'])
         else:
-            print(f"Job {job['id']} for tool {job['tool_id']} is in state {job['state']}")
+            print(
+                f"Job {job['id']} for tool {job['tool_id']} is in state {job['state']}"
+            )
 
 
 def wait_for(gi: GalaxyInstance, history_id: str):

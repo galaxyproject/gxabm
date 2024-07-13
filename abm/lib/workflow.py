@@ -7,8 +7,9 @@ from pprint import pprint
 
 import requests
 import yaml
-from common import Context, connect, summarize_metrics, print_markdown_table, get_float_key, get_str_key, \
-    print_table_header, find_config
+from common import (Context, connect, find_config, get_float_key, get_str_key,
+                    print_markdown_table, print_table_header,
+                    summarize_metrics)
 from planemo.galaxy.workflows import install_shed_repos
 from planemo.runnable import for_path, for_uri
 

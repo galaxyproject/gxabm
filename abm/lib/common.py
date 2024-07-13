@@ -2,9 +2,8 @@ import json
 import os
 import subprocess
 import sys
-from pathlib import Path
-
 from math import ceil
+from pathlib import Path
 
 import bioblend.galaxy
 import lib
@@ -59,11 +58,17 @@ class Context:
     API_KEY      : a user's API key to make API calls on the Galaxy instance
     KUBECONFIG:  : the kubeconfig file needed to make changes via Helm
     """
+
     def __init__(self, *args):
         if len(args) == 1:
             arg = args[0]
             if type(arg) == str:
-                self.GALAXY_SERVER, self.API_KEY, self.KUBECONFIG, self.MASTER_KEY = parse_profile(arg)
+                (
+                    self.GALAXY_SERVER,
+                    self.API_KEY,
+                    self.KUBECONFIG,
+                    self.MASTER_KEY,
+                ) = parse_profile(arg)
             elif type(arg) == dict:
                 self.GALAXY_SERVER = arg['GALAXY_SERVER']
                 self.API_KEY = arg['API_KEY']
@@ -128,7 +133,9 @@ def _set_active_profile(profile_name: str):
     :param profile_name:
     :return:
     """
-    lib.GALAXY_SERVER, lib.API_KEY, lib.KUBECONFIG, lib.MASTER_KEY = parse_profile(profile_name)
+    lib.GALAXY_SERVER, lib.API_KEY, lib.KUBECONFIG, lib.MASTER_KEY = parse_profile(
+        profile_name
+    )
     return lib.GALAXY_SERVER != None
 
 
@@ -290,7 +297,7 @@ table_header = [
     # "memory.failcnt",
     "memory.limit_in_bytes",
     "memory.peak",
-    #"memory.max_usage_in_bytes",
+    # "memory.max_usage_in_bytes",
     # "memory.memsw.limit_in_bytes",
     # "memory.memsw.max_usage_in_bytes",
     # "memory.oom_control.oom_kill_disable",
@@ -304,6 +311,7 @@ table_header = [
     # "uname"
 ]
 
+
 def print_table_header():
     """
     Prints the table header suitable for inclusion in CSV files.
@@ -314,6 +322,8 @@ def print_table_header():
 
 
 history_name_cache = dict()
+
+
 def get_history_name(gi, hid: str) -> str:
     if hid in history_name_cache:
         return history_name_cache[hid]
@@ -444,6 +454,7 @@ def find_config(name: str) -> str:
 
 def _get_dataset_data(gi, name_or_id):
     print(f"Getting dataset data for {name_or_id}")
+
     def make_result(data):
         return {
             'id': data['id'],
@@ -488,17 +499,20 @@ def _make_dataset_element(name, value):
     # print(f"Making dataset element for {name} = {value}({type(value)})")
     return dataset_collections.HistoryDatasetElement(name=name, id=value)
 
+
 def get_float_key(column: int):
     def get_key(row: list):
         if row[column] == '':
             return -1
         return float(row[column])
+
     return get_key
+
 
 def get_str_key(column: int):
     # print(f"Getting string key for column {column}")
     def get_key(row: list):
         # print(f"Sorting by column {column} key {row[column]}")
         return row[column]
-    return get_key
 
+    return get_key
