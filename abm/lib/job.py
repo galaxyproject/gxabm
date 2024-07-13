@@ -1,14 +1,15 @@
+import argparse
+import datetime
 import json
 import logging
 import time
-from pprint import pprint
 
 from .common import Context, connect, find_history, print_json
 
 log = logging.getLogger('abm')
 
 
-def list(context: Context, args: list):
+def do_list(context: Context, args: list):
     state = ''
     history_id = None
     log.debug('Processing args')
@@ -54,18 +55,27 @@ def show(context: Context, args: list):
 
 
 def wait(context: Context, args: list):
-    if len(args) != 1:
-        print("ERROR: Invalid parameters. Job ID is required")
-        return
+    parser = argparse.ArgumentParser()
+    parser.add_argument('job_id')
+    parser.add_argument('-t', '--timeout', default=-1)
+    params = parser.parse_args(args)
+    timeout = params.timeout
+    job_id = params.job_id
     gi = connect(context)
-    state = "Unknown"
+    start_time = time.time()  # we only interested in precision to the second
     waiting = True
     while waiting:
-        job = gi.jobs.show_job(args[0], full_details=False)
+        job = gi.jobs.show_job(job_id, full_details=False)
+        if job is None or len(job) == 0:
+            print(f"Job {job_id} not found.")
+            return
         state = job["state"]
+        if timeout > 0:
+            if time.time() - start_time > timeout:
+                waiting = False
         if state == "ok" or state == "error":
             waiting = False
-        else:
+        if waiting:
             time.sleep(15)
     print(json.dumps(job, indent=4))
 

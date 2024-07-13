@@ -1,3 +1,4 @@
+import argparse
 import json
 import os
 import sys
@@ -7,12 +8,17 @@ from pprint import pprint
 
 import yaml
 from bioblend.galaxy.objects import GalaxyInstance
-from lib.common import (Context, connect, find_history, parse_profile,
-                        print_json, summarize_metrics)
+from lib.common import (Context, connect, find_config, find_history,
+                        get_float_key, get_str_key, parse_profile, print_json,
+                        print_markdown_table, print_table_header,
+                        summarize_metrics, try_for)
 
 #
 # History related functions
 #
+
+# The number of times a failed job will be restarted.
+RESTART_MAX = 3
 
 
 def longest_name(histories: list):
@@ -190,55 +196,41 @@ def _import(context: Context, args: list):
 
 
 def himport(context: Context, args: list):
-    def error_message(msg='Invalid command'):
-        print(f"ERROR: {msg}")
-        print(f"USAGE: {sys.argv[0]} history import SERVER HISTORY_ID JEHA_ID")
-        print(f"       {sys.argv[0]} history import http://GALAXY_SERVER_URL")
-        print(f"       {sys.argv[0]} history import [dna|rna]")
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        '-n',
+        '--no-wait',
+        action='store_true',
+        help='Do not wait for the import to complete',
+        default=False,
+    )
+    parser.add_argument(
+        '-f',
+        '--file',
+        help='Use the specified histories.yml file',
+        required=False,
+        default=None,
+    )
+    parser.add_argument('identifier', help='The history alias or URL to import')
+    argv = parser.parse_args(args)
 
-    wait = True
-    if '-n' in args:
-        args.remove('-n')
-        wait = False
-    if '--no-wait' in args:
-        args.remove('--no-wait')
-        wait = False
-
-    if len(args) == 1:
-        if 'http' in args[0]:
-            url = args[0]
-        else:
-            datasets = None
-            config = f'{os.path.dirname(os.path.abspath(__file__))}/histories.yml'
-            # First load the histories.yml file that is pacakged with abm
-            if os.path.exists(config):
-                with open(config, 'r') as f:
-                    datasets = yaml.safe_load(f)
-            # Then load the user histories.yml, if any
-            userfile = os.path.join(Path.home(), ".abm", "histories.yml")
-            if os.path.exists(userfile):
-                if datasets is None:
-                    datasets = {}
-                with open(userfile, 'r') as f:
-                    userdata = yaml.safe_load(f)
-                    for key, item in userdata.items():
-                        datasets[key] = item
-            if datasets is None:
-                error_message("No history URLs have been configured.")
-                return
-            if not args[0] in datasets:
-                error_message('Please specify a URL or name of the history to import')
-                return
-            url = datasets[args[0]]
-    elif len(args) == 3:
-        server, key = parse_profile(args[0])
-        if server is None:
-            error_message(f"Invalid server profile name: {args[0]}")
-            return
-        url = f"{server}history/export_archive?id={args[1]}&jeha_id={args[2]}"
+    wait = not argv.no_wait
+    if argv.identifier.startswith('http'):
+        url = argv.identifier
     else:
-        error_message()
-        return
+        if argv.file is not None:
+            config = argv.file
+        else:
+            config = find_config("histories.yml")
+        if config is None:
+            print("ERROR: No histories.yml file found.")
+            return
+        with open(config, 'r') as f:
+            histories = yaml.safe_load(f)
+        if argv.identifier not in histories:
+            print(f"ERROR: No such history {argv.identifier}")
+            return
+        url = histories[argv.identifier]
 
     gi = connect(context)
     print(f"Importing history from {url}")
@@ -339,13 +331,20 @@ def tag(context: Context, args: list):
 
 
 def summarize(context: Context, args: list):
-    if len(args) == 0:
+    parser = argparse.ArgumentParser()
+    parser.add_argument('id_list', nargs='+')
+    parser.add_argument('--markdown', action='store_true')
+    parser.add_argument('-s', '--sort-by', choices=['runtime', 'memory', 'tool'])
+    argv = parser.parse_args(args)
+
+    if len(argv.id_list) == 0:
         print("ERROR: Provide one or more history ID values.")
         return
     gi = connect(context)
     all_jobs = []
-    while len(args) > 0:
-        hid = find_history(gi, args.pop(0))
+    id_list = argv.id_list
+    while len(id_list) > 0:
+        hid = find_history(gi, id_list.pop(0))
         history = gi.histories.show_history(history_id=hid)
         jobs = gi.jobs.get_jobs(history_id=hid)
         for job in jobs:
@@ -353,22 +352,25 @@ def summarize(context: Context, args: list):
             job['history_id'] = hid
             job['history_name'] = history['name']
             job['workflow_id'] = ''
-            # if 'workflow_id' in invocation:
-            #     job['workflow_id'] = invocation['workflow_id']
             all_jobs.append(job)
-        # invocations = gi.invocations.get_invocations(history_id=hid)
-        # for invocation in invocations:
-        #     id = invocation['id']
-        #     #jobs = gi.jobs.get_jobs(history_id=hid, invocation_id=id)
-        #     jobs = gi.jobs.get_jobs(history_id=hid)
-        #     for job in jobs:
-        #         job['invocation_id'] = id
-        #         job['history_id'] = hid
-        #         if 'workflow_id' in invocation:
-        #             job['workflow_id'] = invocation['workflow_id']
-        #         all_jobs.append(job)
-    # summarize_metrics(gi, gi.jobs.get_jobs(history_id=args[0]))
-    summarize_metrics(gi, all_jobs)
+    table = summarize_metrics(gi, all_jobs)
+    if argv.sort_by:
+        reverse = True
+        get_key = None
+        if argv.sort_by == 'runtime':
+            get_key = get_float_key(15)
+        elif argv.sort_by == 'memory':
+            get_key = get_float_key(11)
+        elif argv.sort_by == 'tool':
+            get_key = get_str_key(4)
+            reverse = False
+        table.sort(key=get_key, reverse=reverse)
+    if argv.markdown:
+        print_markdown_table(table)
+    else:
+        print_table_header()
+        for row in table:
+            print(','.join(row))
 
 
 def wait(context: Context, args: list):
@@ -385,15 +387,28 @@ def wait(context: Context, args: list):
     wait_for(gi, history_id)
 
 
+def kill_all_jobs(gi: GalaxyInstance, job_list: list):
+    cancel_states = ['new', 'running', 'paused']
+    for job in job_list:
+        if job['state'] in cancel_states:
+            print(f"Cancelling job {job['tool_id']}")
+            gi.jobs.cancel_job(job['id'])
+        else:
+            print(
+                f"Job {job['id']} for tool {job['tool_id']} is in state {job['state']}"
+            )
+
+
 def wait_for(gi: GalaxyInstance, history_id: str):
     errored = []
     waiting = True
     job_states = JobStates()
+    restart_counts = dict()
     while waiting:
         restart = []
         status_counts = dict()
         terminal = 0
-        job_list = gi.jobs.get_jobs(history_id=history_id)
+        job_list = try_for(lambda: gi.jobs.get_jobs(history_id=history_id))
         for job in job_list:
             job_states.update(job)
             state = job['state']
@@ -409,9 +424,18 @@ def wait_for(gi: GalaxyInstance, history_id: str):
             elif state == 'error':
                 terminal += 1
                 if id not in errored:
-                    restart.append(id)
+                    tool = job['tool_id']
+                    if tool in restart_counts:
+                        restart_counts[tool] += 1
+                    else:
+                        restart_counts[tool] = 1
+                    if restart_counts[tool] < RESTART_MAX:
+                        restart.append(id)
+                    else:
+                        kill_all_jobs(gi, job_list)
+                        waiting = False
                     errored.append(id)
-        if len(restart) > 0:
+        if len(restart) > 0 and waiting:
             for job in restart:
                 print(f"Restaring job {job}")
                 try:
@@ -427,9 +451,6 @@ def wait_for(gi: GalaxyInstance, history_id: str):
             waiting = False
         if waiting:
             time.sleep(30)
-            # elif state == 'paused':
-            #     paused += 1
-            # print(f"{job['id']}\t{job['state']}\t{job['update_time']}\t{job['tool_id']}")
 
 
 class JobStates:

@@ -26,18 +26,18 @@
   menu:
     - name: ['upload', 'up']
       handler: workflow.upload
-      params: PATH
+      params: PATH [-n|--no-tools]
       help: 'upload a workflow file to the server'
     - name: ['import', 'imp']
       handler: workflow.import_from_config
-      params: NAME
+      params: NAME [-n|--no-tools]
       help: 'import a workflow defined in ~/.abm/workflows.yml'
     - name: ['download', 'dl']
       handler: workflow.download
       help: 'download a workflow'
       params: ID PATH
     - name: ['list', 'ls']
-      handler: workflow.list
+      handler: workflow.do_list
       help: 'list workflows available on the serer'
     - name: [show]
       handler: workflow.show
@@ -69,8 +69,8 @@
       handler: workflow.inputs
     - name: [summary, summarize]
       handler: workflow.summarize
-      help: generate a CSV with job metrics for all workflow runs
-      params: ID [ID ...]
+      help: generate a CSV or markdown table with job metrics for all workflow runs
+      params: "ID [ID ...] [--markdown] [-s|--sort-by (tool,runtime,memory)"
     - name: ['test']
       handler: workflow.test
       help: run some test code
@@ -81,7 +81,7 @@
   menu:
     - name: ['upload', 'up']
       handler: dataset.upload
-      params: PATH [-id HISTORY_ID | -c "History name"]
+      params: PATH [--history "History name_or_id" | -c|--create "History name"] [-m|--name "Dataset name"]
       help: upload a dataset to the server from the specified URL
     - name: ['download', 'dl']
       handler: dataset.download
@@ -89,10 +89,10 @@
       help: download a dataset from the server
     - name: ['import', 'imp']
       handler: dataset.import_from_config
-      params: KEY [--hs|--hist|--history HISTORY_ID | -c|--create "History name"]
-      help: imports a dataset to the server from a URL specified in the datasets.yml config file.
+      params: '[--hs|--hist|--history HISTORY_ID | -c|--create "History name"] [-m|--name "Dataset name"] KEY [KEY...]'
+      help: imports one or more datasets to the server from a URL specified in the datasets.yml config file.
     - name: ['list', 'ls']
-      handler: dataset.list
+      handler: dataset.do_list
       help: lists all the datasets on the server
     - name: ['find']
       handler: dataset.find
@@ -158,8 +158,8 @@
       help: show detailed information about a history
     - name: [summarize, summary, table]
       handler: history.summarize
-      params: "ID [ID...]"
-      help: Generate a CSV table with runtime metrics for all jobs in the history.
+      params: "ID [ID...] [--markdown] [-s|--sort-by (tool,runtime,memory)]"
+      help: Generate a CSV or markdown table with runtime metrics for all jobs in the history.
     - name: [publish, pub]
       handler: history.publish
       help: publish the given history
@@ -191,7 +191,7 @@
   menu:
     - name: [ list, ls ]
       help: list all jobs, or jobs in a particular state. Can filter by a history.
-      handler: job.list
+      handler: job.do_list
       params: "[-s|--state ok|running|error|waiting] [-h|--history historyID]"
     - name: [ show ]
       help: show detailed information about a job
@@ -208,7 +208,7 @@
     - name: [wait]
       help: Wait for a job to finish running
       handler: job.wait
-      params: ID
+      params: "ID [-T|--timeout SECONDS]"
     - name: [ metrics, stats ]
       help: display runtime metrics for the job, or a list of jobs contained in a history
       handler: job.metrics
@@ -222,7 +222,7 @@
   menu:
     - name: [list, ls]
       help: list all users on the Galaxy instance
-      handler: users.list
+      handler: users.do_list
     - name: [api_key, apikey, key]
       help: obtain the API key for the specified user
       handler: users.api_key
@@ -244,13 +244,13 @@
   standalone: true
   menu:
     - name: [run]
-      help: run all benchmarks in an experiment
+      help: run all benchmarks in an experiment. Use --run-number to specify staring counter.
       handler: experiment.run
-      params: PATH
+      params: "PATH [-r|--run-number N]"
     - name: [summarize, summary]
-      help: summarize metrics to a CSV or TSV file.
+      help: summarize metrics to a CSV, TSV or markdown file.
       handler: experiment.summarize
-      params: "[-c, --csv, -t, --tsv]"
+      params: "[-c, --csv, -t, --tsv, --markdown] [-s|--sort-by (tool,runtime,memory)]"
     - name: [test]
       help: playground code
       handler: experiment.test
@@ -262,9 +262,13 @@
       help: list all invocations.
       handler: invocation.doList
       params: "[-w|--workflow ID] [-h|--history ID]"
-    - name: [summarize]
-      help: generate a CSV of job metrics for an invocation
+    - name: [show]
+      help: display information about the workflow invocation
       params: ID
+      handler: invocation.show
+    - name: [summarize]
+      help: generate a CSV or markdown table of job metrics for an invocation
+      params: "ID [--markdown] [-s|--sort-by (tool, runtime, memory)]"
       handler: invocation.summarize
 - name: [helm]
   help: execute a helm command
@@ -293,13 +297,13 @@
     - name: [url]
       help: derive the URL to access this Galaxy instance
       handler: kubectl.url
-- name: [config, conf, cfg]
+- name: [config, configuration, conf, cfg]
   help: manage configuration profiles
   standalone: true
   menu:
     - name: [list, ls]
       help: list configured servers
-      handler: config.list
+      handler: config.do_list
     - name: [show, sh]
       help: disply URL, API key, and kube config for a specific cloud.
       handler: config.show
@@ -337,7 +341,7 @@
   standalone: true
   menu:
     - name: [list, ls]
-      handler: cloudlaunch.list
+      handler: cloudlaunch.do_list
       help: list deployments on all cloud providers
     - name: [create, launch, new]
       handler: cloudlaunch.create
@@ -352,7 +356,7 @@
   menu:
     - name: [list, ls]
       help: list all libraries on the server
-      handler: library.list
+      handler: library.do_list
     - name: [show]
       help: show detailed information about a library
       handler: library.show
@@ -369,7 +373,7 @@
   help: manage folders in data libraries
   menu:
     - name: [list, ls]
-      handler: folder.list
+      handler: folder.do_list
       help: list the folders in a data library
       params: LIBRARY_ID
     - name: [create, new]

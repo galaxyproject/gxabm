@@ -1,20 +1,22 @@
+import argparse
 import json
 import logging
 import os
 from pathlib import Path
 from pprint import pprint
 
-import planemo
 import requests
 import yaml
-from common import Context, connect, summarize_metrics
+from common import (Context, connect, find_config, get_float_key, get_str_key,
+                    print_markdown_table, print_table_header,
+                    summarize_metrics)
 from planemo.galaxy.workflows import install_shed_repos
 from planemo.runnable import for_path, for_uri
 
 log = logging.getLogger('abm')
 
 
-def list(context: Context, args: list):
+def do_list(context: Context, args: list):
     gi = connect(context)
     workflows = gi.workflows.get_workflows(published=True)
     if len(workflows) == 0:
@@ -34,30 +36,48 @@ def delete(context: Context, args: list):
 
 
 def upload(context: Context, args: list):
-    if len(args) == 0:
-        print('ERROR: no workflow file given')
+    path = None
+    install = True
+    for arg in args:
+        if arg in ['-n', '--no-tools']:
+            print("Skipping tools")
+            install = False
+        else:
+            path = arg
+    if path is None:
+        print("ERROR: no workflow given")
         return
-    path = args[0]
+
     if path.startswith('http'):
         import_from_url(context, args)
         return
     if not os.path.exists(path):
         print(f'ERROR: file not found: {path}')
         return
+    print("Uploading workflow")
     gi = connect(context)
     print("Importing the workflow")
     pprint(gi.workflows.import_workflow_from_local_path(path, publish=True))
     runnable = for_path(path)
-    print("Installing tools")
-    result = install_shed_repos(runnable, gi, False)
-    pprint(result)
+    if install:
+        print("Installing tools")
+        result = install_shed_repos(runnable, gi, False)
+        pprint(result)
 
 
 def import_from_url(context: Context, args: list):
-    if len(args) == 0:
-        print("ERROR: no workflow URL given")
+    print("Importing workflow from URL")
+    url = None
+    install = True
+    for arg in args:
+        if arg in ['-n', '--no-tools']:
+            print("Skipping tools")
+            install = False
+        else:
+            url = arg
+    if url is None:
+        print("ERROR: no URL given")
         return
-    url = args[0]
 
     # There is a bug in ephemeris (for lack of a better term) that assumes all
     # Runnable objects can be found on the local file system
@@ -81,12 +101,6 @@ def import_from_url(context: Context, args: list):
         input_text = response.text
         with open(cached_file, 'w') as f:
             f.write(input_text)
-
-    # response = requests.get(url)
-    # if (response.status_code != 200):
-    #     print(f"ERROR: There was a problem downloading the workflow: {response.status_code}")
-    #     print(response.reason)
-    #     return
     try:
         workflow = json.loads(input_text)
     except Exception as e:
@@ -98,30 +112,45 @@ def import_from_url(context: Context, args: list):
     result = gi.workflows.import_workflow_dict(workflow, publish=True)
     print(json.dumps(result, indent=4))
     runnable = for_path(cached_file)
-    # runnable = for_uri(url)
-    print("Installing tools")
-    result = install_shed_repos(runnable, gi, False, install_tool_dependencies=True)
-    pprint(result)
+    if install:
+        print("Installing tools")
+        result = install_shed_repos(runnable, gi, False, install_tool_dependencies=True)
+        pprint(result)
 
 
 def import_from_config(context: Context, args: list):
-    if len(args) == 0:
+    key = None
+    install = True
+    config = None
+    for arg in args:
+        if arg in ['-n', '--no-tools']:
+            print("Skipping tools")
+            install = False
+        elif arg in ['-f', '--file']:
+            config = arg
+        else:
+            key = arg
+    if key is None:
         print("ERROR: no workflow ID given")
         return
-    key = args[0]
-    userfile = os.path.join(Path.home(), ".abm", "workflows.yml")
-    if not os.path.exists(userfile):
+
+    if config is None:
+        config = find_config("workflows.yml")
+    if config is None:
         print("ERROR: this instance has not been configured to import workflows.")
-        print(f"Please configure {userfile} to enable workflow imports")
+        print(f"Please configure a workflows.yml file to enable imports")
         return
-    with open(userfile, 'r') as f:
+    with open(config, 'r') as f:
         workflows = yaml.safe_load(f)
     if not key in workflows:
         print(f"ERROR: no such workflow: {key}")
         return
 
     url = workflows[key]
-    import_from_url(context, [url])
+    argv = [url]
+    if not install:
+        argv.append('-n')
+    import_from_url(context, argv)
 
 
 def download(context: Context, args: list):
@@ -164,30 +193,21 @@ def invocation(context: Context, args: list):
         print("ERROR: Invalid paramaeters. A workflow ID invocation ID are required")
         return
     workflow_id = None
-    invocation_id = None
     while len(args) > 0:
         arg = args.pop(0)
         if arg in ['-w', '--work', '--workflow']:
             print("Setting workflow id")
             workflow_id = args.pop(0)
-        # elif arg in ['-i', '--invoke', '--invocation']:
-        #     invocation_id = args.pop(0)
-        #     print("Setting invocation id")
         else:
             print(f'Invalid parameter: "{arg}')
             return
     if workflow_id is None:
         print("ERROR: No workflow ID provided")
         return
-    # if invocation_id is None:
-    #     print("ERROR: No invocation ID provided")
-    #     return
     gi = connect(context)
-    # result = gi.workflows.show_invocation(workflow_id, invocation_id)
     invocations = gi.invocations.get_invocations(
         workflow_id=workflow_id, view='element', step_details=True
     )
-    # print(json.dumps(result, indent=4))
     print('ID\tState\tWorkflow\tHistory')
     for invocation in invocations:
         id = invocation['id']
@@ -236,11 +256,13 @@ def rename(context: Context, args: list):
 
 
 def summarize(context: Context, args: list):
-    if len(args) == 0:
-        print("ERROR: Provide one or more workflow ID values.")
-        return
+    parser = argparse.ArgumentParser()
+    parser.add_argument('id', nargs=1)
+    parser.add_argument('--markdown', action='store_true')
+    parser.add_argument('-s', '--sort-by', choices=['runtime', 'memory', 'tool'])
+    argv = parser.parse_args(args)
     gi = connect(context)
-    wid = args[0]
+    wid = argv.id
     all_jobs = []
     invocations = gi.invocations.get_invocations(workflow_id=wid)
     for invocation in invocations:
@@ -250,4 +272,21 @@ def summarize(context: Context, args: list):
             job['invocation_id'] = id
             job['workflow_id'] = wid
             all_jobs.append(job)
-    summarize_metrics(gi, all_jobs)
+    table = summarize_metrics(gi, all_jobs)
+    if argv.sort_by:
+        reverse = True
+        get_key = None
+        if argv.sort_by == 'runtime':
+            get_key = get_float_key(15)
+        elif argv.sort_by == 'memory':
+            get_key = get_float_key(11)
+        elif argv.sort_by == 'tool':
+            get_key = get_str_key(4)
+            reverse = False
+        table.sort(key=get_key, reverse=reverse)
+    if argv.markdown:
+        print_markdown_table(table)
+    else:
+        print_table_header()
+        for row in table:
+            print(','.join(row))
