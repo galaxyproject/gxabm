@@ -118,6 +118,7 @@ def upload(context: Context, args: list):
         return
     if gi is None:
         gi = connect(context)
+    history = find_history(gi, history)
     if name:
         _import_from_url(gi, history, url, file_name=name)
     else:

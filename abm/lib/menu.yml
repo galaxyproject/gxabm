@@ -81,7 +81,7 @@
   menu:
     - name: ['upload', 'up']
       handler: dataset.upload
-      params: PATH [-id HISTORY_ID | -c "History name"]
+      params: PATH [--history "History name_or_id" | -c|--create "History name"] [-m|--name "Dataset name"]
       help: upload a dataset to the server from the specified URL
     - name: ['download', 'dl']
       handler: dataset.download
@@ -89,7 +89,7 @@
       help: download a dataset from the server
     - name: ['import', 'imp']
       handler: dataset.import_from_config
-      params: '[--hs|--hist|--history HISTORY_ID | -c|--create "History name"] KEY [KEY...]'
+      params: '[--hs|--hist|--history HISTORY_ID | -c|--create "History name"] [-m|--name "Dataset name"] KEY [KEY...]'
       help: imports one or more datasets to the server from a URL specified in the datasets.yml config file.
     - name: ['list', 'ls']
       handler: dataset.do_list
