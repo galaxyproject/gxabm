@@ -11,7 +11,7 @@ from bioblend.galaxy import dataset_collections
 from ruamel.yaml import YAML
 
 # Where we will look for our configuration file.
-PROFILE_SEARCH_PATH = ['~/.abm/profile.yml', '.abm-profile.yml']
+PROFILE_SEARCH_PATH = ['.abm/profile.yml', '~/.abm/profile.yml', '.abm-profile.yml']
 
 # Deprecated. Do not use.
 datasets = {
