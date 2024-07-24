@@ -137,7 +137,7 @@ def import_from_config(context: Context, args: list):
     if key.startswith('http'):
         import_from_url(context, args)
         return
-    
+
     if config is None:
         config = find_config("workflows.yml")
     if config is None:
