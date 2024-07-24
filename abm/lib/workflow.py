@@ -134,6 +134,10 @@ def import_from_config(context: Context, args: list):
         print("ERROR: no workflow ID given")
         return
 
+    if key.startswith('http'):
+        import_from_url(context, args)
+        return
+
     if config is None:
         config = find_config("workflows.yml")
     if config is None:

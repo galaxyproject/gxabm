@@ -236,7 +236,7 @@ accept_metrics = [
     'runtime_seconds',
     'cpuacct.usage',
     'memory.limit_in_bytes',
-    'memory.peak'
+    'memory.peak',
     #'memory.max_usage_in_bytes',
 ]  # ,'memory.soft_limit_in_bytes']
 
