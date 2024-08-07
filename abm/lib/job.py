@@ -146,6 +146,8 @@ def cancel(context: Context, args: list):
             if history is None:
                 print("ERROR: No such history")
                 return
+        else:
+            jobs.append(arg)
     if state or history:
         if len(jobs) > 0:
             print(
