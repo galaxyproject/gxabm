@@ -76,9 +76,13 @@ def print_main_help(menu_data):
     print(f"        abm COMMAND [SUBCOMMAND] [OPTIONS]")
     print()
     head("    COMMANDS")
-    for menu_item in menu_data:
+    # for menu_item in menu_data:
+    #     print(f"        {command_list(menu_item['name'])}")
+    #     print(f"            {menu_item['help']}")
+    for menu_item in sorted(menu_data, key=lambda item: item['name']):
         print(f"        {command_list(menu_item['name'])}")
         print(f"            {menu_item['help']}")
+
     print(f"        {command_list(['version', '-v', '--version'])}")
     print("            print the program version and exit")
     print(f"        {command_list(help_args)}")
@@ -113,7 +117,7 @@ def print_help(menu_data, command):
     head("    DESCRIPTION")
     print(f"        {submenu['help']}\n")
     head("    SUBCOMMANDS")
-    for menu_item in submenu['menu']:
+    for menu_item in sorted(submenu['menu'], key=lambda item: item['name']):
         print(
             f"        {'|'.join(bold(x) for x in menu_item['name'])} {menu_item['params'] if 'params' in menu_item else ''}"
         )
