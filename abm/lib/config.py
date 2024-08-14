@@ -2,8 +2,16 @@ import os
 from pathlib import Path
 
 import yaml
-from common import (Context, get_yaml_parser, load_profiles, print_json,
-                    print_yaml, save_profiles)
+from common import (
+    Context,
+    find_config,
+    get_yaml_parser,
+    load_profiles,
+    print_json,
+    print_yaml,
+    save_config,
+    save_profiles,
+)
 
 
 def do_list(context: Context, args: list):
@@ -22,7 +30,7 @@ def create(context: Context, args: list):
     if profile_name in profiles:
         print("ERROR: a cloud configuration with that name already exists.")
         return
-    profile = {'url': "", 'key': '', 'kube': args[1]}
+    profile = {"url": "", "key": "", "kube": args[1]}
     profiles[profile_name] = profile
     save_profiles(profiles)
     print_json(profile)
@@ -53,7 +61,7 @@ def key(context: Context, args: list):
         print(f"ERROR: Unknown cloud {profile_name}")
         return
     profile = profiles[profile_name]
-    profile['key'] = key
+    profile["key"] = key
     save_profiles(profiles)
     print_json(profile)
 
@@ -69,7 +77,7 @@ def url(context: Context, args: list):
         print(f"ERROR: Unknown cloud {profile_name}")
         return
     profile = profiles[profile_name]
-    profile['url'] = url
+    profile["url"] = url
     save_profiles(profiles)
     print_json(profile)
 
@@ -86,87 +94,136 @@ def show(context: Context, args: list):
 
 
 def workflows(context: Context, args: list):
-    userfile = os.path.join(Path.home(), ".abm", "workflows.yml")
-    if len(args) == 0 or args[0] in ['list', 'ls']:
-        workflows = _load_config(userfile)
-        if workflows is None:
-            return
+    # userfile = os.path.join(Path.home(), ".abm", "workflows.yml")
+    userfile = find_config("workflows.yml")
+    if userfile is None:
+        print("ERROR: this instance has not been configured to import workflows.")
+        return
+    workflows = _load_config(userfile)
+    if workflows is None:
+        return
+    save = False
+    if len(args) == 0 or args[0] in ["list", "ls"]:
         print(f"Workflows defined in {userfile}")
         for key, url in workflows.items():
             print(f"{key:10} {url}")
-    elif args[0] in ['delete', 'del', 'rm']:
-        print(
-            f"Deleting workflows is not supported at this time. Please edit {userfile} directly."
-        )
-    elif args[0] in ['add', 'new']:
-        print(
-            f"Adding workflows is not supported at this time. Please edit {userfile} directly."
-        )
+    elif args[0] in ["delete", "del", "rm"]:
+        if len(args) != 2:
+            print("USAGE: abm config workflows delete <workflow>")
+            return
+        id = args[1]
+        if id not in workflows:
+            print(f"ERROR: No such workflow {id}")
+            return
+        url = workflows[id]
+        del workflows[id]
+        print(f"Removed workflow {id} -> {url}.")
+        save = True
+    elif args[0] in ["add", "new"]:
+        if len(args) != 3:
+            print("USAGE: abm config workflows add <workflow> <url>")
+            return
+        id = args[1]
+        if id in workflows:
+            print(f"ERROR: Workflow {id} already exists.")
+            return
+        url = args[2]
+        workflows[id] = url
+        print(f"Added workflow {id} -> {url}.")
+        save = True
     else:
         print(f"ERROR: Unrecognized command {args[0]}")
+    if save:
+        save_config(userfile, workflows)
 
 
 def datasets(context: Context, args: list):
-    userfile = os.path.join(Path.home(), ".abm", "datasets.yml")
-    if len(args) == 0 or args[0] in ['list', 'ls']:
-        datasets = _load_config(userfile)
-        if datasets is None:
-            return
+    # userfile = os.path.join(Path.home(), ".abm", "datasets.yml")
+    userfile = find_config("datasets.yml")
+    if userfile is None:
+        print("ERROR: this instance has not been configured to import datasets.")
+        return
+    datasets = _load_config(userfile)
+    if datasets is None:
+        return
+    save = False
+    if len(args) == 0 or args[0] in ["list", "ls"]:
         print(f"Datasets defined in {userfile}")
         for key, url in datasets.items():
             print(f"{key:10} {url}")
-    elif args[0] in ['delete', 'del', 'rm']:
-        print(
-            f"Deleting datasets is not supported at this time. Please edit {userfile} directly."
-        )
-    elif args[0] in ['add', 'new']:
-        print(
-            f"Adding datasets is not supported at this time. Please edit {userfile} directly."
-        )
+    elif args[0] in ["delete", "del", "rm"]:
+        id = args[1]
+        if id not in datasets:
+            print(f"ERROR: No such dataset {id}")
+            return
+        url = datasets[id]
+        del datasets[id]
+        print(f"Removed dataset {id} -> {url}.")
+        save = True
+    elif args[0] in ["add", "new"]:
+        if len(args) != 3:
+            print("USAGE: abm config datasets add <dataset> <url>")
+            return
+        id = args[1]
+        if id in datasets:
+            print(f"ERROR: Dataset {id} already exists.")
+            return
+        url = args[2]
+        datasets[id] = url
+        print(f"Added dataset {id} -> {url}.")
+        save = True
     else:
         print(f"ERROR: Unrecognized command {args[0]}")
+    if save:
+        save_config(userfile, datasets)
 
 
 def histories(context: Context, args: list):
-    userfile = os.path.join(Path.home(), ".abm", "histories.yml")
-    if len(args) == 0 or args[0] in ['list', 'ls']:
-        histories = _load_config(userfile)
-        if histories is None:
-            return
+    userfile = find_config("histories.yml")
+    if userfile is None:
+        print("ERROR: this instance has not been configured to import histories.")
+        return
+    histories = _load_config(userfile)
+    if histories is None:
+        return
+    save = False
+    if len(args) == 0 or args[0] in ["list", "ls"]:
         print(f"Datasets defined in {userfile}")
         for key, url in histories.items():
             print(f"{key:10} {url}")
-    elif args[0] in ['delete', 'del', 'rm']:
-        print(
-            f"Deleting history entries is not supported at this time. Please edit {userfile} directly."
-        )
-    elif args[0] in ['add', 'new']:
-        print(
-            f"Adding dataset entries is not supported at this time. Please edit {userfile} directly."
-        )
+    elif args[0] in ["delete", "del", "rm"]:
+        if len(args) != 2:
+            print("USAGE: abm config histories delete <history>")
+            return
+        id = args[1]
+        if id not in histories:
+            print(f"ERROR: No such history {id}")
+            return
+        url = histories[id]
+        del histories[id]
+        save = True
+        print(f"Removed history {id} -> {url}.")
+    elif args[0] in ["add", "new"]:
+        if len(args) != 3:
+            print("USAGE: abm config histories add <history> <url>")
+            return
+        id = args[1]
+        if id in histories:
+            print(f"ERROR: History {id} already exists.")
+            return
+        url = args[2]
+        histories[id] = url
+        print(f"Added history {id} -> {url}.")
+        save = True
     else:
         print(f"ERROR: Unrecognized command {args[0]}")
-
-
-# def _load_dataset_config(configfile):
-#     if not os.path.exists(configfile):
-#         print("ERROR: this instance has not been configured to import datasets.")
-#         print(f"Please configure {configfile} to enable dataset imports.")
-#         return None
-#     return _load_config(configfile)
-
-
-# def _load_workflow_config(userfile):
-#     if not os.path.exists(userfile):
-#         print("ERROR: this instance has not been configured to import workflows.")
-#         print(f"Please configure {userfile} to enable workflow imports.")
-#         return None
-#     return _load_config(userfile)
+    if save:
+        save_config(userfile, histories)
 
 
 def _load_config(filepath):
     if not os.path.exists(filepath):
         print(f"ERROR: configuration file not found: {filepath}")
         return None
-    with open(filepath, 'r') as f:
+    with open(filepath, "r") as f:
         return yaml.safe_load(f)
