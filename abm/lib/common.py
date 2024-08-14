@@ -189,6 +189,19 @@ def save_profiles(profiles: dict):
             return
 
 
+def save_config(config: dict, path: str):
+    """
+    Write a configuration file.
+
+    :param config: the configuration to be saved
+    :param path: the path to the file to be written
+    :return: None
+    """
+    yaml = get_yaml_parser()
+    with open(path, 'w') as f:
+        yaml.dump(config, f)
+
+
 def parse_profile(profile_name: str):
     '''
     Parse the profile containing Galaxy URLs and API keys.
@@ -440,6 +453,7 @@ def find_dataset(gi, history_id, name_or_id):
     #     print("No datasets found (len == 0)")
     #     return None
     # return datasets[0]['id']
+
 
 
 def find_config(name: str) -> str:
