@@ -189,7 +189,7 @@ def save_profiles(profiles: dict):
             return
 
 
-def save_config(config: dict, path: str):
+def save_config(path: str, config: dict):
     """
     Write a configuration file.
 
