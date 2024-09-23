@@ -119,11 +119,19 @@ def upload(context: Context, args: list):
     if gi is None:
         gi = connect(context)
     history = find_history(gi, history)
-    if name:
-        _import_from_url(gi, history, url, file_name=name)
+    if url.startswith('http'):
+        if name:
+            _import_from_url(gi, history, url, file_name=name)
+        else:
+            _import_from_url(gi, history, url)
     else:
-        _import_from_url(gi, history, url)
-
+        if not Path(url).exists():
+            print(f"ERROR: file {url} not found")
+            return
+        if not name:
+            name = Path(url).name
+        result = gi.tools.upload_file(url, history, file_name=name)
+        print(result)
 
 def collection(context: Context, args: list):
     type = 'list:paired'
@@ -235,6 +243,7 @@ def import_from_config(context: Context, args: list):
 
 def _import_from_url(gi, history, url, **kwargs):
     response = gi.tools.put_url(url, history, **kwargs)
+    gi.histories.update_history(history, {'annotation': f"Imported {url}"})
     print(json.dumps(response, indent=4))
 
 
