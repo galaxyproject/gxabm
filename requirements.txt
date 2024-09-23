@@ -2,3 +2,4 @@ bioblend
 pyyaml
 planemo
 cloudlaunch-cli
+urllib3<2.0
