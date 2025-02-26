@@ -76,7 +76,7 @@ def usage(context: Context, args: list):
         return
 
     # TODO the master API key needs to be parameterized or specified in a config file.
-    context.API_KEY = "galaxypassword"
+    context.API_KEY = context.MASTER_KEY
     gi = connect(context)
     id = _get_user_id(gi, args[0])
     if id is None:
