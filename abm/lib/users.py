@@ -57,16 +57,17 @@ def create(context: Context, args: list):
 
 
 def show(context: Context, args: list):
-    if len(args) == 0:
-        print("ERROR: no user email given")
-        return
+    # if len(args) == 0:
+    #     print("ERROR: no user email given")
+    #     return
 
     gi = connect(context, use_master_key=True)
-    id = _get_user_id(gi, args[0])
-    if id is None:
-        return
-    result = gi.users.show_user(id)
-    print(json.dumps(result, indent=4))
+    print(json.dumps(gi.users.get_current_user()), indent=4)
+    # id = _get_user_id(gi, args[0])
+    # if id is None:
+    #     return
+    # result = gi.users.show_user(id)
+    # print(json.dumps(result, indent=4))
 
 
 def usage(context: Context, args: list):
