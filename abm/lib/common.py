@@ -225,11 +225,12 @@ def parse_profile(profile_name: str):
         return nones
     profile = profiles[profile_name]
     kube = None
-    master = 'galaxypassword'
     if 'kube' in profile:
         kube = os.path.expanduser(profile['kube'])
     if 'master' in profile:
         master = profile['master']
+    elif 'key' in profile:
+        master = profile['key']
     return (profile['url'], profile['key'], kube, master)
 
 
