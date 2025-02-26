@@ -136,6 +136,9 @@ def summarize(context: Context, args: list):
     parser.add_argument('-t', '--tsv', action='store_true')
     parser.add_argument('-m', '--model', action='store_true')
     parser.add_argument('--markdown', action='store_true')
+    parser.add_argument('--v1', action='store_true', help='Use cgroup metrics v1')
+    parser.add_argument('--v2', action='store_true', help='Use cgroup metrics v2')
+
     parser.add_argument('-s', '--sort-by', choices=['runtime', 'memory', 'tool'])
     argv = parser.parse_args(args)
 
@@ -174,6 +177,12 @@ def summarize(context: Context, args: list):
         print("|---|---|---|---|---|---:|---:|")
     else:
         print(header_row)
+
+    global accept_metrics
+    if argv.v1:
+        accept_metrics = accept_metrics_v1
+    else:
+        accept_metrics = accept_metrics_v2
 
     table = list()
     GB = float(1073741824)
@@ -218,9 +227,16 @@ def summarize(context: Context, args: list):
 
     if markdown:
         for row in table:
+            # i = 0
+            # for e in row:
+            #     print(f" {i:02}: {e}")
+            #     i += 1
             runtime = '' if len(row[10]) == 0 else f"{float(row[10]):4.1f}"
             # cpu = '' if len(row[11]) == 0 else f"{float(row[11])/10**9:4.1f}"
-            memory = '' if len(row[13]) == 0 else f"{float(row[13])/GB:4.3f}"
+            memory_cell = 13
+            # memory_cell = 11
+            memory = '' if len(row[memory_cell]) == 0 else f"{float(row[memory_cell])/GB:4.3f}"
+            # memory = '' if len(row[memory_cell]) == 0 else f"{float(row[memory_cell])}"
             # memory = float(row[13]) / GB
             print(
                 f"| {row[0]} | {row[5].split(' ')[0]} |{row[2]} | {row[6]} | {row[7]} | {runtime}  | {memory} |"
@@ -230,16 +246,25 @@ def summarize(context: Context, args: list):
             print(separator.join([str(x) for x in row]))
 
 
-accept_metrics = [
+accept_metrics_v1 = [
     'galaxy_slots',
     'galaxy_memory_mb',
     'runtime_seconds',
     'cpuacct.usage',
     'memory.limit_in_bytes',
-    'memory.peak',
-    #'memory.max_usage_in_bytes',
+    'memory.max_usage_in_bytes',
 ]  # ,'memory.soft_limit_in_bytes']
 
+accept_metrics_v2 = [
+    'galaxy_slots',
+    'galaxy_memory_mb',
+    'runtime_seconds',
+    'cpuacct.usage', # Shouldn't this be cpu.stat.usage_usec?
+    'memory.limit_in_bytes',
+    'memory.peak',
+]  # ,'memory.soft_limit_in_bytes']
+
+accept_metrics = accept_metrics_v2
 
 def make_table_row(data: dict):
     row = [
@@ -267,12 +292,17 @@ def make_model_row(data: dict):
     row.append(job_metrics.get('processor_count', 0))
     row.append(job_metrics.get('galaxy_slots', 0))
     row.append(job_metrics.get('runtime_seconds', 0))
-    if len(data['ref_data_size']) == 0:
+    if 'ref_data_size' not in data:
+        row.append(0)
+    elif len(data['ref_data_size']) == 0:
         row.append('0')
     else:
         row.append(data['ref_data_size'][0])
-    for size in data['input_data_size']:
-        row.append(size)
+    if 'input_data_size' not in data:
+        row.append(0)
+    else:
+        for size in data['input_data_size']:
+            row.append(size)
     return row
 
 
