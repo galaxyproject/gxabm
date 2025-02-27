@@ -28,4 +28,4 @@ deploy:
 	twine upload -r pypi dist/*
 
 release:
-	./release.sh
+	bin/release.sh
