@@ -20,14 +20,13 @@ $(hi DESCRIPTION)
     Bump the version in abm/VERSION
 
 $(hi SYNOPSIS)
-    $0 [major|minor|patch|dev|next|help]
+    $0 [major|minor|patch|dev|help]
 
 $(hi OPTIONS)
-    $(hi major)    Bump the major version.
-    $(hi minor)    Bump the minor version.
-    $(hi patch)    Bump the patch version.
+    $(hi major)    Bump to the major dev version.
+    $(hi minor)    Bump to the minor dev version.
+    $(hi patch)    Bump to the patch dev version.
     $(hi dev)      Bump the development version.
-    $(hi next)     Bump to the next dev version. Assumes the current version is a release.
     $(hi release)  Bump to the next release version by stipping the dev portion.
     $(hi help)     Show this help message.
 
@@ -41,19 +40,16 @@ fi
 
 case $1 in
   major)
-    version=$(awk -F. '{print $1+1 ".0.0"}' abm/VERSION)
+    version=$(awk -F. '{print $1+1 ".0.0"}-dev.1' abm/VERSION)
     ;;
   minor)
-    version=$(awk -F. '{print $1 "." $2+1 ".0"}' abm/VERSION)
+    version=$(awk -F. '{print $1 "." $2+1 ".0"}-dev.1' abm/VERSION)
     ;;
   patch)
-    version=$(awk -F. '{print $1 "." $2 "." $3+1}' abm/VERSION)
+    version=$(awk -F. '{print $1 "." $2 "." $3+1}-dev.1' abm/VERSION)
     ;;
   dev)
     version=$(awk -F. '{print $1 "." $2 "." $3 "." $4+1}' abm/VERSION)
-    ;;
-  next)
-    version=$(awk -F. '{print $1 "." $2+1 ".0-dev.1"}' abm/VERSION)
     ;;
   release)
     version=$(awk -F- '{print $1}' abm/VERSION)
