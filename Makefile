@@ -7,7 +7,7 @@ help:
 	@echo "    format      - runs Black and isort"
 	@echo "    test-deploy - deploys to test.pypi.org"
 	@echo "    deploy      - deploys to pypi.org"
-	@echo "    release     - creates a GitHub release package"
+	@echo "    tag         - creates a GitHub tag for the current commit"
 	@echo
 	
 dist:
@@ -27,5 +27,5 @@ test-deploy:
 deploy:
 	twine upload -r pypi dist/*
 
-release:
-	bin/release.sh
+tag:
+	bin/tag.sh
