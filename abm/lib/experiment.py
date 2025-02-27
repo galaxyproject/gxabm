@@ -235,7 +235,11 @@ def summarize(context: Context, args: list):
             # cpu = '' if len(row[11]) == 0 else f"{float(row[11])/10**9:4.1f}"
             memory_cell = 13
             # memory_cell = 11
-            memory = '' if len(row[memory_cell]) == 0 else f"{float(row[memory_cell])/GB:4.3f}"
+            memory = (
+                ''
+                if len(row[memory_cell]) == 0
+                else f"{float(row[memory_cell])/GB:4.3f}"
+            )
             # memory = '' if len(row[memory_cell]) == 0 else f"{float(row[memory_cell])}"
             # memory = float(row[13]) / GB
             print(
@@ -259,12 +263,13 @@ accept_metrics_v2 = [
     'galaxy_slots',
     'galaxy_memory_mb',
     'runtime_seconds',
-    'cpuacct.usage', # Shouldn't this be cpu.stat.usage_usec?
+    'cpuacct.usage',  # Shouldn't this be cpu.stat.usage_usec?
     'memory.limit_in_bytes',
     'memory.peak',
 ]  # ,'memory.soft_limit_in_bytes']
 
 accept_metrics = accept_metrics_v2
+
 
 def make_table_row(data: dict):
     row = [

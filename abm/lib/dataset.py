@@ -133,6 +133,7 @@ def upload(context: Context, args: list):
         result = gi.tools.upload_file(url, history, file_name=name)
         print(result)
 
+
 def collection(context: Context, args: list):
     type = 'list:paired'
     collection_name = 'collection'

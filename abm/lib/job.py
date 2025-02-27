@@ -12,7 +12,9 @@ log = logging.getLogger('abm')
 def do_list(context: Context, args: list):
     parser = argparse.ArgumentParser()
     parser.add_argument('-s', '--state', help='list jobs in this state', required=False)
-    parser.add_argument('--history', help='show jobs in the given history', required=False)
+    parser.add_argument(
+        '--history', help='show jobs in the given history', required=False
+    )
     parser.add_argument('-u', '--user', help='show jobs for this user', required=False)
     argv = parser.parse_args(args)
 
@@ -28,7 +30,9 @@ def do_list(context: Context, args: list):
         if history_id is None:
             print("ERROR: No such history")
             return
-    job_list = gi.jobs.get_jobs(state=argv.state, history_id=argv.history, user_id=argv.user)
+    job_list = gi.jobs.get_jobs(
+        state=argv.state, history_id=argv.history, user_id=argv.user
+    )
     log.debug(f"Iterating over job list with {len(job_list)} items")
     for job in job_list:
         print(f"{job['id']}\t{job['state']}\t{job['update_time']}\t{job['tool_id']}")

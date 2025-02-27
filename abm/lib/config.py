@@ -2,16 +2,8 @@ import os
 from pathlib import Path
 
 import yaml
-from common import (
-    Context,
-    find_config,
-    get_yaml_parser,
-    load_profiles,
-    print_json,
-    print_yaml,
-    save_config,
-    save_profiles,
-)
+from common import (Context, find_config, get_yaml_parser, load_profiles,
+                    print_json, print_yaml, save_config, save_profiles)
 
 
 def do_list(context: Context, args: list):
