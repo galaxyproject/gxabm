@@ -4,7 +4,7 @@ The `master` branch is used for releases and points to the latest tagged commit.
 
 You can use the `bin/bump.sh` script to update the version number as needed. Run `bin/bump.sh --help` for more information.
 
-## To perform a release
+## To perform a manual release
 
 To perform a release, follow these steps
 1. Merge the `dev` branch into `master`.<br/>`git checkout master`<br/>`git merge dev`
@@ -14,3 +14,11 @@ To perform a release, follow these steps
 5. Switch back to the `dev` branch and merge the `master` branch into `dev`.<br/>`git checkout dev`<br/>`git merge master`
 6. Update the version number in `abm/VERSION` to the next dev version and push to `origin dev`.<br/>`bin/bump.sh next`<br/>`git add abm/VERSION`<br/>`git commit -m "Bump version to $(cat abm/VERSION)"`<br/>`git push origin dev`
 7. [Optional] use the `bin/move_issues.sh` script to move all open issues from the current  milestone to the next milestone.  For example, to move all issues from the 2.10 milestone to the 2.11 milestone use:<br/>`bin/move_issues.sh --from 2.10 --to 2.11`<br/>If the `--to` milestone does not exist it will be created.
+
+## To perform an automated release
+
+To perform a scripted release you can use the `bin/minor_release.sh` script. This script will perform all of the above steps.  The script takes no parameters.  
+
+## The next major version
+
+When moving from a minor release to the next major release manually write the version number to the `abm/VERSION` file.  For example, to move from 2.10 to 3.0:<br/>`echo "3.0" > abm/VERSION`
