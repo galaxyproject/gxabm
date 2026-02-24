@@ -62,7 +62,7 @@ def command_list(commands: list):
 
 
 def copyright():
-    print(f"    Copyright 2025 The Galaxy Project. All Rights Reserved.\n")
+    print(f"    Copyright 2026 The Galaxy Project. All Rights Reserved.\n")
 
 
 def print_main_help(menu_data):
