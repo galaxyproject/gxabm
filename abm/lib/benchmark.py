@@ -106,7 +106,7 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
                 dsid = dsdata['id']
                 ref_data_size.append(dsdata['size'])
                 print(f"Reference input dataset {dsid}")
-                inputs[input[0]] = {'id': dsid, 'src': 'hda', 'size': dsdata['size']}
+                inputs[input[0]] = {'id': dsid, 'src': 'hda'}
                 input_names.append(dsname)
 
         count = 0
@@ -154,7 +154,7 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
                             dssize = dsdata['size']
                         input_data_size.append(dssize)
                         print(f"Input collection ID: {dsname} [{dsid}] {dssize}")
-                        inputs[input[0]] = {'id': dsid, 'src': 'hdca', 'size': dssize}
+                        inputs[input[0]] = {'id': dsid, 'src': 'hdca'}
                     elif 'paired' in spec:
                         name = spec['name']
                         input_names.append(name)
@@ -170,7 +170,6 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
                             inputs[input[0]] = {
                                 'id': dsid,
                                 'src': 'hdca',
-                                'size': dssize,
                             }
                         else:
                             histories = gi.histories.get_histories(name=spec['history'])
@@ -213,7 +212,6 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
                                 inputs[input[0]] = {
                                     'id': collection['id'],
                                     'src': 'hdca',
-                                    'size': size,
                                 }
                     elif Keys.DATASET_ID in spec:
                         dsname = spec[Keys.DATASET_ID]
@@ -229,7 +227,7 @@ def run(context: Context, workflow_path, history_prefix: str, experiment: str):
                         dssize = dsdata['size']
                         input_data_size.append(dssize)
                         print(f"Input dataset ID: {dsname} [{dsid}] {dssize}")
-                        inputs[input[0]] = {'id': dsid, 'src': 'hda', 'size': dssize}
+                        inputs[input[0]] = {'id': dsid, 'src': 'hda'}
                     else:
                         raise Exception(f'Invalid input value')
             print(f"Running workflow {wfid} in history {new_history_name}")
