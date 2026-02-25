@@ -40,13 +40,13 @@ fi
 
 case $1 in
   major)
-    version=$(awk -F. '{print $1+1 ".0.0"}-dev.1' abm/VERSION)
+    version=$(awk -F. '{print $1+1 ".0.0-dev.1"}' abm/VERSION)
     ;;
   minor)
-    version=$(awk -F. '{print $1 "." $2+1 ".0"}-dev.1' abm/VERSION)
+    version=$(awk -F. '{print $1 "." $2+1 ".0-dev.1"}' abm/VERSION)
     ;;
   patch)
-    version=$(awk -F. '{print $1 "." $2 "." $3+1}-dev.1' abm/VERSION)
+    version=$(awk -F. '{print $1 "." $2 "." $3+1 "-dev.1"}' abm/VERSION)
     ;;
   dev)
     version=$(awk -F. '{print $1 "." $2 "." $3 "." $4+1}' abm/VERSION)

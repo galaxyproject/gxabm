@@ -53,7 +53,7 @@ git commit -m "Release $release"
 git push origin master
 
 # Build and deploy the release to PyPI
-make clean build deploy
+make clean dist deploy
 
 # Create a release on GitHub
 git tag -a -m "Release $tag" $tag
