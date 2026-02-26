@@ -16,6 +16,7 @@ def do_list(context: Context, args: list):
         '--history', help='show jobs in the given history', required=False
     )
     parser.add_argument('-u', '--user', help='show jobs for this user', required=False)
+    parser.add_argument('-l', '--limit', help='limit the number of jobs returned (default 500)', required=False, default=500)
     argv = parser.parse_args(args)
 
     log.debug('Connecting to the Galaxy server')
@@ -31,7 +32,7 @@ def do_list(context: Context, args: list):
             print("ERROR: No such history")
             return
     job_list = gi.jobs.get_jobs(
-        state=argv.state, history_id=argv.history, user_id=argv.user
+        state=argv.state, history_id=argv.history, user_id=argv.user, limit=argv.limit
     )
     log.debug(f"Iterating over job list with {len(job_list)} items")
     for job in job_list:
