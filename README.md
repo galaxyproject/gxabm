@@ -31,8 +31,8 @@ pip install gxabm
 > :bulb: The included `setup.sh` file can be *sourced* to both activate the virtual environment and create an alias so you do not need to type `python3 abm.py` or `python3 -m abm` all the time.  The remainder of this document assumes that the `setup.sh` file has been *sourced* or `abm` has been installed from PyPI.
 
 ```bash
-> source setup.sh
-> abm workflow help
+source setup.sh
+abm workflow help
 ```
 
 ## Setup
@@ -48,7 +48,7 @@ The `kubectl` program is only required when bootstrapping a new Galaxy instance,
 
 ### Credentials
 
-You will need an [API key](https://training.galaxyproject.org/training-material/faqs/galaxy/preferences_admin_api_key.html) for every Galaxy instance you would like to interact with. You will also need the *kubeconfig* file for each Kubernetes cluster.  The `abm` script loads the Galaxy server URLs, API keys, and the location of the *kubeconfig* files from a Yaml configuration file. The profile is searched for in the following order:
+You will need an [API key](https://training.galaxyproject.org/training-material/faqs/galaxy/preferences_admin_api_key.html) for every Galaxy instance you would like to interact with. You will also need the *kubeconfig* file for each Kubernetes cluster.  The `abm` script loads the Galaxy server URLs, API keys, and the location of the *kubeconfig* files from a YAML configuration file. The profile is searched for in the following order:
 
 1. `.abm/profile.yml` (current directory)
 2. `~/.abm/profile.yml` (home directory)
@@ -56,14 +56,14 @@ You will need an [API key](https://training.galaxyproject.org/training-material/
 
 You can use the `samples/profile.yml` file as a starting point.
 
-:bulb: It is now possible (>=2.0.0) to create Galaxy users and their API keys directly with `abm`.
+By default `kubectl` expects that all *kubeconfig*s are stored in a single configuration file located at `$HOME/.kube/config`. However, this is a system-wide configuration making it difficult for two processes to operate on different Kubernetes clusters at the same time.  Therefore `abm` expects each cluster to store its configuration in its own *kubeconfig* file in a directory named `$HOME/.kube/configs`.
+
+:bulb: It is also possible to create Galaxy users and their API keys directly with `abm`.
 
 ```bash
 abm <cloud> user create username email@example.org password
 abm <cloud> user key email@example.org
 ```
-
-Users will also need the *kubeconfig* files for each Kubernetes cluster.  By default `kubectl` expects that all *kubeconfig*s are stored in a single configuration file located at `$HOME/.kube/config`. However, this is a system wide configuration making it difficult for two processes to operate on different Kubernetes clusters at the same time.  Therefore the `abm` scripts expects each cluster to store it's configuration in its own *kubeconfig* file in a directory named `$HOME/.kube/configs`.
 
 > :warning: Creating users and their API keys requires that a *master api key* has been configured for Galaxy.
 
@@ -72,26 +72,26 @@ Users will also need the *kubeconfig* files for each Kubernetes cluster.  By def
 To get general usage information run the command:
 
 ```bash
-> abm help
+abm help
 ```
 
 You can get information about a specific `abm` command with:
 
 ```bash
-> abm workflow help
+abm workflow help
 ```
 
 When running a command (i.e. not just printing help) you will need to specify the Galaxy instance to target as the first parameter:
 
 ```bash
-> abm aws workflow list
-> abm aws benchmark run benchmarks/paired-dna.yml
+abm aws workflow list
+abm aws benchmark run benchmarks/paired-dna.yml
 ```
 
 You can set the log level for debugging with the `--log` flag:
 
 ```bash
-> abm --log DEBUG aws workflow list
+abm --log DEBUG aws workflow list
 ```
 
 Valid log levels are: `DEBUG`, `INFO`, `WARN`, `WARNING`, `ERROR`, `FATAL`, `CRITICAL`.
@@ -116,22 +116,33 @@ See the [Experiment Configuration](#experiment-configuration) section for instru
 
 ## Instance Configuration
 
-Before ABM can interact with the Galaxy cluster an entry for that cluster needs to be created in ABM's `~/.abm/profile.yml` configuration file.  Since the profile is just a YAML file it can be edited in any text editor to add the entry with the URL, API key, and KUBECONFIG location. Or we can use `abm` commands to create the entry.
+Before ABM can interact with a Galaxy cluster an entry for that cluster needs to be created in ABM's `~/.abm/profile.yml` configuration file.  Since the profile is just a YAML file it can be edited in any text editor to add the entry with the URL, API key, and kubeconfig location. Or you can use `abm` commands to create the entry:
 
-```bash
-abm config create cloud /path/to/kubeconfig                          (1)
-abm config url cloud https://galaxy.url                              (2)
-abm cloud user create username user_email@example.org userpassword   (3)
-key=$(abm cloud user apikey user_email@example.org)                  (4)
-abm config key cloud $key                                            (5)
-abm config show cloud
-```
+1. Create a new entry for *cloud* in the profile. The name can be anything you want, as long as that name has not already been used. The *kubeconfig* will have been generated when the cluster was provisioned; how it is obtained depends on the cloud provider.
+   ```bash
+   abm config create cloud /path/to/kubeconfig
+   ```
 
-1. Creates a new entry for *cloud* in the `~/.abm/profile.yml` file.  The `config create` expects two parameters: the name of the cloud instance and the path to the *kubeconfig* file used by *kubectl* to intereact with the cluster.  The name can be anything you want, and long as that name has not already been used.  The *kubeconfig* will have been generated when the cluster was provisioned and how it is obtained will depend on the cloud provider and is beyond the scope of this document.
-1. Sets the `url` field in the profile. The `abm cloud kube url` command can be used to determine Galaxy's URL, but see the [caveats](#caveats_and_known_problems) section for known problems. If the `kube url` command does not work you can also use `kubectl get svc -n galaxy` to find the ingress service name and `kubectl describe svc -n galaxy service-name` to find the ingress URL.
-1. Creates a new user in the Galaxy instance.  The email address should be specified in the Galaxy `admin_users` sections of the `values.yml` file used when installing Galaxy to the cluster.  If the user is not an admin user then installing tools will fail.
-1. Fetch the user's API key for that Galaxy instance and saves it to an environment variable
-1. Save the API key to the profile configuration.
+2. Set the Galaxy URL. The `abm cloud kube url` command can be used to determine Galaxy's URL, but see the [Caveats](#caveats-and-known-problems) section for known problems. If that does not work you can also use `kubectl get svc -n galaxy` to find the ingress service name and `kubectl describe svc -n galaxy service-name` to find the ingress URL.
+   ```bash
+   abm config url cloud https://galaxy.url
+   ```
+
+3. Create a new user in the Galaxy instance. The email address should be specified in the Galaxy `admin_users` section of the `values.yml` file used when installing Galaxy to the cluster. If the user is not an admin user then installing tools will fail.
+   ```bash
+   abm cloud user create username user_email@example.org userpassword
+   ```
+
+4. Fetch the user's API key and save it to the profile.
+   ```bash
+   key=$(abm cloud user apikey user_email@example.org)
+   abm config key cloud $key
+   ```
+
+5. Verify the configuration.
+   ```bash
+   abm config show cloud
+   ```
 
 
 ## Benchmark Configuration
@@ -199,78 +210,84 @@ job_configs:
   - 8x16
 ```
 - **name**<br/>
-The name of the experiment.  This value is not currently not used.
+The name of the experiment.  This value is not currently used.
 - **runs**<br/>
 The number of times each *benchmark* will be executed.  **Note** a *benchmark* configuration may itself define more than one *workflow* execution.
 - **benchmark_confs**<br/>
-The *benchmark* configurations to be execute during the *experiment*. These directories/files are expected to be relative to the current working directory.
+The *benchmark* configurations to be executed during the *experiment*. These paths are expected to be relative to the current working directory.
 - **cloud**<br/>
-The cloud providers, as defined in the `profile.yml` file, where the experiments will be run.  The cloud provider instances must already have the *workflows* and history datasets uploaded and available for use.  Use the `bootstrap.py` script to provision an instance for running experiements.
+The cloud providers, as defined in the `profile.yml` file, where the experiments will be run.  The cloud provider instances must already have the *workflows* and history datasets uploaded and available for use.
 - **job_configs**<br/>
 The `jobs.rules.container_mapper_rules` files that define the CPU and memory resources allocated to tools.  These are resolved as `rules/<name>.yml` relative to the current working directory. See `samples/benchmarks/rules/` for examples.
 
-## Moving Workflows
+## Transferring Data Between Instances
 
-Use the `abm <cloud> workflow download` and `abm <cloud> workflow upload` commands to transfer Galaxy *workflows* between Galaxy instances.
+### Moving Workflows
+
+Use the `workflow download` and `workflow upload` commands to transfer Galaxy *workflows* between Galaxy instances.
 
 ```bash
-> abm cloud1 workflow download <workflow ID> /path/to/save/workflow.ga
-> abm cloud2 workflow upload /path/to/save/workflow.ga
+abm cloud1 workflow download <workflow ID> /path/to/save/workflow.ga
+abm cloud2 workflow upload /path/to/save/workflow.ga
 ```
 
 **NOTE** the name of the saved file (workflow.ga in the above example) is unrelated to the name of the workflow as it will appear in the Galaxy user interface or when listed with the `workflow list` command.
 
-## Moving Benchmarks
+### Moving Benchmarks
 
 The `benchmark translate` and `benchmark validate` commands can be used when moving workflows and datasets between Galaxy instances.  The `benchmark translate` command takes the path to a *benchmark* configuration file, translates the workflow and dataset ID values to their name as they appear in the Galaxy user interface, and writes the configuration to stdout.  To save the translated workflow configuration, redirect the output to a file:
 
 ```bash
-> abm aws benchmark translate config/rna-seq.yml > benchmarks/rna-seq-named.yml
+abm aws benchmark translate config/rna-seq.yml > benchmarks/rna-seq-named.yml
 ```
 
 Then use the `benchmark validate` command to ensure that the other Galaxy instance has the same workflow and datasets installed:
 
 ```bash
-> abm gcp benchmark validate config/rna-seq-named.yml
+abm gcp benchmark validate config/rna-seq-named.yml
 ```
 
-## Moving Histories
+### Moving Histories
 
-### Exporting Histories
+#### Exporting Histories
 
-1. Ensure the history is publicly available (i.e. published) on the Galaxy instance.  You can do this through the Galaxy user interface or via the `abm history publish` command:
-```bash
-$> abm cloud history publish <history id>
-```
-If you do not know the `<history id>` you can find it with `abm cloud history list`.
+1. Ensure the history is publicly available (i.e. published) on the Galaxy instance.  You can do this through the Galaxy user interface or via the `history publish` command:
+   ```bash
+   abm cloud history publish <history id>
+   ```
+   If you do not know the `<history id>` you can find it with `abm cloud history list`.
 
-2. Export the history
-```bash
-$> abm cloud history export <history id>
-```
-Make note of the URL that is returned from the `histroy export` command as this is the URL to use to import the history to another Galaxy instance. Depending on the size of the datasets in the history it may take several hours for the history to be exported, during which time your computer terminal will be blocked.  Use the `[-n|--no-wait]` option if you do not want `history export` to block until the export is complete.
-```bash
-$> abm cloud history export <history id> --no-wait
-```
-The `history export` command will return immediately and print the job ID for the export job.  Use this job id to obtain the status of the job and determine when it has completed.
-```bash
-$> abm cloud job show <job id>
-```
-Once a history has been exported the first time, and as long it has not changed, running `abm history export` again simply print the URL and exit without re-exporting the history.  This is useful when the `--no-wait` option was specified and we need to determine the URL to use for importing.
+2. Export the history:
+   ```bash
+   abm cloud history export <history id>
+   ```
+   Make note of the URL that is returned from the `history export` command as this is the URL to use to import the history to another Galaxy instance. Depending on the size of the datasets in the history it may take several hours for the history to be exported, during which time your computer terminal will be blocked.  Use the `--no-wait` option if you do not want `history export` to block until the export is complete.
+   ```bash
+   abm cloud history export <history id> --no-wait
+   ```
+   The `history export` command will return immediately and print the job ID for the export job.  Use this job ID to obtain the status of the job and determine when it has completed.
+   ```bash
+   abm cloud job show <job id>
+   ```
+   Once a history has been exported the first time, and as long as it has not changed, running `history export` again will simply print the URL and exit without re-exporting the history.  This is useful when the `--no-wait` option was specified and you need to determine the URL to use for importing.
 
-> :bulb: A History should only be exported once and the URL re-used on new benchmarking instances as they are created. Use the `~/.abm/histories.yml` file to record the URLs so they can be easily reused with the `history import` command.
+> :bulb: A history should only be exported once and the URL re-used on new benchmarking instances as they are created. Use the `~/.abm/histories.yml` file to record the URLs so they can be easily reused with the `history import` command.
 
-### Importing Histories
-To import a history use the URL returned from the `history export` command.
+#### Importing Histories
+
+To import a history use the URL returned from the `history export` command:
+
 ```bash
-$> abm dest history import URL
+abm dest history import URL
 
 # For example
-$> abm dest history import https://usegalaxy.org/history/export_archive?id=9198b7907edea3fa&jeha_id=02700395dbc14520
+abm dest history import https://usegalaxy.org/history/export_archive?id=9198b7907edea3fa&jeha_id=02700395dbc14520
 ```
-We can easily import histories defined in `~/.abm/histories.yml` by specifying the YAML dictionary key name. 
+
+You can also import histories defined in `~/.abm/histories.yml` by specifying the YAML dictionary key name:
+
 ```bash
-$> abm dest history import rna
+abm dest history import rna
 ```
 
 ## Contributing
@@ -287,9 +304,7 @@ If you decide to work on one of the [issues](https://github.com/galaxyproject/gx
 
 ## Versioning
 
-There are two scripts for updating the version number in `abm/VERSION`:
-
-The `bin/bump.sh` shell script (used by the release process):
+Use the `bin/bump.sh` script to update the version number in `abm/VERSION`:
 
 ```bash
 bin/bump.sh major
@@ -298,16 +313,7 @@ bin/bump.sh patch
 bin/bump.sh release
 ```
 
-The `bump` Python script, which behaves similarly to the `bumpversion` Python package without the version control integration:
-
-```bash
-bump major
-bump minor
-bump revision
-bump build
-```
-
-The `build` command (Python script) and `patch` command (shell script) are only valid for *development* versions, that is, a version number followed by a dash, followed by some characters, followed by some digits. For example `2.0.0-rc1` or `2.1.0-dev.8`.  Use `bump release` or `bin/bump.sh release` to move from a *development* build to a *release* build.
+The `patch` command is only valid for *development* versions, that is, a version number followed by a dash, followed by some characters, followed by some digits. For example `2.0.0-rc1` or `2.1.0-dev.8`.  Use `bin/bump.sh release` to move from a *development* build to a *release* build.
 
 ## Building and Deploying
 
@@ -328,10 +334,7 @@ ABM is intended to run on a dedicated Galaxy instance with no other users.  It c
 
 The `abm kube url` command is intended to retrieve the URL needed to access the Galaxy instance on the Kubernetes cluster.  However, there are a few issues that make this not so straight-forward:
 
-- the name of the ingress controller is not consistant.  Sometimes it is `ingress-nginx-controller` (AWS) and sometimes it is simply `ingress-nginx` (GCP)
-- sometimes the instance is accessed via the `hostname` field (AWS) and sometimes the `ip` field
-- the URL for the Galaxy instance may have an arbitrary path included, i.e. `https://hostname` or `https://hostname/galaxy` or `https://hostname/something/galaxy`
-
-
-
+- The name of the ingress controller is not consistent.  Sometimes it is `ingress-nginx-controller` (AWS) and sometimes it is simply `ingress-nginx` (GCP).
+- Sometimes the instance is accessed via the `hostname` field (AWS) and sometimes the `ip` field.
+- The URL for the Galaxy instance may have an arbitrary path included, e.g. `https://hostname` or `https://hostname/galaxy` or `https://hostname/something/galaxy`.
 
