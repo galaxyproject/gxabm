@@ -147,17 +147,52 @@ def collection(context: Context, args: list):
         elif arg == '-n' or arg == '--name':
             collection_name = args.pop(0)
         elif '=' in arg:
-            name, value = arg.split('=')
-            dataset = _get_dataset_data(gi, value)
-            if dataset is None:
-                print(f"ERROR: dataset not found {value}")
-                return
-            # print_json(dataset)
-            if hid is None:
-                hid = dataset['history']
-            elif hid != dataset['history']:
-                print('ERROR: Datasets must be in the same history')
-            elements.append(_make_dataset_element(name, dataset['id']))
+            name, value = arg.split('=', 1)
+            if type == 'list:paired':
+                ids = value.split(',')
+                if len(ids) != 2:
+                    print(
+                        f'ERROR: list:paired requires exactly 2 dataset IDs per pair: {name}=forward_id,reverse_id'
+                    )
+                    return
+                fwd_dataset = _get_dataset_data(gi, ids[0])
+                if fwd_dataset is None:
+                    print(f'ERROR: forward dataset not found {ids[0]}')
+                    return
+                rev_dataset = _get_dataset_data(gi, ids[1])
+                if rev_dataset is None:
+                    print(f'ERROR: reverse dataset not found {ids[1]}')
+                    return
+                if hid is None:
+                    hid = fwd_dataset['history']
+                for ds in [fwd_dataset, rev_dataset]:
+                    if hid != ds['history']:
+                        print('ERROR: Datasets must be in the same history')
+                        return
+                pair = dataset_collections.CollectionElement(
+                    name=name,
+                    type='paired',
+                    elements=[
+                        dataset_collections.HistoryDatasetElement(
+                            name='forward', id=fwd_dataset['id']
+                        ),
+                        dataset_collections.HistoryDatasetElement(
+                            name='reverse', id=rev_dataset['id']
+                        ),
+                    ],
+                )
+                elements.append(pair)
+            else:
+                dataset = _get_dataset_data(gi, value)
+                if dataset is None:
+                    print(f'ERROR: dataset not found {value}')
+                    return
+                if hid is None:
+                    hid = dataset['history']
+                elif hid != dataset['history']:
+                    print('ERROR: Datasets must be in the same history')
+                    return
+                elements.append(_make_dataset_element(name, dataset['id']))
 
     if len(elements) == 0:
         print("ERROR: No dataset elements have been defined for the collection")
