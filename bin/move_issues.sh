@@ -33,10 +33,12 @@ if [[ -z "$TO_MILESTONE" ]] ; then
 fi
 echo "Reassigning issues from milestone $FROM_MILESTONE to milestone $TO_MILESTONE"
 set -eu
-
-CHECK=$($GH milestone list --json title | jq -r '.[] | .title' | grep $TO_MILESTONE)
+#$GH milestone list --json title | jq -r '.[] | .title' | grep 2.11.0
+#echo wtf
+#CHECK=$($GH milestone list --json title | jq -r '.[] | .title' | grep $TO_MILESTONE)
 #echo "Check: $CHECK"
-if [[ -z "$CHECK" ]] ; then
+#if [[ -z "$CHECK" ]] ; then
+if ! $GH milestone list --json title | jq -r '.[] | .title' | grep $TO_MILESTONE ; then
 	$GH milestone create --title $TO_MILESTONE
 	echo "Created the milestone $TO_MILESTONE"
 else
