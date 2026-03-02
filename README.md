@@ -220,6 +220,23 @@ The cloud providers, as defined in the `profile.yml` file, where the experiments
 - **job_configs**<br/>
 The `jobs.rules.container_mapper_rules` files that define the CPU and memory resources allocated to tools.  These are resolved as `rules/<name>.yml` relative to the current working directory. See `samples/benchmarks/rules/` for examples.
 
+## Dataset Collections
+
+We can use the `abm dataset collection` command to create collections (list and list:paired) of datasets.  Given the following entries in `~/.abm/datasets.yml`
+
+```yaml
+chipseq-1:  https://zenodo.org/record/1324070/files/wt_H3K4me3_read1.fastq.gz
+chipseq-2:  https://zenodo.org/record/1324070/files/wt_H3K4me3_read2.fastq.gz
+```
+ we can create a list of paired datasets with the following commands:
+
+```bash
+hid=$(abm server history create "ChipSeq-PE Input data" | jq -r .id)
+abm server dataset import --history $hid --name wt_H3K4me3_read1 chipseq-1
+abm server dataset import --history $hid --name wt_H3K4me3_read2 chipseq-2
+abm server dataset collection --type list:paired --name wt_H3K4me3 pair1=wt_H3K4me3_read1,wt_H3K4me3_read2
+```
+
 ## Transferring Data Between Instances
 
 ### Moving Workflows
@@ -283,6 +300,7 @@ abm dest history import URL
 # For example
 abm dest history import https://usegalaxy.org/history/export_archive?id=9198b7907edea3fa&jeha_id=02700395dbc14520
 ```
+
 
 You can also import histories defined in `~/.abm/histories.yml` by specifying the YAML dictionary key name:
 

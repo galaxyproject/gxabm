@@ -116,8 +116,8 @@
       params: HISTORY_ID DATASET_ID NAME
     - name: [collection, collect]
       handler: dataset.collection
-      help: Create a dataset collection.  Only list:paired is currently supported.
-      params: "[-n|--name NAME] [-t|--type TYPE] key1=dataset_id [key2=dataset_id...]"
+      help: "Create a dataset collection. Default type is list:paired: pair_name=fwd_id,rev_id"
+      params: "[-n|--name NAME] [-t|--type TYPE] name=fwd_id,rev_id [name2=fwd_id,rev_id...]"
 - name:
     - history
     - hist
