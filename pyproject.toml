@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gxabm"
+dynamic = ["version"]
+description = "Opinionated Benchmarking Automation in Galaxy"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.9"
+authors = [
+    { name = "Keith Suderman", email = "suderman@jhu.edu" },
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "bioblend",
+    "pyyaml",
+    "planemo",
+    "cloudlaunch-cli",
+]
+
+[project.urls]
+Homepage = "https://github.com/galaxyproject/gxabm"
+
+[project.scripts]
+abm = "abm.__main__:entrypoint"
+
+[tool.setuptools.dynamic]
+version = { file = "abm/VERSION" }
+
+[tool.setuptools.packages.find]
+include = ["abm*"]
+
+[tool.setuptools.package-data]
+"abm.lib" = ["*.yml"]
+"abm" = ["VERSION"]
+
+[tool.black]
+skip-string-normalization = true
+
+[tool.isort]
+profile = "black"

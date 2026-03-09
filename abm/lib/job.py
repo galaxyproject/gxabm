@@ -16,7 +16,13 @@ def do_list(context: Context, args: list):
         '--history', help='show jobs in the given history', required=False
     )
     parser.add_argument('-u', '--user', help='show jobs for this user', required=False)
-    parser.add_argument('-l', '--limit', help='limit the number of jobs returned (default 500)', required=False, default=500)
+    parser.add_argument(
+        '-l',
+        '--limit',
+        help='limit the number of jobs returned (default 500)',
+        required=False,
+        default=500,
+    )
     argv = parser.parse_args(args)
 
     log.debug('Connecting to the Galaxy server')
