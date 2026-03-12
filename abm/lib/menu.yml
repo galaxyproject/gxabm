@@ -91,6 +91,10 @@
       handler: dataset.import_from_config
       params: '[--hs|--hist|--history HISTORY_ID | -c|--create "History name"] [-m|--name "Dataset name"] KEY [KEY...]'
       help: imports one or more datasets to the server from a URL specified in the datasets.yml config file.
+    - name: ['copy', 'cp']
+      handler: dataset.copy
+      help: copy datasets from one history to another
+      params: "--source HISTORY --target HISTORY [-s|--state STATE] [--type TYPE] [-n|--name REGEX] [-t|--tool TOOL] [-u|--unique]"
     - name: ['list', 'ls']
       handler: dataset.do_list
       help: lists all the datasets on the server
