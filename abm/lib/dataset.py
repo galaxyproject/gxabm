@@ -410,7 +410,13 @@ def rename(context: Context, args: list):
     if dsid is None:
         print("ERROR: no such dataset")
         return
-    response = gi.histories.update_dataset(hid, dsid, name=args[2])
+    # Determine if this is a dataset or dataset_collection
+    contents = gi.histories.show_history(hid, contents=True)
+    item = next((c for c in contents if c['id'] == dsid), None)
+    if item and item.get('history_content_type') == 'dataset_collection':
+        response = gi.histories.update_dataset_collection(hid, dsid, name=args[2])
+    else:
+        response = gi.histories.update_dataset(hid, dsid, name=args[2])
     # result = {'state': response['state'], 'name': response['name']}
     print(json.dumps(response, indent=4))
 
