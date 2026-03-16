@@ -340,6 +340,33 @@
       handler: config.histories
       help: manage configuration to import histories
       params: "[list|add|delete] ARGS"
+- name: [tools, tool]
+  help: manage and inspect tools on the server
+  menu:
+    - name: [list, ls]
+      handler: tools.do_list
+      help: list all tools installed on the server
+      params: "[-n|--name REGEX] [-s|--section REGEX] [-id|--id REGEX]"
+    - name: [show]
+      handler: tools.show
+      help: show detailed information about a tool
+      params: TOOL_ID
+    - name: [inputs, inp]
+      handler: tools.inputs
+      help: list the inputs required by a tool
+      params: TOOL_ID
+    - name: [search, find]
+      handler: tools.search
+      help: search for tools by name
+      params: QUERY
+    - name: [scaffold, template]
+      handler: tools.scaffold
+      help: generate a YAML input template for a tool
+      params: TOOL_ID
+    - name: [run]
+      handler: tools.run
+      help: run a tool with inputs from a YAML file and/or key=value arguments
+      params: "TOOL_ID --history HISTORY [-f|--file INPUTS.yml] [-w|--wait] [key=value ...]"
 - name: [library, lib]
   help: manage data libraries on the server
   menu:
