@@ -346,7 +346,7 @@
     - name: [list, ls]
       handler: tools.do_list
       help: list all tools installed on the server
-      params: "[-n|--name REGEX] [-s|--section REGEX] [-id|--id REGEX]"
+      params: "[-n|--name REGEX] [-s|--section REGEX] [-id|--id REGEX] [-l|--latest]"
     - name: [show]
       handler: tools.show
       help: show detailed information about a tool
