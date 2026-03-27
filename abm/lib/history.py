@@ -120,7 +120,50 @@ def clean(context: Context, args: list):
 
 
 def download(context: Context, args: list):
-    print('history download not implemented')
+    parser = argparse.ArgumentParser()
+    parser.add_argument('history', help='History name or ID to download')
+    parser.add_argument(
+        '-o',
+        '--output',
+        help='Output file path (default: HISTORY_NAME.tar.gz)',
+        default=None,
+    )
+    argv = parser.parse_args(args)
+
+    gi = connect(context)
+    hid = find_history(gi, argv.history)
+    if hid is None:
+        print(f'ERROR: No such history {argv.history}')
+        return
+
+    url = f'{gi.histories._make_url(hid)}/exports'
+    response = gi.make_get_request(url)
+    if response.status_code != 200:
+        print('ERROR: Could not check export status.')
+        return
+
+    exports = response.json()
+    ready = [e for e in exports if e.get('ready')]
+    if not ready:
+        print('ERROR: History has not been exported yet.')
+        print('Run "abm CLOUD history export HISTORY" first.')
+        return
+
+    latest = ready[-1]
+    jeha_id = latest['id']
+
+    if argv.output:
+        outpath = argv.output
+    else:
+        history = gi.histories.show_history(hid, contents=False)
+        name = history['name'].replace(' ', '_').replace('/', '_')
+        outpath = f'{name}.tar.gz'
+
+    print(f'Downloading history to {outpath}...')
+    with open(outpath, 'wb') as outf:
+        gi.histories.download_history(hid, jeha_id, outf)
+    file_size = os.path.getsize(outpath)
+    print(f'Downloaded {outpath} ({file_size:,} bytes)')
 
 
 def upload(context: Context, args: list):
