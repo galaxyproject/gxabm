@@ -150,14 +150,17 @@ def download(context: Context, args: list):
         return
 
     latest = ready[-1]
-    jeha_id = latest['id']
+    jeha_id = latest['download_url'].rsplit('/', 1)[-1]
 
-    if argv.output:
+    history = gi.histories.show_history(hid, contents=False)
+    default_name = history['name'].replace(' ', '_').replace('/', '_') + '.tar.gz'
+
+    if argv.output and os.path.isdir(argv.output):
+        outpath = os.path.join(argv.output, default_name)
+    elif argv.output:
         outpath = argv.output
     else:
-        history = gi.histories.show_history(hid, contents=False)
-        name = history['name'].replace(' ', '_').replace('/', '_')
-        outpath = f'{name}.tar.gz'
+        outpath = default_name
 
     print(f'Downloading history to {outpath}...')
     with open(outpath, 'wb') as outf:
