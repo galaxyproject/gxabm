@@ -148,6 +148,10 @@
       handler: history.export
       params: "ID [-n|--no-wait]"
       help: prepares a history for export to another Galaxy server
+    - name: ['download', 'dl']
+      handler: history.download
+      params: "HISTORY [-o|--output FILE]"
+      help: download a previously exported history archive
     - name: [find]
       handler: history.find
       help: find a history by name
