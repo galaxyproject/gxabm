@@ -11,8 +11,13 @@ from time import perf_counter
 import benchmark
 import helm
 import yaml
-from common import (Context, get_float_key, get_str_key, load_profiles,
-                    print_markdown_table)
+from common import (
+    Context,
+    get_float_key,
+    get_str_key,
+    load_profiles,
+    print_markdown_table,
+)
 
 INVOCATIONS_DIR = "invocations"
 METRICS_DIR = "metrics"

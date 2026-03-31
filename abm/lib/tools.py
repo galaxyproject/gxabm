@@ -58,9 +58,7 @@ def do_list(context: Context, argv: list):
     if args.section:
         pattern = re.compile(args.section, re.IGNORECASE)
         tools = [
-            t
-            for t in tools
-            if pattern.search(t.get('panel_section_name', '') or '')
+            t for t in tools if pattern.search(t.get('panel_section_name', '') or '')
         ]
     if len(tools) == 0:
         print('No tools found')
@@ -219,7 +217,9 @@ def _scaffold_inputs(inputs, indent=0):
             option_values = [o[1] for o in options] if options else []
             comment = label if label else name
             if option_values:
-                comment += f' (options: {", ".join(repr(v) for v in option_values[:8])})'
+                comment += (
+                    f' (options: {", ".join(repr(v) for v in option_values[:8])})'
+                )
             lines.append(f'{prefix}# {comment}')
             lines.append(f'{prefix}{name}: {repr(default)}')
 

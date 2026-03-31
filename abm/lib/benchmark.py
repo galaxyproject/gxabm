@@ -7,8 +7,14 @@ import sys
 import yaml
 from bioblend.galaxy import GalaxyInstance, dataset_collections
 from lib import INVOCATIONS_DIR, METRICS_DIR, Keys
-from lib.common import (Context, _get_dataset_data, _make_dataset_element,
-                        connect, print_json, try_for)
+from lib.common import (
+    Context,
+    _get_dataset_data,
+    _make_dataset_element,
+    connect,
+    print_json,
+    try_for,
+)
 from lib.history import wait_for
 
 log = logging.getLogger('abm')

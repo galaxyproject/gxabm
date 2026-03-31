@@ -8,10 +8,20 @@ from pprint import pprint
 
 import yaml
 from bioblend.galaxy.objects import GalaxyInstance
-from lib.common import (Context, connect, find_config, find_history,
-                        get_float_key, get_str_key, parse_profile, print_json,
-                        print_markdown_table, print_table_header,
-                        summarize_metrics, try_for)
+from lib.common import (
+    Context,
+    connect,
+    find_config,
+    find_history,
+    get_float_key,
+    get_str_key,
+    parse_profile,
+    print_json,
+    print_markdown_table,
+    print_table_header,
+    summarize_metrics,
+    try_for,
+)
 
 #
 # History related functions

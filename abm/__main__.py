@@ -16,11 +16,25 @@ from pprint import pprint
 warnings.filterwarnings('ignore', category=UserWarning, module='pydantic')
 
 import yaml
+
 # These imports are required because we need Python to be load them to the
 # symbol table so the parse_menu method can find them in globals()
-from lib import (benchmark, config, dataset, experiment, folder,
-                 helm, history, invocation, job, kubectl, library, tools,
-                 users, workflow)
+from lib import (
+    benchmark,
+    config,
+    dataset,
+    experiment,
+    folder,
+    helm,
+    history,
+    invocation,
+    job,
+    kubectl,
+    library,
+    tools,
+    users,
+    workflow,
+)
 from lib.common import Context
 
 from abm import getVersion
