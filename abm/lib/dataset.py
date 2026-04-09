@@ -383,7 +383,7 @@ def import_from_config(context: Context, args: list):
 
 def _import_from_url(gi, history, url, **kwargs):
     response = gi.tools.put_url(url, history, **kwargs)
-    gi.histories.update_history(history, {'annotation': f"Imported {url}"})
+    gi.histories.update_history(history, annotation=f"Imported {url}")
     print(json.dumps(response, indent=4))
 
 
