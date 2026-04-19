@@ -1,3 +1,4 @@
+import argparse
 import os
 from pathlib import Path
 
@@ -21,17 +22,27 @@ def do_list(context: Context, args: list):
         print(f"{profile}\t{profiles[profile]['url']}")
 
 
-def create(context: Context, args: list):
-    if len(args) != 2:
-        print("USAGE: abm config create <cloud> /path/to/kube.config")
-        return
-    profile_name = args[0]
+def create(context: Context, argv: list):
+    parser = argparse.ArgumentParser(prog='abm config create')
+    parser.add_argument('profile_name', help='name of the profile to create')
+    parser.add_argument('--url', help='Galaxy server URL')
+    parser.add_argument('--key', help='Galaxy API key')
+    parser.add_argument('--kube', help='path to kubeconfig file')
+
+    args = parser.parse_args(argv)
+
     profiles = load_profiles()
-    if profile_name in profiles:
+    if args.profile_name in profiles:
         print("ERROR: a cloud configuration with that name already exists.")
         return
-    profile = {"url": "", "key": "", "kube": args[1]}
-    profiles[profile_name] = profile
+
+    profile = {
+        "url": args.url or "",
+        "key": args.key or "",
+        "kube": args.kube or ""
+    }
+
+    profiles[args.profile_name] = profile
     save_profiles(profiles)
     print_json(profile)
 
