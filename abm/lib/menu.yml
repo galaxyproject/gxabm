@@ -319,7 +319,7 @@
     - name: [create, new]
       help: create a new cloud configuration.
       handler: config.create
-      params: "PROFILE [--url URL] [--key KEY] [--kube KUBECONFIG]"
+      params: "PROFILE [KUBECONFIG] [--url URL] [--key KEY] [--kube KUBECONFIG]"
     - name: [remove, rm, del]
       help: remove a cloud configuration entry from the profile.yml
       handler: config.remove

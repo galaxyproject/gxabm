@@ -117,6 +117,34 @@ def test_config_create_missing_profile_name(temp_profiles):
         create(context, [])
 
 
+def test_config_create_backwards_compatible(temp_profiles, capsys):
+    """Test creating a config with old format (backwards compatibility)."""
+    context = Context('server', 'key', 'kubeconfig')
+
+    create(context, ['test_backwards', '/path/to/old/config'])
+
+    captured = capsys.readouterr()
+    output = json.loads(captured.out.strip())
+
+    assert output['url'] == ''
+    assert output['key'] == ''
+    assert output['kube'] == '/path/to/old/config'
+
+
+def test_config_create_mixed_precedence(temp_profiles, capsys):
+    """Test that positional argument takes precedence over --kube flag."""
+    context = Context('server', 'key', 'kubeconfig')
+
+    create(context, ['test_mixed', '/positional/path', '--kube', '/flag/path'])
+
+    captured = capsys.readouterr()
+    output = json.loads(captured.out.strip())
+
+    assert output['url'] == ''
+    assert output['key'] == ''
+    assert output['kube'] == '/positional/path'  # Positional takes precedence
+
+
 def test_config_create_help(temp_profiles):
     """Test that help argument works."""
     context = Context('server', 'key', 'kubeconfig')

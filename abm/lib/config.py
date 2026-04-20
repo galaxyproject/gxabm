@@ -1,6 +1,5 @@
 import argparse
 import os
-from pathlib import Path
 
 import yaml
 from common import (
@@ -16,7 +15,7 @@ from common import (
 )
 
 # Import functions for bootstrap functionality
-from . import workflow, dataset, history
+from . import dataset, history, workflow
 
 
 def do_list(context: Context, args: list):
@@ -29,6 +28,7 @@ def do_list(context: Context, args: list):
 def create(context: Context, argv: list):
     parser = argparse.ArgumentParser(prog='abm config create')
     parser.add_argument('profile_name', help='name of the profile to create')
+    parser.add_argument('kube_path', nargs='?', help='path to kubeconfig file (backwards compatibility)')
     parser.add_argument('--url', help='Galaxy server URL')
     parser.add_argument('--key', help='Galaxy API key')
     parser.add_argument('--kube', help='path to kubeconfig file')
@@ -40,11 +40,14 @@ def create(context: Context, argv: list):
         print("ERROR: a cloud configuration with that name already exists.")
         return
 
-    profile = {
-        "url": args.url or "",
-        "key": args.key or "",
-        "kube": args.kube or ""
-    }
+    # Handle backwards compatibility: if kube_path is provided as positional argument, use it
+    kube_value = ""
+    if args.kube_path:
+        kube_value = args.kube_path
+    elif args.kube:
+        kube_value = args.kube
+
+    profile = {"url": args.url or "", "key": args.key or "", "kube": kube_value}
 
     profiles[args.profile_name] = profile
     save_profiles(profiles)
@@ -320,7 +323,9 @@ def bootstrap(context: Context, args: list):
         elif isinstance(datasets, dict):
             # Dictionary format - group by history name
             for history_name, urls in datasets.items():
-                print(f"Importing {len(urls)} datasets into history '{history_name}'...")
+                print(
+                    f"Importing {len(urls)} datasets into history '{history_name}'..."
+                )
 
                 # Get or create the named history
                 histories = gi.histories.get_histories(name=history_name)
