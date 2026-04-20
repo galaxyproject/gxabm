@@ -5,6 +5,7 @@ from pathlib import Path
 import yaml
 from common import (
     Context,
+    connect,
     find_config,
     get_yaml_parser,
     load_profiles,
@@ -13,6 +14,9 @@ from common import (
     save_config,
     save_profiles,
 )
+
+# Import functions for bootstrap functionality
+from . import workflow, dataset, history
 
 
 def do_list(context: Context, args: list):
@@ -238,3 +242,106 @@ def _load_config(filepath):
         return None
     with open(filepath, "r") as f:
         return yaml.safe_load(f)
+
+
+def bootstrap(context: Context, args: list):
+    """Configure a Galaxy instance by uploading datasets, histories, and workflows from a YAML configuration file."""
+    if len(args) < 2:
+        print("USAGE: abm config bootstrap <server> <config_file>")
+        return
+
+    server = args[0]
+    config_file = args[1]
+
+    # Create context for the specified server
+    context = Context(server)
+
+    if not os.path.exists(config_file):
+        print(f"ERROR: configuration file not found: {config_file}")
+        return
+
+    # Load configuration file
+    try:
+        with open(config_file, 'r') as f:
+            config = yaml.safe_load(f)
+    except Exception as e:
+        print(f"ERROR: failed to parse configuration file: {e}")
+        return
+
+    if config is None:
+        print("ERROR: configuration file is empty")
+        return
+
+    # Process histories
+    if 'histories' in config:
+        histories = config['histories']
+        print(f"Importing {len(histories)} histories...")
+        for url in histories:
+            try:
+                # Call existing history import function
+                history._import(context, [url])
+            except Exception as e:
+                print(f"ERROR: failed to import history from {url}: {e}")
+
+    # Process datasets - support both simple list and grouped by history
+    if 'datasets' in config:
+        datasets = config['datasets']
+        gi = connect(context)
+
+        # Check if datasets is a simple list or dictionary
+        if isinstance(datasets, list):
+            # Simple list format - create default history
+            print(f"Importing {len(datasets)} datasets into default history...")
+            new_history = gi.histories.create_history(name="Configured Datasets")
+            dataset_history = new_history['id']
+
+            for url in datasets:
+                try:
+                    dataset._import_from_url(gi, dataset_history, url)
+                except Exception as e:
+                    print(f"ERROR: failed to import dataset from {url}: {e}")
+
+        elif isinstance(datasets, dict):
+            # Dictionary format - group by history name
+            for history_name, urls in datasets.items():
+                print(f"Importing {len(urls)} datasets into history '{history_name}'...")
+
+                # Get or create the named history
+                histories = gi.histories.get_histories(name=history_name)
+                if histories:
+                    dataset_history = histories[0]['id']
+                else:
+                    new_history = gi.histories.create_history(name=history_name)
+                    dataset_history = new_history['id']
+
+                for url in urls:
+                    try:
+                        dataset._import_from_url(gi, dataset_history, url)
+                    except Exception as e:
+                        print(f"ERROR: failed to import dataset from {url}: {e}")
+        else:
+            print("ERROR: datasets section must be either a list or dictionary")
+
+    # Process workflows (with tool installation)
+    if 'workflows' in config:
+        workflows = config['workflows']
+        print(f"Importing {len(workflows)} workflows (with tools)...")
+        for url in workflows:
+            try:
+                # Call existing workflow import function with tools
+                workflow.import_from_url(context, [url])
+            except Exception as e:
+                print(f"ERROR: failed to import workflow from {url}: {e}")
+
+    # Process workflows (without tool installation)
+    if 'workflows-no-tools' in config:
+        workflows_no_tools = config['workflows-no-tools']
+        print(f"Importing {len(workflows_no_tools)} workflows (without tools)...")
+        for url in workflows_no_tools:
+            try:
+                # Call existing workflow import function without tools
+                workflow.import_from_url(context, [url, '--no-tools'])
+            except Exception as e:
+                print(f"ERROR: failed to import workflow from {url}: {e}")
+
+    print("Instance configuration complete!")
