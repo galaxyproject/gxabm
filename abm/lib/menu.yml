@@ -332,6 +332,10 @@
       help: set the URL for the Galaxy server.
       params: CLOUD URL
       handler: config.url
+    - name: [kube]
+      help: set the path to the kubeconfig file for the provided cloud instance
+      handler: config.kube
+      params: CLOUD KUBE_PATH
     - name: [workflows, workflow, wf]
       help: manage configuration to import workflows.
       handler: config.workflows

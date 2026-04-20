@@ -5,7 +5,7 @@ from pathlib import Path
 from unittest.mock import patch, mock_open
 import pytest
 
-from abm.lib.config import create
+from abm.lib.config import create, kube
 from abm.lib.common import Context
 
 
@@ -123,3 +123,44 @@ def test_config_create_help(temp_profiles):
 
     with pytest.raises(SystemExit):
         create(context, ['--help'])
+
+
+def test_config_kube_success(temp_profiles, capsys):
+    """Test setting kube path for existing profile."""
+    context = Context('server', 'key', 'kubeconfig')
+
+    kube(context, ['test_profile', '/new/path/to/config'])
+
+    captured = capsys.readouterr()
+    output = json.loads(captured.out.strip())
+
+    assert output['url'] == 'http://example.com'
+    assert output['key'] == 'test_key'
+    assert output['kube'] == '/new/path/to/config'
+
+
+def test_config_kube_unknown_profile(temp_profiles, capsys):
+    """Test setting kube path for unknown profile."""
+    context = Context('server', 'key', 'kubeconfig')
+
+    kube(context, ['unknown_profile', '/path/to/config'])
+
+    captured = capsys.readouterr()
+    assert "ERROR: Unknown cloud unknown_profile" in captured.out
+
+
+def test_config_kube_invalid_args(temp_profiles, capsys):
+    """Test kube command with invalid argument count."""
+    context = Context('server', 'key', 'kubeconfig')
+
+    # Test with only one argument
+    kube(context, ['test_profile'])
+
+    captured = capsys.readouterr()
+    assert "USAGE: abm config kube <cloud> <kube_path>" in captured.out
+
+    # Test with no arguments
+    kube(context, [])
+
+    captured = capsys.readouterr()
+    assert "USAGE: abm config kube <cloud> <kube_path>" in captured.out

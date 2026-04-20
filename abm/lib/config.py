@@ -97,6 +97,22 @@ def url(context: Context, args: list):
     print_json(profile)
 
 
+def kube(context: Context, args: list):
+    if len(args) != 2:
+        print(f"USAGE: abm config kube <cloud> <kube_path>")
+        return
+    profile_name = args[0]
+    kube_path = args[1]
+    profiles = load_profiles()
+    if not profile_name in profiles:
+        print(f"ERROR: Unknown cloud {profile_name}")
+        return
+    profile = profiles[profile_name]
+    profile["kube"] = kube_path
+    save_profiles(profiles)
+    print_json(profile)
+
+
 def show(context: Context, args: list):
     if len(args) != 1:
         print("USAGE: abm config show <cloud>")
