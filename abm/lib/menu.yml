@@ -344,6 +344,10 @@
       handler: config.histories
       help: manage configuration to import histories
       params: "[list|add|delete] ARGS"
+    - name: [bootstrap, boot]
+      handler: config.bootstrap
+      help: configure an instance by importing datasets, histories, and workflows from a YAML file
+      params: "SERVER CONFIG_FILE"
 - name: [tools, tool]
   help: manage and inspect tools on the server
   menu:
