@@ -13,6 +13,22 @@ pip install gxabm
 ```
 
 
+### Docker
+
+A `Dockerfile` is provided for building a container image. It will build the library from the local source.
+
+```bash
+docker build -t gxabm:latest .
+# Or with a specific platform and version tag:
+docker build --platform linux/amd64 -t quay.io/galaxyproject/abm:2.12.0 .
+```
+
+The image uses `abm` as its entrypoint, so commands can be passed directly:
+
+```bash
+docker run --rm gxabm:latest --help
+```
+
 ### From Source
 
 1. Clone the GitHub repository.
@@ -348,11 +364,10 @@ The `make test-deploy` deploys artifacts to TestPyPI server and is intended for 
 
 ABM relies on the names of things (datasets, histories, etc.) to find them on the Galaxy instance. This can cause problems as nothing in Galaxy forces names to be unique.  For example, if the Galaxy instance contains more than one dataset named `SRR35689022.fastq` ABM will select the first one returned by Galaxy, which may or may not be the one you intended.  It is up to the user to ensure important items have sensible, unique names.
 
-ABM is intended to run on a dedicated Galaxy instance with no other users.  It can be used on multi-user systems, but ABM does not play nicely with others and some commands may cause ABM to restart the server. Care must also be taken when performing destructive commands such as deleting datasets or histories.  
+ABM is intended to run on a dedicated Galaxy instance with no other users.  It can be used on multi-user systems, but ABM does not play nicely with others and some commands may cause ABM to restart the server. Care must also be taken when performing destructive commands such as deleting datasets or histories.
 
 The `abm kube url` command is intended to retrieve the URL needed to access the Galaxy instance on the Kubernetes cluster.  However, there are a few issues that make this not so straight-forward:
 
 - The name of the ingress controller is not consistent.  Sometimes it is `ingress-nginx-controller` (AWS) and sometimes it is simply `ingress-nginx` (GCP).
 - Sometimes the instance is accessed via the `hostname` field (AWS) and sometimes the `ip` field.
 - The URL for the Galaxy instance may have an arbitrary path included, e.g. `https://hostname` or `https://hostname/galaxy` or `https://hostname/something/galaxy`.
-
