@@ -3,6 +3,13 @@ name: Release Process
 on:
   push:
     branches: [master]
+  workflow_dispatch:
+    inputs:
+      force_release:
+        description: 'Force release even if not from dev merge'
+        required: false
+        default: 'false'
+        type: boolean
 
 jobs:
   # Check if this push is from a dev branch merge
@@ -17,17 +24,36 @@ jobs:
       - name: Check if merge is from dev branch
         id: check
         run: |
-          echo "Checking merge source..."
-          echo "Commit message: ${{ github.event.head_commit.message }}"
+          echo "Event: ${{ github.event_name }}"
 
-          # Check if this is a merge commit from dev
-          if [[ "${{ github.event.head_commit.message }}" == *"Merge pull request"* ]] && \
-             [[ "${{ github.event.head_commit.message }}" == *"/dev"* ]]; then
-            echo "✅ Detected merge from dev branch"
-            echo "is-dev-merge=true" >> $GITHUB_OUTPUT
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "🔧 Manual workflow dispatch triggered"
+            if [[ "${{ github.event.inputs.force_release }}" == "true" ]]; then
+              echo "✅ Force release enabled - proceeding"
+              echo "is-dev-merge=true" >> $GITHUB_OUTPUT
+            else
+              echo "⚠️  Manual trigger without force_release - checking current branch is master"
+              if [[ "${{ github.ref_name }}" == "master" ]]; then
+                echo "✅ On master branch - proceeding with manual release"
+                echo "is-dev-merge=true" >> $GITHUB_OUTPUT
+              else
+                echo "❌ Not on master branch for manual release"
+                echo "is-dev-merge=false" >> $GITHUB_OUTPUT
+              fi
+            fi
           else
-            echo "❌ Not a dev branch merge - skipping release"
-            echo "is-dev-merge=false" >> $GITHUB_OUTPUT
+            echo "Checking merge source..."
+            echo "Commit message: ${{ github.event.head_commit.message }}"
+
+            # Check if this is a merge commit from dev
+            if [[ "${{ github.event.head_commit.message }}" == *"Merge pull request"* ]] && \
+               [[ "${{ github.event.head_commit.message }}" == *"/dev"* ]]; then
+              echo "✅ Detected merge from dev branch"
+              echo "is-dev-merge=true" >> $GITHUB_OUTPUT
+            else
+              echo "❌ Not a dev branch merge - skipping release"
+              echo "is-dev-merge=false" >> $GITHUB_OUTPUT
+            fi
           fi
 
   # Main release job with manual approval
