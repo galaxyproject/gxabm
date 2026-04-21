@@ -60,7 +60,8 @@ jobs:
         run: |
           # Read current version and clean it
           CURRENT_VERSION=$(cat abm/VERSION)
-          CLEAN_VERSION=$(echo "$CURRENT_VERSION" | sed 's/-dev[0-9]*$//' | sed 's/-rc[0-9]*$//')
+          # Handle both -dev0 and -dev.11 formats, plus -rc variants
+          CLEAN_VERSION=$(echo "$CURRENT_VERSION" | sed 's/-dev[0-9.]*$//' | sed 's/-rc[0-9.]*$//')
 
           # Calculate next dev version (minor bump)
           IFS='.' read -r major minor patch <<< "$CLEAN_VERSION"
