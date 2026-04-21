@@ -56,12 +56,11 @@ jobs:
             fi
           fi
 
-  # Main release job with manual approval
+  # Main release job
   release:
     needs: check-merge-source
     if: needs.check-merge-source.outputs.is-dev-merge == 'true'
     runs-on: ubuntu-latest
-    environment: production  # This requires manual approval from repository owners
     permissions:
       contents: write
       pull-requests: write
