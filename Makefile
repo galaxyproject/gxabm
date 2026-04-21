@@ -1,4 +1,4 @@
-.PHONY: dist
+.PHONY: dist docker
 help:
 	@echo
 	@echo "GOALS"
@@ -7,6 +7,7 @@ help:
 	@echo "    format      - runs Black and isort"
 	@echo "    test-deploy - deploys to test.pypi.org"
 	@echo "    deploy      - deploys to pypi.org"
+	@echo "    docker      - builds and pushes Docker image to Docker Hub"
 	@echo "    tag         - creates a GitHub tag for the current commit"
 	@echo
 	
@@ -22,9 +23,15 @@ format:
 	
 test-deploy:
 	twine upload -r pypitest dist/*
-    
+
 deploy:
 	twine upload -r pypi dist/*
 
-tag:
-	bin/tag.sh
+docker:
+	$(eval VERSION := $(shell cat abm/VERSION))
+	docker build -t ksuderman/gxabm:$(VERSION) -t ksuderman/gxabm:latest .
+	docker push ksuderman/gxabm:$(VERSION)
+	docker push ksuderman/gxabm:latest
+
+#tag:
+#	bin/tag.sh
