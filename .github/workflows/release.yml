@@ -206,18 +206,14 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Bump version for next development
-        run: |
-          echo "${{ steps.version.outputs.next-dev-version }}" > abm/VERSION
-          git add abm/VERSION
-          git commit -m "Bump version to ${{ steps.version.outputs.next-dev-version }}"
-          git push origin master
-
       - name: Merge master back to dev
         run: |
           git checkout dev
           git pull origin dev
           git merge master --no-ff -m "Merge release ${{ steps.tag.outputs.tag-name }} back to dev"
+          echo "${{ steps.version.outputs.next-dev-version }}" > abm/VERSION
+          git add abm/VERSION
+          git commit -m "Bump version to ${{ steps.version.outputs.next-dev-version }}"
           git push origin dev
 
       # Rollback on failure
