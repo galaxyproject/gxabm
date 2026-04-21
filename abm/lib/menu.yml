@@ -91,6 +91,10 @@
       handler: dataset.import_from_config
       params: '[--hs|--hist|--history HISTORY_ID | -c|--create "History name"] [-m|--name "Dataset name"] KEY [KEY...]'
       help: imports one or more datasets to the server from a URL specified in the datasets.yml config file.
+    - name: ['copy', 'cp']
+      handler: dataset.copy
+      help: copy datasets from one history to another
+      params: "--source HISTORY --target HISTORY [-s|--state STATE] [--type TYPE] [-n|--name REGEX] [-t|--tool TOOL] [-u|--unique]"
     - name: ['list', 'ls']
       handler: dataset.do_list
       help: lists all the datasets on the server
@@ -116,8 +120,8 @@
       params: HISTORY_ID DATASET_ID NAME
     - name: [collection, collect]
       handler: dataset.collection
-      help: Create a dataset collection.  Only list:paired is currently supported.
-      params: "[-n|--name NAME] [-t|--type TYPE] key1=dataset_id [key2=dataset_id...]"
+      help: "Create a dataset collection. Default type is list:paired: pair_name=fwd_id,rev_id"
+      params: "[-n|--name NAME] [-t|--type TYPE] name=fwd_id,rev_id [name2=fwd_id,rev_id...]"
 - name:
     - history
     - hist
@@ -144,6 +148,10 @@
       handler: history.export
       params: "ID [-n|--no-wait]"
       help: prepares a history for export to another Galaxy server
+    - name: ['download', 'dl']
+      handler: history.download
+      params: "HISTORY [-o|--output FILE]"
+      help: download a previously exported history archive
     - name: [find]
       handler: history.find
       help: find a history by name
@@ -311,7 +319,7 @@
     - name: [create, new]
       help: create a new cloud configuration.
       handler: config.create
-      params: "CLOUD KUBECONFIG"
+      params: "PROFILE [KUBECONFIG] [--url URL] [--key KEY] [--kube KUBECONFIG]"
     - name: [remove, rm, del]
       help: remove a cloud configuration entry from the profile.yml
       handler: config.remove
@@ -324,6 +332,10 @@
       help: set the URL for the Galaxy server.
       params: CLOUD URL
       handler: config.url
+    - name: [kube]
+      help: set the path to the kubeconfig file for the provided cloud instance
+      handler: config.kube
+      params: CLOUD KUBE_PATH
     - name: [workflows, workflow, wf]
       help: manage configuration to import workflows.
       handler: config.workflows
@@ -336,21 +348,37 @@
       handler: config.histories
       help: manage configuration to import histories
       params: "[list|add|delete] ARGS"
-- name: [cloudlaunch, cl]
-  help: manage cluster deployments on AWS and GCP
-  standalone: true
+    - name: [bootstrap, boot]
+      handler: config.bootstrap
+      help: configure an instance by importing datasets, histories, and workflows from a YAML file
+      params: "SERVER CONFIG_FILE"
+- name: [tools, tool]
+  help: manage and inspect tools on the server
   menu:
     - name: [list, ls]
-      handler: cloudlaunch.do_list
-      help: list deployments on all cloud providers
-    - name: [create, launch, new]
-      handler: cloudlaunch.create
-      help: create a new deployment on the specified provider
-      params: "[aws|gcp] NAME [-t|--type vmType] [-k|--keypair keyName] [-c|--config config-app]"
-    - name: [delete, rm]
-      help: delete a deployment
-      handler: cloudlaunch.delete
-      params: "ID"
+      handler: tools.do_list
+      help: list all tools installed on the server
+      params: "[-n|--name REGEX] [-s|--section REGEX] [-id|--id REGEX] [-l|--latest]"
+    - name: [show]
+      handler: tools.show
+      help: show detailed information about a tool
+      params: TOOL_ID
+    - name: [inputs, inp]
+      handler: tools.inputs
+      help: list the inputs required by a tool
+      params: TOOL_ID
+    - name: [search, find]
+      handler: tools.search
+      help: search for tools by name
+      params: QUERY
+    - name: [scaffold, template]
+      handler: tools.scaffold
+      help: generate a YAML input template for a tool
+      params: TOOL_ID
+    - name: [run]
+      handler: tools.run
+      help: run a tool with inputs from a YAML file and/or key=value arguments
+      params: "TOOL_ID --history HISTORY [-f|--file INPUTS.yml] [-w|--wait] [key=value ...]"
 - name: [library, lib]
   help: manage data libraries on the server
   menu:

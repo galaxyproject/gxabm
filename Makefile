@@ -11,11 +11,10 @@ help:
 	@echo
 	
 dist:
-	python3 setup.py sdist bdist_wheel
+	python3 -m build
     
 clean:
-	@if [ -e dist/ ] ; then rm -rf dist/ ; fi
-	@if [ -e gxabm.egg-info ] ; then rm -rf gxabm.egg-info ; fi
+	@rm -rf dist/ build/ gxabm.egg-info/
 
 format:
 	black -S abm/

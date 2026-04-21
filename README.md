@@ -13,6 +13,22 @@ pip install gxabm
 ```
 
 
+### Docker
+
+A `Dockerfile` is provided for building a container image. It will build the library from the local source.
+
+```bash
+docker build -t gxabm:latest .
+# Or with a specific platform and version tag:
+docker build --platform linux/amd64 -t quay.io/galaxyproject/abm:2.12.0 .
+```
+
+The image uses `abm` as its entrypoint, so commands can be passed directly:
+
+```bash
+docker run --rm gxabm:latest --help
+```
+
 ### From Source
 
 1. Clone the GitHub repository.
@@ -220,6 +236,23 @@ The cloud providers, as defined in the `profile.yml` file, where the experiments
 - **job_configs**<br/>
 The `jobs.rules.container_mapper_rules` files that define the CPU and memory resources allocated to tools.  These are resolved as `rules/<name>.yml` relative to the current working directory. See `samples/benchmarks/rules/` for examples.
 
+## Dataset Collections
+
+We can use the `abm dataset collection` command to create collections (list and list:paired) of datasets.  Given the following entries in `~/.abm/datasets.yml`
+
+```yaml
+chipseq-1:  https://zenodo.org/record/1324070/files/wt_H3K4me3_read1.fastq.gz
+chipseq-2:  https://zenodo.org/record/1324070/files/wt_H3K4me3_read2.fastq.gz
+```
+ we can create a list of paired datasets with the following commands:
+
+```bash
+hid=$(abm server history create "ChipSeq-PE Input data" | jq -r .id)
+abm server dataset import --history $hid --name wt_H3K4me3_read1 chipseq-1
+abm server dataset import --history $hid --name wt_H3K4me3_read2 chipseq-2
+abm server dataset collection --type list:paired --name wt_H3K4me3 pair1=wt_H3K4me3_read1,wt_H3K4me3_read2
+```
+
 ## Transferring Data Between Instances
 
 ### Moving Workflows
@@ -284,6 +317,7 @@ abm dest history import URL
 abm dest history import https://usegalaxy.org/history/export_archive?id=9198b7907edea3fa&jeha_id=02700395dbc14520
 ```
 
+
 You can also import histories defined in `~/.abm/histories.yml` by specifying the YAML dictionary key name:
 
 ```bash
@@ -330,11 +364,10 @@ The `make test-deploy` deploys artifacts to TestPyPI server and is intended for 
 
 ABM relies on the names of things (datasets, histories, etc.) to find them on the Galaxy instance. This can cause problems as nothing in Galaxy forces names to be unique.  For example, if the Galaxy instance contains more than one dataset named `SRR35689022.fastq` ABM will select the first one returned by Galaxy, which may or may not be the one you intended.  It is up to the user to ensure important items have sensible, unique names.
 
-ABM is intended to run on a dedicated Galaxy instance with no other users.  It can be used on multi-user systems, but ABM does not play nicely with others and some commands may cause ABM to restart the server. Care must also be taken when performing destructive commands such as deleting datasets or histories.  
+ABM is intended to run on a dedicated Galaxy instance with no other users.  It can be used on multi-user systems, but ABM does not play nicely with others and some commands may cause ABM to restart the server. Care must also be taken when performing destructive commands such as deleting datasets or histories.
 
 The `abm kube url` command is intended to retrieve the URL needed to access the Galaxy instance on the Kubernetes cluster.  However, there are a few issues that make this not so straight-forward:
 
 - The name of the ingress controller is not consistent.  Sometimes it is `ingress-nginx-controller` (AWS) and sometimes it is simply `ingress-nginx` (GCP).
 - Sometimes the instance is accessed via the `hostname` field (AWS) and sometimes the `ip` field.
 - The URL for the Galaxy instance may have an arbitrary path included, e.g. `https://hostname` or `https://hostname/galaxy` or `https://hostname/something/galaxy`.
-

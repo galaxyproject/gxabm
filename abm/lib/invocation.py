@@ -1,8 +1,16 @@
 import argparse
 
-from common import (Context, connect, get_float_key, get_str_key, print_json,
-                    print_markdown_table, print_table_header, print_yaml,
-                    summarize_metrics)
+from common import (
+    Context,
+    connect,
+    get_float_key,
+    get_str_key,
+    print_json,
+    print_markdown_table,
+    print_table_header,
+    print_yaml,
+    summarize_metrics,
+)
 
 
 def doList(context: Context, args: list):

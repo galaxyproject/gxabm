@@ -7,8 +7,14 @@ import sys
 import yaml
 from bioblend.galaxy import GalaxyInstance, dataset_collections
 from lib import INVOCATIONS_DIR, METRICS_DIR, Keys
-from lib.common import (Context, _get_dataset_data, _make_dataset_element,
-                        connect, print_json, try_for)
+from lib.common import (
+    Context,
+    _get_dataset_data,
+    _make_dataset_element,
+    connect,
+    print_json,
+    try_for,
+)
 from lib.history import wait_for
 
 log = logging.getLogger('abm')
@@ -559,6 +565,14 @@ def find_workflow_id(gi, name_or_id):
     return None
 
 
+def _get_active_history_ids(gi):
+    """
+    Returns a set of history IDs for histories that are not deleted or purged.
+    """
+    histories = gi.histories.get_histories(deleted=False)
+    return {h['id'] for h in histories}
+
+
 def find_dataset_id(gi, name_or_id):
     """
     Resolves the human-readable name if a dataset into the unique ID on the
@@ -575,11 +589,14 @@ def find_dataset_id(gi, name_or_id):
         pass
 
     try:
+        active_histories = _get_active_history_ids(gi)
         datasets = gi.datasets.get_datasets(
             name=name_or_id
         )  # , deleted=True, purged=True)
         for ds in datasets:
             if ds['state'] == 'ok' and not ds['deleted'] and ds['visible']:
+                if ds.get('history_id') not in active_histories:
+                    continue
                 return ds['id']
             else:
                 print(f"Dataset {ds['id']} is not valid.")
@@ -600,19 +617,21 @@ def find_collection_id(gi, name):
     :return: The unique Galaxy ID of the collection or None if the collection
     can not be located.
     """
+    active_histories = _get_active_history_ids(gi)
     kwargs = {'limit': 10000, 'offset': 0}
     datasets = gi.datasets.get_datasets(**kwargs)
     if len(datasets) == 0:
         print('No datasets found')
         return None
     for dataset in datasets:
-        # print(f"Checking if dataset {dataset['name']} == {name}")
         if dataset['type'] == 'collection' and dataset['name'].strip() == name:
             if (
                 dataset['populated_state'] == 'ok'
                 and not dataset['deleted']
                 and dataset['visible']
             ):
+                if dataset.get('history_id') not in active_histories:
+                    continue
                 return dataset['id']
     return None
 
