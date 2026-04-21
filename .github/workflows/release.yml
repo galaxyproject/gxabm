@@ -1,0 +1,223 @@
+name: Release Process
+
+on:
+  push:
+    branches: [master]
+
+jobs:
+  # Check if this push is from a dev branch merge
+  check-merge-source:
+    runs-on: ubuntu-latest
+    outputs:
+      is-dev-merge: ${{ steps.check.outputs.is-dev-merge }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check if merge is from dev branch
+        id: check
+        run: |
+          echo "Checking merge source..."
+          echo "Commit message: ${{ github.event.head_commit.message }}"
+
+          # Check if this is a merge commit from dev
+          if [[ "${{ github.event.head_commit.message }}" == *"Merge pull request"* ]] && \
+             [[ "${{ github.event.head_commit.message }}" == *"/dev"* ]]; then
+            echo "✅ Detected merge from dev branch"
+            echo "is-dev-merge=true" >> $GITHUB_OUTPUT
+          else
+            echo "❌ Not a dev branch merge - skipping release"
+            echo "is-dev-merge=false" >> $GITHUB_OUTPUT
+          fi
+
+  # Main release job with manual approval
+  release:
+    needs: check-merge-source
+    if: needs.check-merge-source.outputs.is-dev-merge == 'true'
+    runs-on: ubuntu-latest
+    environment: production  # This requires manual approval from repository owners
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # Use GITHUB_TOKEN which has permissions to bypass branch protection
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install build dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine
+
+      - name: Read and clean version
+        id: version
+        run: |
+          # Read current version and clean it
+          CURRENT_VERSION=$(cat abm/VERSION)
+          CLEAN_VERSION=$(echo "$CURRENT_VERSION" | sed 's/-dev[0-9]*$//' | sed 's/-rc[0-9]*$//')
+
+          # Calculate next dev version (minor bump)
+          IFS='.' read -r major minor patch <<< "$CLEAN_VERSION"
+          NEXT_MINOR=$((minor + 1))
+          NEXT_DEV_VERSION="${major}.${NEXT_MINOR}.0-dev0"
+
+          echo "current-version=$CURRENT_VERSION" >> $GITHUB_OUTPUT
+          echo "clean-version=$CLEAN_VERSION" >> $GITHUB_OUTPUT
+          echo "next-dev-version=$NEXT_DEV_VERSION" >> $GITHUB_OUTPUT
+
+          echo "Current version: $CURRENT_VERSION"
+          echo "Clean version: $CLEAN_VERSION"
+          echo "Next dev version: $NEXT_DEV_VERSION"
+
+      - name: Update version for release
+        run: |
+          echo "${{ steps.version.outputs.clean-version }}" > abm/VERSION
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add abm/VERSION
+          git commit -m "Release v${{ steps.version.outputs.clean-version }}"
+          git push origin master
+
+      - name: Create and push tag
+        id: tag
+        run: |
+          TAG_NAME="v${{ steps.version.outputs.clean-version }}"
+          git tag "$TAG_NAME"
+          git push origin "$TAG_NAME"
+          echo "tag-name=$TAG_NAME" >> $GITHUB_OUTPUT
+
+      - name: Build Python package
+        run: |
+          python -m build
+
+      - name: Publish to PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          twine upload dist/*
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Quay.io
+        uses: docker/login-action@v3
+        with:
+          registry: quay.io
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_PASSWORD }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            quay.io/galaxyproject/abm:${{ steps.version.outputs.clean-version }}
+            quay.io/galaxyproject/abm:latest
+          platforms: linux/amd64,linux/arm64
+
+      - name: Create GitHub Release
+        id: create-release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.tag.outputs.tag-name }}
+          release_name: ${{ steps.tag.outputs.tag-name }}
+          body: |
+            # gxabm ${{ steps.tag.outputs.tag-name }}
+
+            This release includes all changes merged from the development branch.
+
+            ## What's Changed
+            ${{ github.event.head_commit.message }}
+
+            **Full Changelog**: https://github.com/${{ github.repository }}/compare/${{ github.event.before }}...${{ steps.tag.outputs.tag-name }}
+          draft: false
+          prerelease: false
+
+      - name: Generate detailed release notes
+        run: |
+          # Get the previous tag for comparison
+          PREV_TAG=$(git describe --tags --abbrev=0 ${{ steps.tag.outputs.tag-name }}^ 2>/dev/null || echo "")
+
+          if [ -n "$PREV_TAG" ]; then
+            # Generate release notes between previous tag and current
+            gh api \
+              --method POST \
+              -H "Accept: application/vnd.github+json" \
+              /repos/${{ github.repository }}/releases/generate-notes \
+              -f tag_name="${{ steps.tag.outputs.tag-name }}" \
+              -f previous_tag_name="$PREV_TAG" > release-notes.json
+
+            # Extract the generated notes
+            GENERATED_NOTES=$(cat release-notes.json | jq -r '.body')
+
+            # Update the release with detailed notes
+            gh api \
+              --method PATCH \
+              -H "Accept: application/vnd.github+json" \
+              /repos/${{ github.repository }}/releases/${{ steps.create-release.outputs.id }} \
+              -f body="# gxabm ${{ steps.tag.outputs.tag-name }}
+
+            This release includes all changes merged from the development branch.
+
+            ## What's Changed
+            $GENERATED_NOTES
+
+            **Full Changelog**: https://github.com/${{ github.repository }}/compare/$PREV_TAG...${{ steps.tag.outputs.tag-name }}"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bump version for next development
+        run: |
+          echo "${{ steps.version.outputs.next-dev-version }}" > abm/VERSION
+          git add abm/VERSION
+          git commit -m "Bump version to ${{ steps.version.outputs.next-dev-version }}"
+          git push origin master
+
+      - name: Merge master back to dev
+        run: |
+          git checkout dev
+          git pull origin dev
+          git merge master --no-ff -m "Merge release ${{ steps.tag.outputs.tag-name }} back to dev"
+          git push origin dev
+
+      # Rollback on failure
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          echo "Release process failed. Rolling back..."
+
+          # Delete the tag if it was created
+          if [ -n "${{ steps.tag.outputs.tag-name }}" ]; then
+            git tag -d "${{ steps.tag.outputs.tag-name }}" || true
+            git push --delete origin "${{ steps.tag.outputs.tag-name }}" || true
+          fi
+
+          # Delete the GitHub release if it was created
+          if [ -n "${{ steps.create-release.outputs.id }}" ]; then
+            gh api \
+              --method DELETE \
+              -H "Accept: application/vnd.github+json" \
+              /repos/${{ github.repository }}/releases/${{ steps.create-release.outputs.id }} || true
+          fi
+
+          # Reset the version file to original
+          echo "${{ steps.version.outputs.current-version }}" > abm/VERSION
+          git add abm/VERSION
+          git commit -m "Rollback: restore version to ${{ steps.version.outputs.current-version }}"
+          git push origin master
+
+          echo "Rollback completed. Please check the logs and fix any issues before retrying."
+          exit 1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
