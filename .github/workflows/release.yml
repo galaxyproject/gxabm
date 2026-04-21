@@ -62,6 +62,10 @@ jobs:
     if: needs.check-merge-source.outputs.is-dev-merge == 'true'
     runs-on: ubuntu-latest
     environment: production  # This requires manual approval from repository owners
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: read
 
     steps:
       - name: Checkout code
