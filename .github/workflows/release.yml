@@ -168,10 +168,7 @@ jobs:
 
             This release includes all changes merged from the development branch.
 
-            ## What's Changed
-            ${{ github.event.head_commit.message }}
-
-            **Full Changelog**: https://github.com/${{ github.repository }}/compare/${{ github.event.before }}...${{ steps.tag.outputs.tag-name }}
+            Release notes will be updated with detailed changes shortly...
           draft: false
           prerelease: false
 
