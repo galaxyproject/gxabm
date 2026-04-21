@@ -1,0 +1,84 @@
+name: Validate Pull Request
+
+on:
+  pull_request:
+    branches: [master]
+
+jobs:
+  validate-source-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if PR is from dev branch
+        run: |
+          SOURCE_BRANCH="${{ github.head_ref }}"
+          TARGET_BRANCH="${{ github.base_ref }}"
+
+          echo "Source branch: $SOURCE_BRANCH"
+          echo "Target branch: $TARGET_BRANCH"
+
+          if [ "$TARGET_BRANCH" = "master" ]; then
+            if [ "$SOURCE_BRANCH" != "dev" ]; then
+              echo "❌ ERROR: Only pull requests from 'dev' branch can be merged into 'master'"
+              echo "Current source branch: '$SOURCE_BRANCH'"
+              echo ""
+              echo "To fix this:"
+              echo "1. Close this PR"
+              echo "2. Merge your changes into the 'dev' branch first"
+              echo "3. Create a new PR from 'dev' to 'master'"
+              exit 1
+            else
+              echo "✅ Valid: PR is from 'dev' branch to 'master'"
+            fi
+          fi
+
+      - name: Validate PR title for release
+        if: github.head_ref == 'dev'
+        run: |
+          PR_TITLE="${{ github.event.pull_request.title }}"
+
+          # Suggest a good PR title format for releases
+          if [[ ! "$PR_TITLE" =~ ^(Release|Merge|Prepare).* ]]; then
+            echo "💡 Suggestion: Consider using a clear title like:"
+            echo "   'Release v2.12.0' or 'Merge dev to master for release'"
+            echo "   Current title: '$PR_TITLE'"
+          fi
+
+  validate-version-ready:
+    runs-on: ubuntu-latest
+    if: github.head_ref == 'dev'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check if version is ready for release
+        run: |
+          VERSION=$(cat abm/VERSION)
+          echo "Current version: $VERSION"
+
+          # Check if version has dev/rc suffix
+          if [[ "$VERSION" == *"-dev"* ]] || [[ "$VERSION" == *"-rc"* ]]; then
+            echo "✅ Version '$VERSION' appears to be a development version"
+            echo "   It will be cleaned to a release version during the automated release process"
+          else
+            echo "⚠️  Version '$VERSION' appears to already be a release version"
+            echo "   Make sure this is intentional"
+          fi
+
+      - name: Preview release version
+        run: |
+          VERSION=$(cat abm/VERSION)
+          CLEAN_VERSION=$(echo "$VERSION" | sed 's/-dev[0-9]*$//' | sed 's/-rc[0-9]*$//')
+
+          # Calculate next dev version
+          IFS='.' read -r major minor patch <<< "$CLEAN_VERSION"
+          NEXT_MINOR=$((minor + 1))
+          NEXT_DEV_VERSION="${major}.${NEXT_MINOR}.0-dev0"
+
+          echo "📋 Release Preview:"
+          echo "   Current: $VERSION"
+          echo "   Release: $CLEAN_VERSION"
+          echo "   Next dev: $NEXT_DEV_VERSION"
+          echo ""
+          echo "🏷️  Git tag: v$CLEAN_VERSION"
+          echo "📦 PyPI: gxabm==$CLEAN_VERSION"
+          echo "🐳 Docker: quay.io/galaxyproject/abm:$CLEAN_VERSION"
