@@ -7,8 +7,9 @@ help:
 	@echo "    format      - runs Black and isort"
 	@echo "    test-deploy - deploys to test.pypi.org"
 	@echo "    deploy      - deploys to pypi.org"
-	@echo "    docker      - builds and pushes Docker image to Docker Hub"
-	@echo "    tag         - creates a GitHub tag for the current commit"
+	@echo "    docker      - builds the Docker image"
+	@echo "    push-docker - push images to docker.io"
+	@echo "    push-quay   - push images to quay.io"
 	@echo
 	
 dist:
@@ -29,9 +30,18 @@ deploy:
 
 docker:
 	$(eval VERSION := $(shell cat abm/VERSION))
-	docker build -t ksuderman/gxabm:$(VERSION) -t ksuderman/gxabm:latest .
+	docker build --platform linux/amd64 -t ksuderman/gxabm:$(VERSION) -t ksuderman/gxabm:latest .
+	docker build --platform linux/amd64 -t quay.io/galaxyproject/abm:$(VERSION) -t quay.io/galaxyproject/abm:latest .
+
+push-docker:
+	$(eval VERSION := $(shell cat abm/VERSION))
 	docker push ksuderman/gxabm:$(VERSION)
 	docker push ksuderman/gxabm:latest
+
+push-quay:
+	$(eval VERSION := $(shell cat abm/VERSION))
+	docker push quay.io/galaxyproject/abm:$(VERSION)
+	docker push quay.io/galaxyproject/abm:latest
 
 #tag:
 #	bin/tag.sh
