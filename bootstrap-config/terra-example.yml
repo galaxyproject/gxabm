@@ -1,0 +1,52 @@
+# Example Terra workspace bootstrap configuration
+# This configuration demonstrates how to import data from Terra workspaces
+# into Galaxy using the enhanced config bootstrap command
+
+version: 1
+
+# Standard dataset imports (existing functionality)
+datasets:
+  "Public Datasets":
+    - https://zenodo.org/records/61771/files/1.fasta
+    - https://zenodo.org/records/61771/files/2.fasta
+
+# Terra workspace imports (new functionality)
+terra_workspaces:
+  - namespace: "broad-dsde-dev"
+    workspace: "example-analysis-workspace"
+    datasets:
+      "Raw Sequencing Data":
+        - "data/*.fastq.gz"
+        - pattern: "data/*.fq.gz"
+          datatype: "fastqsanger.gz"
+      "Alignment Results":
+        - pattern: "results/*.bam"
+          datatype: "bam"
+        - pattern: "results/*.sam"
+          datatype: "sam"
+      "Reference Data":
+        - "references/*.fa"
+        - pattern: "references/*.fasta"
+          datatype: "fasta"
+      "Metadata":
+        - pattern: "metadata/*.tsv"
+          datatype: "tabular"
+        - pattern: "metadata/*.csv"
+          datatype: "csv"
+
+  - namespace: "my-billing-project"
+    workspace: "secondary-analysis"
+    datasets:
+      "Variant Calls":
+        - pattern: "variants/*.vcf"
+          datatype: "vcf"
+        - pattern: "variants/*.bcf"
+          datatype: "bcf"
+
+# Standard workflow imports (existing functionality)
+workflows:
+  - https://github.com/galaxyproject/training-material/raw/main/topics/variant-analysis/tutorials/dip/workflows/workflow.ga
+
+# Standard history imports (existing functionality)
+histories:
+  - https://usegalaxy.org/api/histories/example
