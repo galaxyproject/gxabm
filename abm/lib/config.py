@@ -1,5 +1,6 @@
 import argparse
 import os
+from urllib.parse import urlparse
 
 import yaml
 from common import (
@@ -263,6 +264,122 @@ def _load_config(filepath):
         return yaml.safe_load(f)
 
 
+def _extract_filename_from_url(url):
+    """Extract filename from URL for use as dataset name."""
+    parsed = urlparse(url)
+    filename = os.path.basename(parsed.path)
+    return filename if filename else "dataset"
+
+
+def _import_dataset_with_metadata(gi, history_id, dataset_config):
+    """Import a dataset with optional name and datatype metadata."""
+    if isinstance(dataset_config, str):
+        # Simple URL format
+        url = dataset_config
+        file_name = _extract_filename_from_url(url)
+        dataset._import_from_url(gi, history_id, url, file_name=file_name)
+    elif isinstance(dataset_config, dict):
+        # Dictionary format with optional name and datatype
+        url = dataset_config.get('url')
+        if not url:
+            print(f"ERROR: dataset config missing required 'url' field: {dataset_config}")
+            return
+
+        # Extract optional parameters
+        file_name = dataset_config.get('name')
+        if not file_name:
+            file_name = _extract_filename_from_url(url)
+
+        file_type = dataset_config.get('datatype')
+
+        # Build kwargs for import
+        kwargs = {'file_name': file_name}
+        if file_type:
+            kwargs['file_type'] = file_type
+
+        dataset._import_from_url(gi, history_id, url, **kwargs)
+    else:
+        print(f"ERROR: dataset config must be URL string or dict: {dataset_config}")
+
+
+def _process_datasets_v1(gi, datasets):
+    """Process datasets in version 1 format with enhanced metadata support."""
+    # Check if datasets is a simple list or dictionary
+    if isinstance(datasets, list):
+        # Simple list format - create default history
+        print(f"Importing {len(datasets)} datasets into default history...")
+        new_history = gi.histories.create_history(name="Configured Datasets")
+        dataset_history = new_history['id']
+
+        for dataset_config in datasets:
+            try:
+                _import_dataset_with_metadata(gi, dataset_history, dataset_config)
+            except Exception as e:
+                print(f"ERROR: failed to import dataset {dataset_config}: {e}")
+
+    elif isinstance(datasets, dict):
+        # Dictionary format - group by history name
+        for history_name, dataset_list in datasets.items():
+            print(
+                f"Importing {len(dataset_list)} datasets into history '{history_name}'..."
+            )
+
+            # Get or create the named history
+            histories = gi.histories.get_histories(name=history_name)
+            if histories:
+                dataset_history = histories[0]['id']
+            else:
+                new_history = gi.histories.create_history(name=history_name)
+                dataset_history = new_history['id']
+
+            for dataset_config in dataset_list:
+                try:
+                    _import_dataset_with_metadata(gi, dataset_history, dataset_config)
+                except Exception as e:
+                    print(f"ERROR: failed to import dataset {dataset_config}: {e}")
+    else:
+        print("ERROR: datasets section must be either a list or dictionary")
+
+
+def _process_datasets_v0(gi, datasets):
+    """Process datasets in legacy version 0 format (backward compatibility)."""
+    # Check if datasets is a simple list or dictionary
+    if isinstance(datasets, list):
+        # Simple list format - create default history
+        print(f"Importing {len(datasets)} datasets into default history...")
+        new_history = gi.histories.create_history(name="Configured Datasets")
+        dataset_history = new_history['id']
+
+        for url in datasets:
+            try:
+                dataset._import_from_url(gi, dataset_history, url)
+            except Exception as e:
+                print(f"ERROR: failed to import dataset from {url}: {e}")
+
+    elif isinstance(datasets, dict):
+        # Dictionary format - group by history name
+        for history_name, urls in datasets.items():
+            print(
+                f"Importing {len(urls)} datasets into history '{history_name}'..."
+            )
+
+            # Get or create the named history
+            histories = gi.histories.get_histories(name=history_name)
+            if histories:
+                dataset_history = histories[0]['id']
+            else:
+                new_history = gi.histories.create_history(name=history_name)
+                dataset_history = new_history['id']
+
+            for url in urls:
+                try:
+                    dataset._import_from_url(gi, dataset_history, url)
+                except Exception as e:
+                    print(f"ERROR: failed to import dataset from {url}: {e}")
+    else:
+        print("ERROR: datasets section must be either a list or dictionary")
+
+
 def bootstrap(context: Context, args: list):
     """Configure a Galaxy instance by uploading datasets, histories, and workflows from a YAML configuration file."""
     if len(args) < 2:
@@ -291,6 +408,10 @@ def bootstrap(context: Context, args: list):
         print("ERROR: configuration file is empty")
         return
 
+    # Determine configuration version (default to 0 for backward compatibility)
+    config_version = config.get('version', 0)
+    print(f"Processing bootstrap configuration version {config_version}")
+
     # Process histories
     if 'histories' in config:
         histories = config['histories']
@@ -302,46 +423,19 @@ def bootstrap(context: Context, args: list):
             except Exception as e:
                 print(f"ERROR: failed to import history from {url}: {e}")
 
-    # Process datasets - support both simple list and grouped by history
+    # Process datasets using version-appropriate handler
     if 'datasets' in config:
         datasets = config['datasets']
         gi = connect(context)
 
-        # Check if datasets is a simple list or dictionary
-        if isinstance(datasets, list):
-            # Simple list format - create default history
-            print(f"Importing {len(datasets)} datasets into default history...")
-            new_history = gi.histories.create_history(name="Configured Datasets")
-            dataset_history = new_history['id']
-
-            for url in datasets:
-                try:
-                    dataset._import_from_url(gi, dataset_history, url)
-                except Exception as e:
-                    print(f"ERROR: failed to import dataset from {url}: {e}")
-
-        elif isinstance(datasets, dict):
-            # Dictionary format - group by history name
-            for history_name, urls in datasets.items():
-                print(
-                    f"Importing {len(urls)} datasets into history '{history_name}'..."
-                )
-
-                # Get or create the named history
-                histories = gi.histories.get_histories(name=history_name)
-                if histories:
-                    dataset_history = histories[0]['id']
-                else:
-                    new_history = gi.histories.create_history(name=history_name)
-                    dataset_history = new_history['id']
-
-                for url in urls:
-                    try:
-                        dataset._import_from_url(gi, dataset_history, url)
-                    except Exception as e:
-                        print(f"ERROR: failed to import dataset from {url}: {e}")
+        if config_version == 0:
+            # Legacy format for backward compatibility
+            _process_datasets_v0(gi, datasets)
+        elif config_version == 1:
+            # Enhanced format with name and datatype support
+            _process_datasets_v1(gi, datasets)
         else:
-            print("ERROR: datasets section must be either a list or dictionary")
+            print(f"ERROR: unsupported configuration version: {config_version}")
 
     # Process workflows (with tool installation)
     if 'workflows' in config:
