@@ -23,6 +23,10 @@ dependencies = [
     "bioblend",
     "pyyaml",
     "planemo",
+    "fs.anvilfs",
+    "azure-core",
+    "azure-identity",
+    "azure-storage-blob",
 ]
 
 [project.urls]
