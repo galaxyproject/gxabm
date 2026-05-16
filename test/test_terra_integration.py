@@ -121,8 +121,8 @@ def test_configuration_parsing():
         print(f"  ✅ Configuration loaded: {config_file}")
 
         # Validate structure
-        if 'terra_workspaces' in config_data:
-            workspaces = config_data['terra_workspaces']
+        if 'terra' in config_data:
+            workspaces = config_data['terra']
             print(f"  ✅ Found {len(workspaces)} Terra workspaces in config")
 
             for i, workspace in enumerate(workspaces):
@@ -136,7 +136,7 @@ def test_configuration_parsing():
                 total_patterns = sum(len(patterns) for patterns in datasets.values())
                 print(f"      Dataset patterns: {total_patterns}")
         else:
-            print(f"  ❌ No terra_workspaces section found in config")
+            print(f"  ❌ No terra section found in config")
 
     except FileNotFoundError:
         print(f"  ❌ Configuration file not found: {config_file}")

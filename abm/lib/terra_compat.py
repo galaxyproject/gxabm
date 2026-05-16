@@ -23,7 +23,7 @@ def patch_firecloud_python312():
         # Add SafeConfigParser as an alias to ConfigParser for backward compatibility
         if not hasattr(configparser, 'SafeConfigParser'):
             configparser.SafeConfigParser = configparser.ConfigParser
-            print("🔧 Applied Python 3.12 compatibility patch for firecloud")
+            # print("🔧 Applied Python 3.12 compatibility patch for firecloud")
 
 
 def patch_terra_dependencies():

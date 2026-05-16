@@ -11,37 +11,18 @@ datasets:
     - https://zenodo.org/records/61771/files/2.fasta
 
 # Terra workspace imports (new functionality)
-terra_workspaces:
-  - namespace: "broad-dsde-dev"
-    workspace: "example-analysis-workspace"
+terra:
+  - namespace: "notebooks-canary-project"
+    workspace: "SArS-CoV-2-Genome copy"
     datasets:
-      "Raw Sequencing Data":
-        - "data/*.fastq.gz"
-        - pattern: "data/*.fq.gz"
-          datatype: "fastqsanger.gz"
-      "Alignment Results":
-        - pattern: "results/*.bam"
-          datatype: "bam"
-        - pattern: "results/*.sam"
-          datatype: "sam"
       "Reference Data":
-        - "references/*.fa"
-        - pattern: "references/*.fasta"
+        - pattern: "Tables/reference/SARS-CoV-2_reference_genome.fasta"
           datatype: "fasta"
-      "Metadata":
-        - pattern: "metadata/*.tsv"
-          datatype: "tabular"
-        - pattern: "metadata/*.csv"
-          datatype: "csv"
-
-  - namespace: "my-billing-project"
-    workspace: "secondary-analysis"
-    datasets:
-      "Variant Calls":
-        - pattern: "variants/*.vcf"
-          datatype: "vcf"
-        - pattern: "variants/*.bcf"
-          datatype: "bcf"
+      "Sample Data":
+        - pattern: "Tables/sample/VA_sample_forward_reads.fastq"
+          datatype: "fastqsanger"
+        - pattern: "Tables/sample/VA_sample_reverse_reads.fastq"
+          datatype: "fastqsanger"
 
 # Standard workflow imports (existing functionality)
 workflows:

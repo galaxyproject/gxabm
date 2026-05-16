@@ -313,12 +313,13 @@ def _detect_datatype_from_extension(filename: str) -> Optional[str]:
 
 
 def _filter_files_by_pattern(files: List[Dict[str, Any]], pattern: str) -> List[Dict[str, Any]]:
-    """Filter files by glob-style pattern."""
+    """Filter files by glob-style pattern against filename."""
     # Convert glob pattern to regex
     regex_pattern = pattern.replace("*", ".*").replace("?", ".")
     regex = re.compile(f"^{regex_pattern}$")
 
-    return [f for f in files if regex.match(f.get("path", ""))]
+    # Match against filename (name field) rather than full path
+    return [f for f in files if regex.match(f.get("name", ""))]
 
 
 def _process_terra_workspaces(gi, terra_workspaces):
@@ -376,18 +377,37 @@ def _process_terra_workspaces(gi, terra_workspaces):
                     print(f"    Looking for files matching: {pattern}")
 
                     try:
-                        # List all files in the workspace
-                        all_files = []
-                        for file_info in anvil_fs.scandir("/"):
-                            if file_info.is_file:
-                                all_files.append({
-                                    "path": file_info.name,  # This may need adjustment based on fs.anvilfs API
-                                    "name": Path(file_info.name).name,
-                                    "size": file_info.size if hasattr(file_info, 'size') else 0
-                                })
+                        # Parse pattern to extract directory path and filename pattern
+                        pattern_path = Path(pattern)
+                        if pattern_path.parent != Path("."):
+                            # Pattern has directory path (e.g., "Tables/sample/*.fastq")
+                            scan_dir = str(pattern_path.parent)
+                            filename_pattern = pattern_path.name
+                        else:
+                            # Pattern is just filename (e.g., "*.fastq")
+                            scan_dir = "/"
+                            filename_pattern = pattern
 
-                        # Filter files by pattern
-                        matching_files = _filter_files_by_pattern(all_files, pattern)
+                        print(f"      Scanning directory: {scan_dir}")
+                        print(f"      Filename pattern: {filename_pattern}")
+
+                        # List files in the specific directory
+                        all_files = []
+                        try:
+                            for file_info in anvil_fs.scandir(scan_dir):
+                                if file_info.is_file:
+                                    full_path = f"{scan_dir.rstrip('/')}/{file_info.name}".replace("//", "/")
+                                    all_files.append({
+                                        "path": full_path,
+                                        "name": file_info.name,
+                                        "size": file_info.size if hasattr(file_info, 'size') else 0
+                                    })
+                        except Exception as e:
+                            print(f"      ERROR scanning directory {scan_dir}: {e}")
+                            continue
+
+                        # Filter files by filename pattern
+                        matching_files = _filter_files_by_pattern(all_files, filename_pattern)
                         print(f"    Found {len(matching_files)} matching files")
 
                         # Import each matching file
@@ -616,8 +636,8 @@ def bootstrap(context: Context, args: list):
                 print(f"ERROR: failed to import workflow from {url}: {e}")
 
     # Process Terra workspaces
-    if 'terra_workspaces' in config:
-        terra_workspaces = config['terra_workspaces']
+    if 'terra' in config:
+        terra_workspaces = config['terra']
         print(f"Processing {len(terra_workspaces)} Terra workspaces...")
         gi = connect(context)
         _process_terra_workspaces(gi, terra_workspaces)
