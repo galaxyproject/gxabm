@@ -65,6 +65,7 @@ jobs:
       contents: write
       pull-requests: write
       actions: read
+      id-token: write  # Required for PyPI Trusted Publishing
 
     steps:
       - name: Checkout code
@@ -82,7 +83,7 @@ jobs:
       - name: Install build dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install build twine
+          pip install build
 
       - name: Read and clean version
         id: version
@@ -126,13 +127,11 @@ jobs:
         run: |
           python -m build
 
-      # PyPI upload disabled for testing to avoid version conflicts
       - name: Publish to PyPI
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-        run: |
-          twine upload dist/*
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          # Uses OIDC Trusted Publisher - no API token required
+          attestations: true
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
