@@ -15,12 +15,12 @@ pip install gxabm
 
 ### Docker
 
-A `Dockerfile` is provided for building a container image. It will build the library from the local source.
+A `Dockerfile` is provided for building a container image based on Ubuntu 24.04. It builds the library from the local source and includes kubectl for Kubernetes management.
 
 ```bash
 docker build -t gxabm:latest .
 # Or with a specific platform and version tag:
-docker build --platform linux/amd64 -t quay.io/galaxyproject/abm:2.12.0 .
+docker build --platform linux/amd64 -t quay.io/galaxyproject/abm:2.13.0 .
 ```
 
 The image uses `abm` as its entrypoint, so commands can be passed directly:
@@ -36,15 +36,15 @@ docker run --rm gxabm:latest --help
    git clone https://github.com/galaxyproject/gxabm.git
    cd gxabm
    ```
-1. Create a virtual env and install the required libraries
+1. Create a virtual env and install in development mode
    ```bash
    python3 -m venv .venv
    source .venv/bin/activate
    pip install --upgrade pip
-   pip install -r requirements.txt
+   pip install -e .
    ```
 
-> :bulb: The included `setup.sh` file can be *sourced* to both activate the virtual environment and create an alias so you do not need to type `python3 abm.py` or `python3 -m abm` all the time.  The remainder of this document assumes that the `setup.sh` file has been *sourced* or `abm` has been installed from PyPI.
+> :bulb: The included `setup.sh` file can be *sourced* to activate the virtual environment and create an alias so you do not need to type `python3 -m abm` all the time.  The remainder of this document assumes that the `setup.sh` file has been *sourced* or `abm` has been installed from PyPI.
 
 ```bash
 source setup.sh
@@ -112,10 +112,43 @@ abm --log DEBUG aws workflow list
 
 Valid log levels are: `DEBUG`, `INFO`, `WARN`, `WARNING`, `ERROR`, `FATAL`, `CRITICAL`.
 
+### Tools Management
+
+The `tools` subcommand provides comprehensive management and inspection of tools installed on a Galaxy instance:
+
+```bash
+# List all tools
+abm aws tools list
+
+# List tools with filtering
+abm aws tools list --name "fastq.*" --section "NGS" --latest
+
+# Show detailed information about a specific tool
+abm aws tools show toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.73
+
+# List inputs required by a tool
+abm aws tools inputs toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.73
+
+# Search for tools by name or description
+abm aws tools search "quality control"
+
+# Generate a YAML template for tool inputs
+abm aws tools scaffold toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.73
+
+# Run a tool with inputs from YAML file
+abm aws tools run toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.73 inputs.yml
+
+# Run a tool with inline parameters (can be combined with YAML)
+abm aws tools run toolshed.g2.bx.psu.edu/repos/devteam/fastqc/fastqc/0.73 --param input_file=hda:abc123 --wait
+```
+
 ### Terms and Definitions
 
 **workflow**<br/>
 A [Galaxy workflow](https://galaxyproject.org/learn/advanced-workflow/). Workflows in `abm` are managed with the `workflow` sub-command. Workflows can **not** be run directly via the `abm` command, but are run through the *benchmark* or *experiment* commands.
+
+**tools**<br/>
+Individual Galaxy tools that can be listed, inspected, and executed directly. Tools are managed with the `tools` sub-command and can be run independently of workflows with YAML configuration files or inline parameters.
 
 **benchmark**<br/>
 A *benchmark* consists of one or more *workflows* with their inputs and outputs defined in a YAML configuration file. See the [Benchmark Configuration](#benchmark-configuration) section for instructions on defining a *benchmark*.
@@ -134,12 +167,16 @@ See the [Experiment Configuration](#experiment-configuration) section for instru
 
 Before ABM can interact with a Galaxy cluster an entry for that cluster needs to be created in ABM's `~/.abm/profile.yml` configuration file.  Since the profile is just a YAML file it can be edited in any text editor to add the entry with the URL, API key, and kubeconfig location. Or you can use `abm` commands to create the entry:
 
-1. Create a new entry for *cloud* in the profile. The name can be anything you want, as long as that name has not already been used. The *kubeconfig* will have been generated when the cluster was provisioned; how it is obtained depends on the cloud provider.
+1. Create a new entry for *cloud* in the profile. The name can be anything you want, as long as that name has not already been used. You can specify all parameters at once or add them individually:
    ```bash
+   # Create with all parameters at once
+   abm config create cloud --url https://galaxy.url --key YOUR_API_KEY --kube /path/to/kubeconfig
+   
+   # Or create basic entry and add details later
    abm config create cloud /path/to/kubeconfig
    ```
 
-2. Set the Galaxy URL. The `abm cloud kube url` command can be used to determine Galaxy's URL, but see the [Caveats](#caveats-and-known-problems) section for known problems. If that does not work you can also use `kubectl get svc -n galaxy` to find the ingress service name and `kubectl describe svc -n galaxy service-name` to find the ingress URL.
+2. Set the Galaxy URL (if not provided during creation). The `abm cloud kube url` command can be used to determine Galaxy's URL, but see the [Caveats](#caveats-and-known-problems) section for known problems. If that does not work you can also use `kubectl get svc -n galaxy` to find the ingress service name and `kubectl describe svc -n galaxy service-name` to find the ingress URL.
    ```bash
    abm config url cloud https://galaxy.url
    ```
@@ -155,10 +192,25 @@ Before ABM can interact with a Galaxy cluster an entry for that cluster needs to
    abm config key cloud $key
    ```
 
-5. Verify the configuration.
+5. Update the kubeconfig path if needed:
+   ```bash
+   abm config kube cloud /new/path/to/kubeconfig
+   ```
+
+6. Verify the configuration.
    ```bash
    abm config show cloud
    ```
+
+### Bulk Instance Configuration
+
+For setting up a Galaxy instance with datasets, histories, and workflows, use the `config bootstrap` command with a YAML configuration file:
+
+```bash
+abm cloud config bootstrap bootstrap-config.yml
+```
+
+The bootstrap configuration supports multiple formats and features including Terra workspace integration. See the [Bootstrap Configuration](#bootstrap-configuration) section for details.
 
 
 ## Benchmark Configuration
@@ -235,6 +287,69 @@ The *benchmark* configurations to be executed during the *experiment*. These pat
 The cloud providers, as defined in the `profile.yml` file, where the experiments will be run.  The cloud provider instances must already have the *workflows* and history datasets uploaded and available for use.
 - **job_configs**<br/>
 The `jobs.rules.container_mapper_rules` files that define the CPU and memory resources allocated to tools.  These are resolved as `rules/<name>.yml` relative to the current working directory. See `samples/benchmarks/rules/` for examples.
+
+## Bootstrap Configuration
+
+The `config bootstrap` command allows bulk configuration of Galaxy instances by importing datasets, histories, workflows, and Terra workspace data from a YAML configuration file.
+
+### Basic Bootstrap Configuration (Version 0)
+
+```yaml
+datasets:
+  "History Name":
+    - https://example.com/data/file1.fastq.gz
+    - https://example.com/data/file2.fastq.gz
+
+histories:
+  - name: "Import History"
+    url: https://usegalaxy.org/history/export_archive?id=...
+
+workflows:
+  - /path/to/workflow.ga
+```
+
+### Enhanced Bootstrap Configuration (Version 1)
+
+Version 1 adds support for custom dataset names, datatypes, and metadata:
+
+```yaml
+version: 1
+
+datasets:
+  "History Name":
+    - https://example.com/data/file1.fastq.gz  # Simple URL (uses filename)
+    - url: https://example.com/data/file2.fastq.gz
+      name: custom_sample_name                 # Custom name in Galaxy
+    - url: https://example.com/data/file3.fastq.gz
+      name: quality_data
+      datatype: fastqsanger                   # Custom datatype
+
+histories:
+  - name: "Import History"
+    url: https://usegalaxy.org/history/export_archive?id=...
+
+workflows:
+  - /path/to/workflow.ga
+
+terra:
+  namespace: your-billing-project
+  workspace: your-workspace-name
+  files:
+    "Terra Data":                            # Target history name
+      - pattern: "*.fastq.gz"
+        directory: "fastq_files/"
+      - pattern: "reference_genome.fa"
+```
+
+### Terra Workspace Integration
+
+The bootstrap command can import data directly from Terra workspaces when running Galaxy on Terra platform:
+
+- **namespace**: Terra billing project/namespace
+- **workspace**: Terra workspace name  
+- **files**: Mapping of Galaxy history names to file patterns and directories
+- **pattern**: File pattern to match (supports wildcards)
+- **directory**: Optional subdirectory within the workspace bucket (supports wildcards)
 
 ## Dataset Collections
 
@@ -351,6 +466,8 @@ The `patch` command is only valid for *development* versions, that is, a version
 
 ## Building and Deploying
 
+The project uses a modern Python build system with `pyproject.toml`:
+
 ```bash
 make clean
 make dist
@@ -358,7 +475,14 @@ make test-deploy
 make deploy
 ```
 
-The `make test-deploy` deploys artifacts to TestPyPI server and is intended for deploying and testing *development* builds.  Development build **should not** be deployed to PyPI.
+The `make dist` command uses `python3 -m build` to create both source distribution and wheel packages. The `make test-deploy` deploys artifacts to TestPyPI server and is intended for deploying and testing *development* builds.  Development builds **should not** be deployed to PyPI.
+
+For Docker builds:
+```bash
+make docker        # Build Docker image with version tag
+make push-docker   # Push to Docker Hub (ksuderman/gxabm)
+make push-quay     # Push to Quay.io (quay.io/galaxyproject/abm)
+```
 
 ## Caveats and Known Problems
 

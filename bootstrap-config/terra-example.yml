@@ -1,0 +1,33 @@
+# Example Terra workspace bootstrap configuration
+# This configuration demonstrates how to import data from Terra workspaces
+# into Galaxy using the enhanced config bootstrap command
+
+version: 1
+
+# Standard dataset imports (existing functionality)
+datasets:
+  "Public Datasets":
+    - https://zenodo.org/records/61771/files/1.fasta
+    - https://zenodo.org/records/61771/files/2.fasta
+
+# Terra workspace imports (new functionality)
+terra:
+  - namespace: "notebooks-canary-project"
+    workspace: "SArS-CoV-2-Genome copy"
+    datasets:
+      "Reference Data":
+        - pattern: "Tables/reference/SARS-CoV-2_reference_genome.fasta"
+          datatype: "fasta"
+      "Sample Data":
+        - pattern: "Tables/sample/VA_sample_forward_reads.fastq"
+          datatype: "fastqsanger"
+        - pattern: "Tables/sample/VA_sample_reverse_reads.fastq"
+          datatype: "fastqsanger"
+
+# Standard workflow imports (existing functionality)
+workflows:
+  - https://github.com/galaxyproject/training-material/raw/main/topics/variant-analysis/tutorials/dip/workflows/workflow.ga
+
+# Standard history imports (existing functionality)
+histories:
+  - https://usegalaxy.org/api/histories/example
