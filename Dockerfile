@@ -6,11 +6,14 @@ WORKDIR /app
 COPY pyproject.toml README.md ./
 COPY abm/ abm/
 
-# Install Python 3, pip, and other required packages
+# Install Python 3, pip, build tools, and other required packages
 RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
     python3-venv \
+    python3-dev \
+    build-essential \
+    gcc \
     curl \
     jq \
     apt-transport-https \
