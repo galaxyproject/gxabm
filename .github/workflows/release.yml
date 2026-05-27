@@ -10,6 +10,26 @@ on:
         required: false
         default: 'false'
         type: boolean
+      publish_pypi:
+        description: 'Publish to PyPI'
+        required: false
+        default: 'true'
+        type: boolean
+      publish_docker:
+        description: 'Publish Docker images'
+        required: false
+        default: 'true'
+        type: boolean
+      create_github_release:
+        description: 'Create GitHub release'
+        required: false
+        default: 'true'
+        type: boolean
+      merge_back_to_dev:
+        description: 'Merge back to dev and bump version'
+        required: false
+        default: 'false'
+        type: boolean
 
 jobs:
   # Check if this push is from a dev branch merge
@@ -128,15 +148,18 @@ jobs:
           python -m build
 
       - name: Publish to PyPI
+        if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.publish_pypi == 'true') }}
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           # Uses OIDC Trusted Publisher - no API token required
           attestations: true
 
       - name: Set up Docker Buildx
+        if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.publish_docker == 'true') }}
         uses: docker/setup-buildx-action@v3
 
       - name: Login to Quay.io
+        if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.publish_docker == 'true') }}
         uses: docker/login-action@v3
         with:
           registry: quay.io
@@ -144,6 +167,7 @@ jobs:
           password: ${{ secrets.QUAY_PASSWORD }}
 
       - name: Build and push Docker image
+        if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.publish_docker == 'true') }}
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -155,6 +179,7 @@ jobs:
 
       - name: Create GitHub Release
         id: create-release
+        if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.create_github_release == 'true') }}
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -171,6 +196,7 @@ jobs:
           prerelease: false
 
       - name: Generate detailed release notes
+        if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.create_github_release == 'true') }}
         run: |
           # Get the previous tag for comparison
           PREV_TAG=$(git describe --tags --abbrev=0 ${{ steps.tag.outputs.tag-name }}^ 2>/dev/null || echo "")
@@ -205,6 +231,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Merge master back to dev
+        if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.merge_back_to_dev == 'true') }}
         run: |
           git checkout dev
           git pull origin dev
@@ -215,32 +242,67 @@ jobs:
           git push origin dev
 
       # Rollback on failure
+      # Log workflow configuration
+      - name: Log workflow configuration
+        run: |
+          echo "🔧 Workflow Configuration:"
+          echo "=========================="
+          echo "Event: ${{ github.event_name }}"
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            echo "Force release: ${{ github.event.inputs.force_release }}"
+            echo "Publish PyPI: ${{ github.event.inputs.publish_pypi }}"
+            echo "Publish Docker: ${{ github.event.inputs.publish_docker }}"
+            echo "Create GitHub release: ${{ github.event.inputs.create_github_release }}"
+            echo "Merge back to dev: ${{ github.event.inputs.merge_back_to_dev }}"
+          else
+            echo "Auto-release from merge: all steps enabled"
+          fi
+          echo ""
+
+      # Simplified rollback on failure
       - name: Rollback on failure
         if: failure()
         run: |
-          echo "Release process failed. Rolling back..."
+          echo "🚨 Release process failed. Starting cleanup..."
 
-          # Delete the tag if it was created
-          if [ -n "${{ steps.tag.outputs.tag-name }}" ]; then
-            git tag -d "${{ steps.tag.outputs.tag-name }}" || true
-            git push --delete origin "${{ steps.tag.outputs.tag-name }}" || true
-          fi
+          RELEASE_TAG="${{ steps.tag.outputs.tag-name }}"
+          RELEASE_ID="${{ steps.create-release.outputs.id }}"
+          ORIGINAL_VERSION="${{ steps.version.outputs.current-version }}"
 
           # Delete the GitHub release if it was created
-          if [ -n "${{ steps.create-release.outputs.id }}" ]; then
-            gh api \
-              --method DELETE \
-              -H "Accept: application/vnd.github+json" \
-              /repos/${{ github.repository }}/releases/${{ steps.create-release.outputs.id }} || true
+          if [ -n "$RELEASE_ID" ]; then
+            echo "🗑️  Deleting GitHub release..."
+            gh api --method DELETE -H "Accept: application/vnd.github+json" /repos/${{ github.repository }}/releases/$RELEASE_ID || echo "⚠️  Could not delete release"
+          fi
+
+          # Delete the Git tag (local and remote)
+          if [ -n "$RELEASE_TAG" ]; then
+            echo "🗑️  Deleting Git tag..."
+            git tag -d "$RELEASE_TAG" || echo "⚠️  Could not delete local tag"
+            git push --delete origin "$RELEASE_TAG" || echo "⚠️  Could not delete remote tag"
           fi
 
           # Reset the version file to original
-          echo "${{ steps.version.outputs.current-version }}" > abm/VERSION
-          git add abm/VERSION
-          git commit -m "Rollback: restore version to ${{ steps.version.outputs.current-version }}"
-          git push origin master
+          if [ -n "$ORIGINAL_VERSION" ]; then
+            echo "🔄 Resetting version file..."
+            echo "$ORIGINAL_VERSION" > abm/VERSION
+            git add abm/VERSION
+            git commit -m "Rollback: restore version to $ORIGINAL_VERSION after failed release" || echo "⚠️  Could not commit version rollback"
+            git push origin master || echo "⚠️  Could not push version rollback"
+          fi
 
-          echo "Rollback completed. Please check the logs and fix any issues before retrying."
+          echo ""
+          echo "📋 Cleanup Summary:"
+          echo "==================="
+          echo "❌ Release failed during: ${{ github.job }}"
+          echo "🧹 Cleaned up: tag, release, version commit"
+          echo "⚠️  PyPI/Docker artifacts may have been published (cannot be automatically removed)"
+          echo ""
+          echo "🔧 To retry:"
+          echo "   1. Fix the issue that caused the failure"
+          echo "   2. Use 'Run workflow' with selective publishing options"
+          echo "   3. Or create a new dev→master PR"
+
           exit 1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
