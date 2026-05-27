@@ -14,6 +14,9 @@ RUN apt-get update && apt-get install -y \
     python3-dev \
     build-essential \
     gcc \
+    libz-dev \
+    libbz2-dev \
+    liblzma-dev \
     curl \
     jq \
     apt-transport-https \
