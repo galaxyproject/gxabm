@@ -1,20 +1,29 @@
 import json
-import tempfile
 import os
-import yaml
+import tempfile
 from pathlib import Path
-from unittest.mock import patch, mock_open, MagicMock
-import pytest
+from unittest.mock import MagicMock, mock_open, patch
 
-from abm.lib.config import create, kube, bootstrap, _extract_filename_from_url, _import_dataset_with_metadata
+import pytest
+import yaml
+
 from abm.lib.common import Context
+from abm.lib.config import (
+    _extract_filename_from_url,
+    _import_dataset_with_metadata,
+    bootstrap,
+    create,
+    kube,
+)
 
 
 @pytest.fixture
 def temp_profiles():
     """Create a temporary profiles.yml file for testing."""
     with tempfile.NamedTemporaryFile(mode='w', suffix='.yml', delete=False) as f:
-        f.write("test_profile:\n  url: 'http://example.com'\n  key: 'test_key'\n  kube: '/tmp/test.config'\n")
+        f.write(
+            "test_profile:\n  url: 'http://example.com'\n  key: 'test_key'\n  kube: '/tmp/test.config'\n"
+        )
         temp_file = f.name
 
     with patch('abm.lib.common.find_config') as mock_find:
@@ -85,12 +94,18 @@ def test_config_create_with_all_params(temp_profiles, capsys):
     """Test creating a config with all parameters specified."""
     context = Context('server', 'key', 'kubeconfig')
 
-    create(context, [
-        'test_new',
-        '--url', 'https://galaxy.example.com',
-        '--key', 'my_api_key',
-        '--kube', '/path/to/kube.config'
-    ])
+    create(
+        context,
+        [
+            'test_new',
+            '--url',
+            'https://galaxy.example.com',
+            '--key',
+            'my_api_key',
+            '--kube',
+            '/path/to/kube.config',
+        ],
+    )
 
     captured = capsys.readouterr()
     output = json.loads(captured.out.strip())
@@ -197,10 +212,17 @@ def test_config_kube_invalid_args(temp_profiles, capsys):
 
 # Tests for new bootstrap functionality
 
+
 def test_extract_filename_from_url():
     """Test filename extraction from URLs."""
-    assert _extract_filename_from_url("https://example.com/data/file.fastq.gz") == "file.fastq.gz"
-    assert _extract_filename_from_url("http://example.com/path/to/dataset.bam") == "dataset.bam"
+    assert (
+        _extract_filename_from_url("https://example.com/data/file.fastq.gz")
+        == "file.fastq.gz"
+    )
+    assert (
+        _extract_filename_from_url("http://example.com/path/to/dataset.bam")
+        == "dataset.bam"
+    )
     assert _extract_filename_from_url("https://example.com/data/") == "dataset"
     assert _extract_filename_from_url("https://example.com") == "dataset"
 
@@ -215,7 +237,10 @@ def test_import_dataset_with_metadata_url_only(mock_dataset):
     _import_dataset_with_metadata(mock_gi, history_id, dataset_config)
 
     mock_dataset._import_from_url.assert_called_once_with(
-        mock_gi, history_id, "https://example.com/data/file.fastq", file_name="file.fastq"
+        mock_gi,
+        history_id,
+        "https://example.com/data/file.fastq",
+        file_name="file.fastq",
     )
 
 
@@ -226,13 +251,16 @@ def test_import_dataset_with_metadata_with_name(mock_dataset):
     history_id = "test_history_id"
     dataset_config = {
         "url": "https://example.com/data/file.fastq",
-        "name": "custom_name"
+        "name": "custom_name",
     }
 
     _import_dataset_with_metadata(mock_gi, history_id, dataset_config)
 
     mock_dataset._import_from_url.assert_called_once_with(
-        mock_gi, history_id, "https://example.com/data/file.fastq", file_name="custom_name"
+        mock_gi,
+        history_id,
+        "https://example.com/data/file.fastq",
+        file_name="custom_name",
     )
 
 
@@ -244,14 +272,17 @@ def test_import_dataset_with_metadata_with_datatype(mock_dataset):
     dataset_config = {
         "url": "https://example.com/data/file.fastq",
         "name": "custom_name",
-        "datatype": "fastqsanger"
+        "datatype": "fastqsanger",
     }
 
     _import_dataset_with_metadata(mock_gi, history_id, dataset_config)
 
     mock_dataset._import_from_url.assert_called_once_with(
-        mock_gi, history_id, "https://example.com/data/file.fastq",
-        file_name="custom_name", file_type="fastqsanger"
+        mock_gi,
+        history_id,
+        "https://example.com/data/file.fastq",
+        file_name="custom_name",
+        file_type="fastqsanger",
     )
 
 
@@ -293,11 +324,11 @@ def temp_bootstrap_config():
         "datasets": {
             "Test History": [
                 "https://example.com/file1.fastq",
-                "https://example.com/file2.fastq"
+                "https://example.com/file2.fastq",
             ]
         },
         "histories": ["https://example.com/history1"],
-        "workflows": ["https://example.com/workflow1"]
+        "workflows": ["https://example.com/workflow1"],
     }
 
     # Version 1 config (new format)
@@ -306,17 +337,14 @@ def temp_bootstrap_config():
         "datasets": {
             "Test History": [
                 "https://example.com/file1.fastq",
-                {
-                    "url": "https://example.com/file2.fastq",
-                    "name": "custom_file2"
-                },
+                {"url": "https://example.com/file2.fastq", "name": "custom_file2"},
                 {
                     "url": "https://example.com/file3.fastq",
                     "name": "custom_file3",
-                    "datatype": "fastqsanger"
-                }
+                    "datatype": "fastqsanger",
+                },
             ]
-        }
+        },
     }
 
     for version, config in [("v0", v0_config), ("v1", v1_config)]:
@@ -335,7 +363,14 @@ def temp_bootstrap_config():
 @patch('abm.lib.config.history')
 @patch('abm.lib.config.connect')
 @patch('abm.lib.config.Context')
-def test_bootstrap_version_0_backward_compatibility(mock_context_class, mock_connect, mock_history, mock_workflow, temp_bootstrap_config, capsys):
+def test_bootstrap_version_0_backward_compatibility(
+    mock_context_class,
+    mock_connect,
+    mock_history,
+    mock_workflow,
+    temp_bootstrap_config,
+    capsys,
+):
     """Test bootstrap with version 0 config (backward compatibility)."""
     mock_context = MagicMock()
     mock_context_class.return_value = mock_context
@@ -362,7 +397,14 @@ def test_bootstrap_version_0_backward_compatibility(mock_context_class, mock_con
 @patch('abm.lib.config.history')
 @patch('abm.lib.config.connect')
 @patch('abm.lib.config.Context')
-def test_bootstrap_version_1_enhanced_format(mock_context_class, mock_connect, mock_history, mock_workflow, temp_bootstrap_config, capsys):
+def test_bootstrap_version_1_enhanced_format(
+    mock_context_class,
+    mock_connect,
+    mock_history,
+    mock_workflow,
+    temp_bootstrap_config,
+    capsys,
+):
     """Test bootstrap with version 1 config (enhanced format)."""
     mock_context = MagicMock()
     mock_context_class.return_value = mock_context
@@ -390,3 +432,135 @@ def test_bootstrap_version_1_enhanced_format(mock_context_class, mock_connect, m
     assert calls[1][1]['file_name'] == "custom_file2"  # Custom name
     assert calls[2][1]['file_name'] == "custom_file3"  # Custom name + datatype
     assert calls[2][1]['file_type'] == "fastqsanger"
+
+
+# Tests for issue #346: v1 history entries may be {url, name} dicts.
+
+
+def test_normalize_history_entry_string():
+    """A plain URL string yields (url, <filename from url>)."""
+    from abm.lib.config import _normalize_history_entry
+
+    assert _normalize_history_entry("https://example.com/history.tar.gz") == (
+        "https://example.com/history.tar.gz",
+        "history.tar.gz",
+    )
+
+
+def test_normalize_history_entry_dict_with_name():
+    """A {url, name} dict yields (url, name)."""
+    from abm.lib.config import _normalize_history_entry
+
+    entry = {"url": "https://example.com/history.tar.gz", "name": "Variant Test"}
+    assert _normalize_history_entry(entry) == (
+        "https://example.com/history.tar.gz",
+        "Variant Test",
+    )
+
+
+def test_normalize_history_entry_dict_without_name():
+    """A dict with only a url yields (url, None)."""
+    from abm.lib.config import _normalize_history_entry
+
+    entry = {"url": "https://example.com/history.tar.gz"}
+    assert _normalize_history_entry(entry) == (
+        "https://example.com/history.tar.gz",
+        None,
+    )
+
+
+def test_normalize_history_entry_dict_missing_url():
+    """A dict without a url yields (None, ...) so the caller can report the error."""
+    from abm.lib.config import _normalize_history_entry
+
+    url, name = _normalize_history_entry({"name": "No URL"})
+    assert url is None
+
+
+@pytest.fixture
+def temp_history_bootstrap_config():
+    """Bootstrap configs exercising v1 history entries (string and {url, name} dict)."""
+    configs = {}
+
+    # v1 with a {url, name} dict history entry -- the case that triggered issue #346
+    v1_dict = {
+        "version": 1,
+        "histories": [
+            {
+                "url": "https://example.com/Galaxy-History-VC-Test-Data.tar.gz",
+                "name": "Variant Test",
+            }
+        ],
+    }
+
+    # v1 with a plain URL string history entry (backward compatibility)
+    v1_string = {
+        "version": 1,
+        "histories": ["https://example.com/plain-history.tar.gz"],
+    }
+
+    for key, config in [("dict", v1_dict), ("string", v1_string)]:
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.yml', delete=False) as f:
+            yaml.dump(config, f)
+            configs[key] = f.name
+
+    yield configs
+
+    for config_file in configs.values():
+        os.unlink(config_file)
+
+
+@patch('abm.lib.config.workflow')
+@patch('abm.lib.config.history')
+@patch('abm.lib.config.connect')
+@patch('abm.lib.config.Context')
+def test_bootstrap_history_dict_entry_extracts_url(
+    mock_context_class,
+    mock_connect,
+    mock_history,
+    mock_workflow,
+    temp_history_bootstrap_config,
+    capsys,
+):
+    """A v1 {url, name} history entry must import the URL string, not the dict (issue #346)."""
+    mock_context_class.return_value = MagicMock()
+    mock_connect.return_value = MagicMock()
+
+    context = Context('server', 'key', 'kubeconfig')
+    with patch('abm.lib.config.dataset'):
+        bootstrap(context, ['test_server', temp_history_bootstrap_config['dict']])
+
+    mock_history._import.assert_called_once()
+    args, kwargs = mock_history._import.call_args
+    # The second positional arg is the args list forwarded to history._import;
+    # it must contain the URL string, never the whole {url, name} dict.
+    assert args[1] == ["https://example.com/Galaxy-History-VC-Test-Data.tar.gz"]
+    # The name from the entry should be forwarded so the history can be renamed.
+    assert kwargs.get('name') == "Variant Test"
+
+
+@patch('abm.lib.config.workflow')
+@patch('abm.lib.config.history')
+@patch('abm.lib.config.connect')
+@patch('abm.lib.config.Context')
+def test_bootstrap_history_string_entry_still_works(
+    mock_context_class,
+    mock_connect,
+    mock_history,
+    mock_workflow,
+    temp_history_bootstrap_config,
+    capsys,
+):
+    """A plain URL string history entry must still import unchanged (backward compatibility)."""
+    mock_context_class.return_value = MagicMock()
+    mock_connect.return_value = MagicMock()
+
+    context = Context('server', 'key', 'kubeconfig')
+    with patch('abm.lib.config.dataset'):
+        bootstrap(context, ['test_server', temp_history_bootstrap_config['string']])
+
+    mock_history._import.assert_called_once()
+    args, kwargs = mock_history._import.call_args
+    assert args[1] == ["https://example.com/plain-history.tar.gz"]
+    # A plain URL string derives its history name from the filename portion.
+    assert kwargs.get('name') == "plain-history.tar.gz"

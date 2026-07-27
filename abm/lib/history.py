@@ -240,15 +240,33 @@ def rename(context: Context, args: list):
     print(f"History renamed to {result['name']}")
 
 
-def _import(context: Context, args: list):
+def _import(context: Context, args: list, name: str = None):
     gi = connect(context)
-    result = gi.histories.import_history(url=args[0])
-    id = result['id']
+    # import_history returns the import *job*, not the new history, and Galaxy
+    # names the imported history after the archive contents rather than the
+    # URL, so identify the created history by diffing the history list.
+    before = {h['id'] for h in gi.histories.get_histories()}
+    job = gi.histories.import_history(url=args[0])
     try:
-        gi.jobs.wait_for_job(id, 86400, 10, False)
+        gi.jobs.wait_for_job(job['id'], 86400, 10, False)
     except:
-        return False
-    return True
+        return None
+
+    new = [h for h in gi.histories.get_histories() if h['id'] not in before]
+    if len(new) != 1:
+        print(
+            f"WARNING: expected 1 new history after import, found {len(new)}: "
+            f"{[h['name'] for h in new]}"
+        )
+    if not new:
+        return None
+    history_id = new[0]['id']
+
+    if name:
+        gi.histories.update_history(history_id, name=name)
+        print(f"Imported history {history_id} renamed to '{name}'")
+
+    return history_id
 
 
 def himport(context: Context, args: list):
