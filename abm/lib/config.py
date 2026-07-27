@@ -1,9 +1,9 @@
 import argparse
 import os
 import re
-from pathlib import Path
-from typing import List, Dict, Any, Optional
 from datetime import timedelta
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 import yaml
 from common import (
@@ -21,13 +21,24 @@ from common import (
 # Import functions for bootstrap functionality
 from . import dataset, history, workflow
 
-# Terra workspace integration
+# Terra workspace integration.
+#
+# terra_compat MUST be imported before anvilfs. It monkey-patches
+# configparser.SafeConfigParser (removed in Python 3.12) back into place, and
+# importing anvilfs eagerly imports firecloud, which calls SafeConfigParser()
+# at import time. The `isort: off`/`on` guards preserve this order -- anvilfs
+# is third-party and isort would otherwise sort it ahead of the first-party
+# terra_compat import. A broad except ensures a broken or absent Terra stack
+# disables the feature instead of crashing the whole CLI.
 try:
-    # Import our Python 3.12 compatibility patch first
-    from . import terra_compat
+    # isort: off
+    from . import terra_compat  # noqa: F401
     from anvilfs.anvilfs import AnVILFS
+
+    # isort: on
+
     TERRA_AVAILABLE = True
-except ImportError:
+except Exception:
     TERRA_AVAILABLE = False
 
 
@@ -41,7 +52,9 @@ def do_list(context: Context, args: list):
 def create(context: Context, argv: list):
     parser = argparse.ArgumentParser(prog='abm config create')
     parser.add_argument('profile_name', help='name of the profile to create')
-    parser.add_argument('kube_path', nargs='?', help='path to kubeconfig file (backwards compatibility)')
+    parser.add_argument(
+        'kube_path', nargs='?', help='path to kubeconfig file (backwards compatibility)'
+    )
     parser.add_argument('--url', help='Galaxy server URL')
     parser.add_argument('--key', help='Galaxy API key')
     parser.add_argument('--kube', help='path to kubeconfig file')
@@ -302,7 +315,7 @@ def _detect_datatype_from_extension(filename: str) -> Optional[str]:
         '.h5': 'h5',
         '.hdf5': 'h5',
         '.json': 'json',
-        '.xml': 'xml'
+        '.xml': 'xml',
     }
 
     filename_lower = filename.lower()
@@ -312,7 +325,9 @@ def _detect_datatype_from_extension(filename: str) -> Optional[str]:
     return None
 
 
-def _filter_files_by_pattern(files: List[Dict[str, Any]], pattern: str) -> List[Dict[str, Any]]:
+def _filter_files_by_pattern(
+    files: List[Dict[str, Any]], pattern: str
+) -> List[Dict[str, Any]]:
     """Filter files by glob-style pattern against filename."""
     # Convert glob pattern to regex
     regex_pattern = pattern.replace("*", ".*").replace("?", ".")
@@ -325,7 +340,9 @@ def _filter_files_by_pattern(files: List[Dict[str, Any]], pattern: str) -> List[
 def _process_terra_workspaces(gi, terra_workspaces):
     """Process Terra workspace configurations and import datasets."""
     if not TERRA_AVAILABLE:
-        print("ERROR: Terra workspace support not available. Install fs.anvilfs package.")
+        print(
+            "ERROR: Terra workspace support not available. Install fs.anvilfs package."
+        )
         return
 
     for workspace_config in terra_workspaces:
@@ -333,7 +350,9 @@ def _process_terra_workspaces(gi, terra_workspaces):
         workspace_name = workspace_config.get('workspace')
 
         if not namespace or not workspace_name:
-            print(f"ERROR: Terra workspace config missing 'namespace' or 'workspace': {workspace_config}")
+            print(
+                f"ERROR: Terra workspace config missing 'namespace' or 'workspace': {workspace_config}"
+            )
             continue
 
         print(f"Processing Terra workspace: {namespace}/{workspace_name}")
@@ -368,7 +387,9 @@ def _process_terra_workspaces(gi, terra_workspaces):
                         pattern = pattern_config.get('pattern')
                         custom_datatype = pattern_config.get('datatype')
                         if not pattern:
-                            print(f"    ERROR: pattern config missing 'pattern' field: {pattern_config}")
+                            print(
+                                f"    ERROR: pattern config missing 'pattern' field: {pattern_config}"
+                            )
                             continue
                     else:
                         print(f"    ERROR: invalid pattern config: {pattern_config}")
@@ -396,18 +417,28 @@ def _process_terra_workspaces(gi, terra_workspaces):
                         try:
                             for file_info in anvil_fs.scandir(scan_dir):
                                 if file_info.is_file:
-                                    full_path = f"{scan_dir.rstrip('/')}/{file_info.name}".replace("//", "/")
-                                    all_files.append({
-                                        "path": full_path,
-                                        "name": file_info.name,
-                                        "size": file_info.size if hasattr(file_info, 'size') else 0
-                                    })
+                                    full_path = f"{scan_dir.rstrip('/')}/{file_info.name}".replace(
+                                        "//", "/"
+                                    )
+                                    all_files.append(
+                                        {
+                                            "path": full_path,
+                                            "name": file_info.name,
+                                            "size": (
+                                                file_info.size
+                                                if hasattr(file_info, 'size')
+                                                else 0
+                                            ),
+                                        }
+                                    )
                         except Exception as e:
                             print(f"      ERROR scanning directory {scan_dir}: {e}")
                             continue
 
                         # Filter files by filename pattern
-                        matching_files = _filter_files_by_pattern(all_files, filename_pattern)
+                        matching_files = _filter_files_by_pattern(
+                            all_files, filename_pattern
+                        )
                         print(f"    Found {len(matching_files)} matching files")
 
                         # Import each matching file
@@ -416,7 +447,10 @@ def _process_terra_workspaces(gi, terra_workspaces):
                             file_name = file_info["name"]
 
                             # Detect datatype
-                            datatype = custom_datatype or _detect_datatype_from_extension(file_name)
+                            datatype = (
+                                custom_datatype
+                                or _detect_datatype_from_extension(file_name)
+                            )
 
                             try:
                                 # Generate signed URL for the file
@@ -428,8 +462,16 @@ def _process_terra_workspaces(gi, terra_workspaces):
 
                                 # Import dataset using Galaxy's URL import mechanism
                                 # This will need to be adapted to work with AnVIL URLs
-                                print(f"      Importing: {file_name} (type: {datatype})")
-                                dataset._import_from_url(gi, dataset_history, file_url, file_name=file_name, file_type=datatype)
+                                print(
+                                    f"      Importing: {file_name} (type: {datatype})"
+                                )
+                                dataset._import_from_url(
+                                    gi,
+                                    dataset_history,
+                                    file_url,
+                                    file_name=file_name,
+                                    file_type=datatype,
+                                )
 
                             except Exception as e:
                                 print(f"      ERROR importing {file_name}: {e}")
@@ -438,12 +480,18 @@ def _process_terra_workspaces(gi, terra_workspaces):
                         print(f"    ERROR processing pattern {pattern}: {e}")
 
         except Exception as e:
-            print(f"ERROR connecting to Terra workspace {namespace}/{workspace_name}: {e}")
+            print(
+                f"ERROR connecting to Terra workspace {namespace}/{workspace_name}: {e}"
+            )
             # Provide helpful guidance on authentication
             if 'credentials' in str(e).lower() or 'authentication' in str(e).lower():
                 print(f"  Set up Terra authentication with:")
-                print(f"    export GOOGLE_APPLICATION_CREDENTIALS='path/to/credentials.json'")
-                print(f"    export TERRA_NOTEBOOK_GOOGLE_ACCESS_TOKEN=\"$(gcloud auth print-access-token)\"")
+                print(
+                    f"    export GOOGLE_APPLICATION_CREDENTIALS='path/to/credentials.json'"
+                )
+                print(
+                    f"    export TERRA_NOTEBOOK_GOOGLE_ACCESS_TOKEN=\"$(gcloud auth print-access-token)\""
+                )
             continue
 
 
@@ -458,7 +506,9 @@ def _import_dataset_with_metadata(gi, history_id, dataset_config):
         # Dictionary format with optional name and datatype
         url = dataset_config.get('url')
         if not url:
-            print(f"ERROR: dataset config missing required 'url' field: {dataset_config}")
+            print(
+                f"ERROR: dataset config missing required 'url' field: {dataset_config}"
+            )
             return
 
         # Extract optional parameters
@@ -535,9 +585,7 @@ def _process_datasets_v0(gi, datasets):
     elif isinstance(datasets, dict):
         # Dictionary format - group by history name
         for history_name, urls in datasets.items():
-            print(
-                f"Importing {len(urls)} datasets into history '{history_name}'..."
-            )
+            print(f"Importing {len(urls)} datasets into history '{history_name}'...")
 
             # Get or create the named history
             histories = gi.histories.get_histories(name=history_name)
@@ -554,6 +602,21 @@ def _process_datasets_v0(gi, datasets):
                     print(f"ERROR: failed to import dataset from {url}: {e}")
     else:
         print("ERROR: datasets section must be either a list or dictionary")
+
+
+def _normalize_history_entry(entry):
+    """Normalize a bootstrap 'histories' entry into a ``(url, name)`` tuple.
+
+    An entry may be either a plain URL string or a dict with a required ``url``
+    field and an optional ``name`` field (v1 config format). For a plain URL
+    string the name defaults to the filename portion of the URL. Returns
+    ``(None, name)`` when a dict is missing its ``url`` so the caller can report
+    the error rather than passing the whole dict to Galaxy as the archive
+    source (see issue #346).
+    """
+    if isinstance(entry, dict):
+        return entry.get('url'), entry.get('name')
+    return entry, _extract_filename_from_url(entry)
 
 
 def bootstrap(context: Context, args: list):
@@ -588,10 +651,16 @@ def bootstrap(context: Context, args: list):
     if 'histories' in config:
         histories = config['histories']
         print(f"Importing {len(histories)} histories...")
-        for url in histories:
+        for entry in histories:
+            # v1 entries may be a plain URL string or a {url, name} dict; pass
+            # only the URL string to the importer (issue #346).
+            url, name = _normalize_history_entry(entry)
+            if not url:
+                print(f"ERROR: history entry missing 'url': {entry}")
+                continue
             try:
                 # Call existing history import function
-                history._import(context, [url])
+                history._import(context, [url], name=name)
             except Exception as e:
                 print(f"ERROR: failed to import history from {url}: {e}")
 
