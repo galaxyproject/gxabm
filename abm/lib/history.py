@@ -285,10 +285,22 @@ def himport(context: Context, args: list):
         required=False,
         default=None,
     )
+    parser.add_argument(
+        '-r',
+        '--name',
+        help='Rename the imported history to this name',
+        required=False,
+        default=None,
+    )
     parser.add_argument('identifier', help='The history alias or URL to import')
     argv = parser.parse_args(args)
 
     wait = not argv.no_wait
+    if argv.name and not wait:
+        print(
+            "ERROR: --name requires waiting for the import to complete (remove --no-wait)"
+        )
+        return False
     if argv.identifier.startswith('http'):
         url = argv.identifier
     else:
@@ -308,16 +320,35 @@ def himport(context: Context, args: list):
 
     gi = connect(context)
     print(f"Importing history from {url}")
+    # Snapshot existing history IDs so we can identify the one the import
+    # creates. import_history returns the import *job*, not the new history,
+    # and Galaxy names the imported history after the archive contents rather
+    # than the URL, so we find it by diffing the history list.
+    before = {h['id'] for h in gi.histories.get_histories()}
     result = gi.histories.import_history(url=url)
     if wait:
         id = result['id']
         print(f"Waiting for job {id}")
         try:
             gi.jobs.wait_for_job(id, 86400, 10, False)
-            # TODO We could rename the history here if we wanted to.
             print('Done')
         except:
             return False
+
+        new = [h for h in gi.histories.get_histories() if h['id'] not in before]
+        if len(new) != 1:
+            print(
+                f"WARNING: expected 1 new history after import, found {len(new)}: "
+                f"{[h['name'] for h in new]}"
+            )
+        if argv.name:
+            if new:
+                history_id = new[0]['id']
+                gi.histories.update_history(history_id, name=argv.name)
+                print(f"Imported history {history_id} renamed to '{argv.name}'")
+            else:
+                print("ERROR: could not locate the imported history to rename")
+                return False
     else:
         print(json.dumps(result, indent=4))
     return True
