@@ -142,6 +142,22 @@ def kube(context: Context, args: list):
     print_json(profile)
 
 
+def master(context: Context, args: list):
+    if len(args) != 2:
+        print(f"USAGE: abm config master <cloud> <bootstrap_api_key>")
+        return
+    profile_name = args[0]
+    master_key = args[1]
+    profiles = load_profiles()
+    if not profile_name in profiles:
+        print(f"ERROR: Unknown cloud {profile_name}")
+        return
+    profile = profiles[profile_name]
+    profile["master"] = master_key
+    save_profiles(profiles)
+    print_json(profile)
+
+
 def show(context: Context, args: list):
     if len(args) != 1:
         print("USAGE: abm config show <cloud>")
