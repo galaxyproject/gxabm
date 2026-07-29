@@ -528,80 +528,65 @@ def _import_dataset_with_metadata(gi, history_id, dataset_config):
         print(f"ERROR: dataset config must be URL string or dict: {dataset_config}")
 
 
-def _process_datasets_v1(gi, datasets):
-    """Process datasets in version 1 format with enhanced metadata support."""
-    # Check if datasets is a simple list or dictionary
+DEFAULT_DATASET_HISTORY = "Configured Datasets"
+
+
+def _normalize_datasets_config(datasets):
+    """Normalize any accepted 'datasets' shape into ``{history_name: [item, ...]}``.
+
+    The bootstrap config format is version-agnostic (issue #349). Accepts:
+
+      * a list of items                    -> imported into the default history
+      * a single URL string                -> default history, one item
+      * a single ``{url, ...}`` dataset dict -> default history, one item
+      * a dict of ``history_name -> list``   -> passthrough
+      * a dict of ``history_name -> scalar`` -> the scalar wrapped in a list
+
+    Each item is a URL string or a ``{url, name?, datatype?}`` dict; per-item
+    validation is left to ``_import_dataset_with_metadata``. Returns an empty
+    mapping (after printing an error) for any unsupported top-level type.
+    """
+    if isinstance(datasets, str):
+        return {DEFAULT_DATASET_HISTORY: [datasets]}
     if isinstance(datasets, list):
-        # Simple list format - create default history
-        print(f"Importing {len(datasets)} datasets into default history...")
-        new_history = gi.histories.create_history(name="Configured Datasets")
-        dataset_history = new_history['id']
+        return {DEFAULT_DATASET_HISTORY: datasets}
+    if isinstance(datasets, dict):
+        # A single dataset config (identified by a 'url' key) rather than a
+        # history map.
+        if 'url' in datasets:
+            return {DEFAULT_DATASET_HISTORY: [datasets]}
+        normalized = {}
+        for history_name, value in datasets.items():
+            normalized[history_name] = value if isinstance(value, list) else [value]
+        return normalized
+    print(f"ERROR: datasets section must be a list, dict, or URL string: {datasets!r}")
+    return {}
 
-        for dataset_config in datasets:
+
+def _get_or_create_history(gi, name):
+    """Return the id of the history named ``name``, creating it if necessary."""
+    histories = gi.histories.get_histories(name=name)
+    if histories:
+        return histories[0]['id']
+    return gi.histories.create_history(name=name)['id']
+
+
+def _process_datasets(gi, datasets):
+    """Import datasets from any supported bootstrap format (version-agnostic).
+
+    Replaces the former version-specific ``_process_datasets_v0``/``_v1``
+    handlers with a single implementation that accepts every previously
+    supported shape (issue #349).
+    """
+    mapping = _normalize_datasets_config(datasets)
+    for history_name, items in mapping.items():
+        print(f"Importing {len(items)} datasets into history '{history_name}'...")
+        history_id = _get_or_create_history(gi, history_name)
+        for item in items:
             try:
-                _import_dataset_with_metadata(gi, dataset_history, dataset_config)
+                _import_dataset_with_metadata(gi, history_id, item)
             except Exception as e:
-                print(f"ERROR: failed to import dataset {dataset_config}: {e}")
-
-    elif isinstance(datasets, dict):
-        # Dictionary format - group by history name
-        for history_name, dataset_list in datasets.items():
-            print(
-                f"Importing {len(dataset_list)} datasets into history '{history_name}'..."
-            )
-
-            # Get or create the named history
-            histories = gi.histories.get_histories(name=history_name)
-            if histories:
-                dataset_history = histories[0]['id']
-            else:
-                new_history = gi.histories.create_history(name=history_name)
-                dataset_history = new_history['id']
-
-            for dataset_config in dataset_list:
-                try:
-                    _import_dataset_with_metadata(gi, dataset_history, dataset_config)
-                except Exception as e:
-                    print(f"ERROR: failed to import dataset {dataset_config}: {e}")
-    else:
-        print("ERROR: datasets section must be either a list or dictionary")
-
-
-def _process_datasets_v0(gi, datasets):
-    """Process datasets in legacy version 0 format (backward compatibility)."""
-    # Check if datasets is a simple list or dictionary
-    if isinstance(datasets, list):
-        # Simple list format - create default history
-        print(f"Importing {len(datasets)} datasets into default history...")
-        new_history = gi.histories.create_history(name="Configured Datasets")
-        dataset_history = new_history['id']
-
-        for url in datasets:
-            try:
-                dataset._import_from_url(gi, dataset_history, url)
-            except Exception as e:
-                print(f"ERROR: failed to import dataset from {url}: {e}")
-
-    elif isinstance(datasets, dict):
-        # Dictionary format - group by history name
-        for history_name, urls in datasets.items():
-            print(f"Importing {len(urls)} datasets into history '{history_name}'...")
-
-            # Get or create the named history
-            histories = gi.histories.get_histories(name=history_name)
-            if histories:
-                dataset_history = histories[0]['id']
-            else:
-                new_history = gi.histories.create_history(name=history_name)
-                dataset_history = new_history['id']
-
-            for url in urls:
-                try:
-                    dataset._import_from_url(gi, dataset_history, url)
-                except Exception as e:
-                    print(f"ERROR: failed to import dataset from {url}: {e}")
-    else:
-        print("ERROR: datasets section must be either a list or dictionary")
+                print(f"ERROR: failed to import dataset {item}: {e}")
 
 
 def _normalize_history_entry(entry):
@@ -664,23 +649,12 @@ def bootstrap(context: Context, args: list):
             except Exception as e:
                 print(f"ERROR: failed to import history from {url}: {e}")
 
-    # Determine configuration version (default to 0 for backward compatibility)
-    config_version = config.get('version', 0)
-    print(f"Processing bootstrap configuration version {config_version}")
-
-    # Process datasets using version-appropriate handler
+    # The bootstrap config format is version-agnostic; the 'version' attribute
+    # is ignored if present (issue #349). _process_datasets handles every
+    # supported dataset shape with full backwards compatibility.
     if 'datasets' in config:
-        datasets = config['datasets']
         gi = connect(context)
-
-        if config_version == 0:
-            # Legacy format for backward compatibility
-            _process_datasets_v0(gi, datasets)
-        elif config_version == 1:
-            # Enhanced format with name and datatype support
-            _process_datasets_v1(gi, datasets)
-        else:
-            print(f"ERROR: unsupported configuration version: {config_version}")
+        _process_datasets(gi, config['datasets'])
 
     # Process workflows (with tool installation)
     if 'workflows' in config:
