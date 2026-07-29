@@ -328,6 +328,10 @@
       help: set the Galaxy API key for the provided cloud instance
       handler: config.key
       params: CLOUD API_KEY
+    - name: [master]
+      help: set the Galaxy master (bootstrap API) key for the provided cloud instance
+      handler: config.master
+      params: CLOUD API_KEY
     - name: [url]
       help: set the URL for the Galaxy server.
       params: CLOUD URL
