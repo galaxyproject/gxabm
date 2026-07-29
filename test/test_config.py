@@ -386,10 +386,8 @@ def test_bootstrap_version_0_backward_compatibility(
     with patch('abm.lib.config.dataset') as mock_dataset:
         bootstrap(context, ['test_server', config_file])
 
-    captured = capsys.readouterr()
-    assert "Processing bootstrap configuration version 0" in captured.out
-
-    # Verify legacy import was called
+    # The v0 (legacy) dataset config still imports both datasets; the version
+    # attribute is now ignored (issue #349).
     assert mock_dataset._import_from_url.call_count == 2
 
 
@@ -419,9 +417,6 @@ def test_bootstrap_version_1_enhanced_format(
 
     with patch('abm.lib.config.dataset') as mock_dataset:
         bootstrap(context, ['test_server', config_file])
-
-    captured = capsys.readouterr()
-    assert "Processing bootstrap configuration version 1" in captured.out
 
     # Verify enhanced import was called with different parameter sets
     calls = mock_dataset._import_from_url.call_args_list
@@ -564,3 +559,176 @@ def test_bootstrap_history_string_entry_still_works(
     assert args[1] == ["https://example.com/plain-history.tar.gz"]
     # A plain URL string derives its history name from the filename portion.
     assert kwargs.get('name') == "plain-history.tar.gz"
+
+
+# Tests for issue #349: unified, version-agnostic _process_datasets.
+
+
+def _fresh_gi(existing_histories=None):
+    """Mock GalaxyInstance: get_histories returns existing_histories (default none)."""
+    gi = MagicMock()
+    gi.histories.get_histories.return_value = existing_histories or []
+    gi.histories.create_history.return_value = {'id': 'new_history_id'}
+    return gi
+
+
+def test_normalize_datasets_config_list():
+    """A bare list is imported into the default history."""
+    from abm.lib.config import DEFAULT_DATASET_HISTORY, _normalize_datasets_config
+
+    urls = ["https://example.com/a.fastq", "https://example.com/b.fastq"]
+    assert _normalize_datasets_config(urls) == {DEFAULT_DATASET_HISTORY: urls}
+
+
+def test_normalize_datasets_config_single_string():
+    """A single URL string becomes a one-item default-history list."""
+    from abm.lib.config import DEFAULT_DATASET_HISTORY, _normalize_datasets_config
+
+    assert _normalize_datasets_config("https://example.com/a.fastq") == {
+        DEFAULT_DATASET_HISTORY: ["https://example.com/a.fastq"]
+    }
+
+
+def test_normalize_datasets_config_single_dataset_dict():
+    """A single {url, ...} dict (has a 'url' key) is one default-history item."""
+    from abm.lib.config import DEFAULT_DATASET_HISTORY, _normalize_datasets_config
+
+    entry = {"url": "https://example.com/a.fastq", "name": "custom"}
+    assert _normalize_datasets_config(entry) == {DEFAULT_DATASET_HISTORY: [entry]}
+
+
+def test_normalize_datasets_config_history_map_of_lists():
+    """A history_name -> list dict passes through unchanged."""
+    from abm.lib.config import _normalize_datasets_config
+
+    cfg = {"H1": ["https://example.com/a"], "H2": ["https://example.com/b"]}
+    assert _normalize_datasets_config(cfg) == cfg
+
+
+def test_normalize_datasets_config_history_map_scalar_values():
+    """History-map values that are scalars are wrapped in a list."""
+    from abm.lib.config import _normalize_datasets_config
+
+    cfg = {
+        "H1": "https://example.com/a",
+        "H2": {"url": "https://example.com/b", "name": "b"},
+    }
+    assert _normalize_datasets_config(cfg) == {
+        "H1": ["https://example.com/a"],
+        "H2": [{"url": "https://example.com/b", "name": "b"}],
+    }
+
+
+def test_normalize_datasets_config_invalid_type(capsys):
+    """An unsupported top-level type yields an empty mapping and an error."""
+    from abm.lib.config import _normalize_datasets_config
+
+    assert _normalize_datasets_config(123) == {}
+    assert "ERROR" in capsys.readouterr().out
+
+
+@patch('abm.lib.config.dataset')
+def test_process_datasets_v0_list(mock_dataset):
+    """v0: a list of URLs imports into the default history with a derived name."""
+    from abm.lib.config import _process_datasets
+
+    gi = _fresh_gi()
+    _process_datasets(gi, ["https://example.com/a.fastq", "https://example.com/b.bam"])
+
+    gi.histories.create_history.assert_called_once()
+    calls = mock_dataset._import_from_url.call_args_list
+    assert len(calls) == 2
+    # Uniform behavior: bare URLs now pass a derived file_name.
+    assert calls[0][1]['file_name'] == "a.fastq"
+    assert calls[1][1]['file_name'] == "b.bam"
+
+
+@patch('abm.lib.config.dataset')
+def test_process_datasets_v0_dict(mock_dataset):
+    """v0: a history_name -> [urls] dict imports into that history."""
+    from abm.lib.config import _process_datasets
+
+    gi = _fresh_gi()
+    _process_datasets(gi, {"My History": ["https://example.com/a.fastq"]})
+
+    gi.histories.create_history.assert_called_once_with(name="My History")
+    assert mock_dataset._import_from_url.call_count == 1
+
+
+@patch('abm.lib.config.dataset')
+def test_process_datasets_v1_list_mixed_items(mock_dataset):
+    """v1: list items may be strings or {url, name, datatype} dicts."""
+    from abm.lib.config import _process_datasets
+
+    gi = _fresh_gi()
+    _process_datasets(
+        gi,
+        [
+            "https://example.com/file1.fastq",
+            {"url": "https://example.com/file2.fastq", "name": "custom_file2"},
+            {
+                "url": "https://example.com/file3.fastq",
+                "name": "custom_file3",
+                "datatype": "fastqsanger",
+            },
+        ],
+    )
+
+    calls = mock_dataset._import_from_url.call_args_list
+    assert len(calls) == 3
+    assert calls[0][1]['file_name'] == "file1.fastq"
+    assert calls[1][1]['file_name'] == "custom_file2"
+    assert calls[2][1]['file_name'] == "custom_file3"
+    assert calls[2][1]['file_type'] == "fastqsanger"
+
+
+@patch('abm.lib.config.dataset')
+def test_process_datasets_reuses_existing_history(mock_dataset):
+    """An existing history is reused rather than recreated."""
+    from abm.lib.config import _process_datasets
+
+    gi = _fresh_gi(existing_histories=[{'id': 'existing_id', 'name': 'My History'}])
+    _process_datasets(gi, {"My History": ["https://example.com/a.fastq"]})
+
+    gi.histories.create_history.assert_not_called()
+    assert mock_dataset._import_from_url.call_args[0][1] == 'existing_id'
+
+
+@patch('abm.lib.config.dataset')
+def test_process_datasets_missing_url_reports_and_skips(mock_dataset, capsys):
+    """A dict item without a url is reported and skipped, others still import."""
+    from abm.lib.config import _process_datasets
+
+    gi = _fresh_gi()
+    _process_datasets(gi, [{"name": "no url"}, "https://example.com/ok.fastq"])
+
+    out = capsys.readouterr().out
+    assert "missing required 'url'" in out
+    assert mock_dataset._import_from_url.call_count == 1
+
+
+@patch('abm.lib.config.workflow')
+@patch('abm.lib.config.history')
+@patch('abm.lib.config.connect')
+@patch('abm.lib.config.Context')
+def test_bootstrap_ignores_version(
+    mock_context_class, mock_connect, mock_history, mock_workflow, capsys
+):
+    """A config with an arbitrary 'version' still processes datasets normally."""
+    mock_context_class.return_value = MagicMock()
+    mock_connect.return_value = _fresh_gi()
+
+    config = {"version": 99, "datasets": ["https://example.com/a.fastq"]}
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.yml', delete=False) as f:
+        yaml.dump(config, f)
+        config_file = f.name
+
+    try:
+        context = Context('server', 'key', 'kubeconfig')
+        with patch('abm.lib.config.dataset') as mock_dataset:
+            bootstrap(context, ['test_server', config_file])
+        out = capsys.readouterr().out
+        assert "unsupported configuration version" not in out
+        assert mock_dataset._import_from_url.call_count == 1
+    finally:
+        os.unlink(config_file)
