@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock, patch
 
-from abm.lib.history import _import
+from abm.lib.history import _import, himport
 
 
 def _make_gi(before_ids, after_histories):
@@ -77,3 +77,56 @@ def test_import_returns_none_when_job_fails(mock_connect):
 
     assert result is None
     gi.histories.update_history.assert_not_called()
+
+
+# Tests for issue #344: import multiple histories at once.
+
+
+@patch('abm.lib.history.connect')
+def test_himport_multiple_no_wait(mock_connect):
+    """Multiple URL identifiers each trigger an import (no-wait path)."""
+    gi = MagicMock()
+    gi.histories.import_history.return_value = {'id': 'job'}
+    mock_connect.return_value = gi
+
+    result = himport(
+        MagicMock(),
+        ['http://a/h1.tar.gz', 'http://b/h2.tar.gz', '--no-wait'],
+    )
+
+    assert result is True
+    urls = [c.kwargs['url'] for c in gi.histories.import_history.call_args_list]
+    assert urls == ['http://a/h1.tar.gz', 'http://b/h2.tar.gz']
+
+
+@patch('abm.lib.history.connect')
+def test_himport_single_wait(mock_connect):
+    """A single URL still imports and waits (backward compatibility)."""
+    gi = MagicMock()
+    gi.histories.get_histories.side_effect = [
+        [{'id': 'h1', 'name': 'h1'}],
+        [{'id': 'h1', 'name': 'h1'}, {'id': 'h2', 'name': 'imported'}],
+    ]
+    gi.histories.import_history.return_value = {'id': 'job'}
+    mock_connect.return_value = gi
+
+    result = himport(MagicMock(), ['http://a/h1.tar.gz'])
+
+    assert result is True
+    gi.histories.import_history.assert_called_once_with(url='http://a/h1.tar.gz')
+
+
+@patch('abm.lib.history.connect')
+def test_himport_name_with_multiple_is_rejected(mock_connect, capsys):
+    """--name cannot be combined with multiple identifiers."""
+    gi = MagicMock()
+    mock_connect.return_value = gi
+
+    result = himport(
+        MagicMock(),
+        ['http://a/h1.tar.gz', 'http://b/h2.tar.gz', '--name', 'X'],
+    )
+
+    assert result is False
+    gi.histories.import_history.assert_not_called()
+    assert 'name' in capsys.readouterr().out.lower()

@@ -133,9 +133,9 @@
       help: list histories on the server.
       params: "[-a|--all]"
     - name: ['import', 'imp', 'im']
-      params: "[CLOUD HISTORY_ID JEHA_ID | URL | [dna|rna]] [-n|--no-wait]"
+      params: "IDENTIFIER [IDENTIFIER...] [-n|--no-wait] [-r|--name NAME] [-f|--file FILE]"
       handler: history.himport
-      help: import a history from another Galaxy server
+      help: import one or more histories (by alias or URL) from another Galaxy server
     - name: [create, new]
       params: NAME
       handler: history.create
