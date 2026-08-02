@@ -732,3 +732,33 @@ def test_bootstrap_ignores_version(
         assert mock_dataset._import_from_url.call_count == 1
     finally:
         os.unlink(config_file)
+
+
+# Tests for issue #354: `config create --master`.
+
+
+@patch('abm.lib.config.save_profiles')
+@patch('abm.lib.config.load_profiles')
+def test_config_create_with_master(mock_load, mock_save):
+    """--master stores the master (bootstrap) key in the new profile."""
+    mock_load.return_value = {}
+    context = Context('server', 'key', 'kubeconfig')
+
+    create(context, ['prof', '--url', 'http://x', '--master', 'MASTER_KEY'])
+
+    saved = mock_save.call_args[0][0]
+    assert saved['prof']['master'] == 'MASTER_KEY'
+    assert saved['prof']['url'] == 'http://x'
+
+
+@patch('abm.lib.config.save_profiles')
+@patch('abm.lib.config.load_profiles')
+def test_config_create_without_master_omits_field(mock_load, mock_save):
+    """Without --master no 'master' field is written, preserving key fallback."""
+    mock_load.return_value = {}
+    context = Context('server', 'key', 'kubeconfig')
+
+    create(context, ['prof', '--url', 'http://x'])
+
+    saved = mock_save.call_args[0][0]
+    assert 'master' not in saved['prof']

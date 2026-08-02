@@ -58,6 +58,7 @@ def create(context: Context, argv: list):
     parser.add_argument('--url', help='Galaxy server URL')
     parser.add_argument('--key', help='Galaxy API key')
     parser.add_argument('--kube', help='path to kubeconfig file')
+    parser.add_argument('--master', help='Galaxy master (bootstrap) API key')
 
     args = parser.parse_args(argv)
 
@@ -74,6 +75,10 @@ def create(context: Context, argv: list):
         kube_value = args.kube
 
     profile = {"url": args.url or "", "key": args.key or "", "kube": kube_value}
+    # Only store the master key when provided; a profile with no 'master' field
+    # falls back to the regular API key (see parse_profile in common.py).
+    if args.master:
+        profile["master"] = args.master
 
     profiles[args.profile_name] = profile
     save_profiles(profiles)
