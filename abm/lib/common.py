@@ -1,5 +1,6 @@
 import json
 import os
+import string
 import subprocess
 import sys
 from math import ceil
@@ -415,15 +416,31 @@ def get_keys(d: dict):
     return result
 
 
-def find_history(gi, name_or_id):
-    history = None
-    try:
-        history = gi.histories.show_history(name_or_id)
-    except:
-        pass
+def _looks_like_id(value):
+    """Return True if value looks like a Galaxy encoded id.
 
-    if history is not None:
-        return history['id']
+    Galaxy encoded ids are hex strings whose length is a multiple of 16. This is
+    used to avoid a doomed ``show_history()`` probe (which triggers an HTTP 400
+    and several retries) when the reference is actually a history name.
+    """
+    return (
+        len(value) > 0
+        and len(value) % 16 == 0
+        and all(c in string.hexdigits for c in value)
+    )
+
+
+def find_history(gi, name_or_id):
+    # Only probe show_history for values that look like an id; otherwise the
+    # call 400s and BioBlend retries it several times before we fall back to a
+    # name lookup (see issue #359).
+    if _looks_like_id(name_or_id):
+        try:
+            history = gi.histories.show_history(name_or_id)
+            if history is not None:
+                return history['id']
+        except:
+            pass
     history = gi.histories.get_histories(name=name_or_id)
     if history is None:
         return name_or_id
