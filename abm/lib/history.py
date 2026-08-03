@@ -364,15 +364,17 @@ def create(context: Context, args: list):
 
 
 def delete(context: Context, args: list):
-    if len(args) != 1:
-        print('ERROR: please provide the history ID')
+    if len(args) == 0:
+        print('ERROR: please provide one or more history IDs or names')
         return
     gi = connect(context)
-    history = find_history(gi, args[0])
-    if history is None:
-        print("ERROR: No such history.")
-    gi.histories.delete_history(history, True)
-    print(f"Deleted history {args[0]}")
+    for identifier in args:
+        history = find_history(gi, identifier)
+        if history is None:
+            print(f"ERROR: No such history {identifier}")
+            continue
+        gi.histories.delete_history(history, True)
+        print(f"Deleted history {identifier}")
 
 
 def copy(context: Context, args: list):
