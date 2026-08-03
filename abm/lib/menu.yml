@@ -180,8 +180,8 @@
       help: remove empty histories
       handler: history.clean
     - name: [delete, del, rm]
-      params: ID
-      help: delete a single history
+      params: ID [ID...]
+      help: delete one or more histories by ID or name
       handler: history.delete
     - name: [ test ]
       handler: history.test

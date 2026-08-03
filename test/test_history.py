@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock, patch
 
-from abm.lib.history import _import, himport
+from abm.lib.history import _import, himport, delete
 
 
 def _make_gi(before_ids, after_histories):
@@ -79,8 +79,61 @@ def test_import_returns_none_when_job_fails(mock_connect):
     gi.histories.update_history.assert_not_called()
 
 
-# Tests for issue #344: import multiple histories at once.
+# Tests for issue #356: delete multiple histories at once.
 
+@patch('abm.lib.history.find_history')
+@patch('abm.lib.history.connect')
+def test_delete_multiple(mock_connect, mock_find):
+    """Multiple identifiers each resolve and get deleted."""
+    gi = MagicMock()
+    mock_connect.return_value = gi
+    mock_find.side_effect = lambda g, ident: {
+        'Variant Test': 'id1',
+        'Variant 2G': 'id2',
+    }[ident]
+
+    delete(MagicMock(), ['Variant Test', 'Variant 2G'])
+
+    deleted = [c.args[0] for c in gi.histories.delete_history.call_args_list]
+    assert deleted == ['id1', 'id2']
+
+
+@patch('abm.lib.history.find_history')
+@patch('abm.lib.history.connect')
+def test_delete_single(mock_connect, mock_find):
+    """A single identifier still deletes as before (backward compatibility)."""
+    gi = MagicMock()
+    mock_connect.return_value = gi
+    mock_find.return_value = 'id1'
+
+    delete(MagicMock(), ['id1'])
+
+    gi.histories.delete_history.assert_called_once_with('id1', True)
+
+
+@patch('abm.lib.history.find_history')
+@patch('abm.lib.history.connect')
+def test_delete_skips_missing(mock_connect, mock_find, capsys):
+    """A missing history is reported and skipped; others are still deleted."""
+    gi = MagicMock()
+    mock_connect.return_value = gi
+    mock_find.side_effect = [None, 'id2']
+
+    delete(MagicMock(), ['missing', 'good'])
+
+    gi.histories.delete_history.assert_called_once_with('id2', True)
+    assert 'No such history' in capsys.readouterr().out
+
+
+@patch('abm.lib.history.connect')
+def test_delete_no_args_errors(mock_connect, capsys):
+    """No identifiers prints an error and does not connect/delete."""
+    delete(MagicMock(), [])
+
+    assert 'ERROR' in capsys.readouterr().out
+    mock_connect.assert_not_called()
+    
+# Tests for issue #344: import multiple histories at once.
 
 @patch('abm.lib.history.connect')
 def test_himport_multiple_no_wait(mock_connect):
