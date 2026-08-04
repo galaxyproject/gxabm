@@ -23,9 +23,6 @@ dependencies = [
     "bioblend",
     "pyyaml",
     "planemo",
-    "azure-core",
-    "azure-identity",
-    "azure-storage-blob",
 ]
 
 # Terra/AnVIL workspace support is optional. It pulls in fs.anvilfs, which
