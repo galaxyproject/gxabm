@@ -25,6 +25,12 @@ dependencies = [
     "planemo",
 ]
 
+# Terra/AnVIL workspace support is optional. It pulls in fs.anvilfs, which
+# depends on the unmaintained bgzip C extension that only builds on Python
+# <= 3.10. Install with `pip install gxabm[terra]` to enable it.
+[project.optional-dependencies]
+terra = ["fs.anvilfs"]
+
 [project.urls]
 Homepage = "https://github.com/galaxyproject/gxabm"
 

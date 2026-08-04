@@ -240,15 +240,65 @@ def rename(context: Context, args: list):
     print(f"History renamed to {result['name']}")
 
 
-def _import(context: Context, args: list):
-    gi = connect(context)
-    result = gi.histories.import_history(url=args[0])
-    id = result['id']
+def _do_import(gi, url: str, wait: bool = True, name: str = None):
+    """Import a single history archive from ``url``.
+
+    Returns the new history id on success, or None on failure. When ``wait`` is
+    False the import job is not awaited and the raw job dict is returned instead
+    (there is no new history to rename yet).
+    """
+    print(f"Importing history from {url}")
+    # import_history returns the import *job*, not the new history, and Galaxy
+    # names the imported history after the archive contents rather than the
+    # URL, so identify the created history by diffing the history list.
+    before = {h['id'] for h in gi.histories.get_histories()}
+    job = gi.histories.import_history(url=url)
+    if not wait:
+        print(json.dumps(job, indent=4))
+        return job
+
+    print(f"Waiting for job {job['id']}")
     try:
-        gi.jobs.wait_for_job(id, 86400, 10, False)
+        gi.jobs.wait_for_job(job['id'], 86400, 10, False)
+        print('Done')
     except:
-        return False
-    return True
+        return None
+
+    new = [h for h in gi.histories.get_histories() if h['id'] not in before]
+    if len(new) != 1:
+        print(
+            f"WARNING: expected 1 new history after import, found {len(new)}: "
+            f"{[h['name'] for h in new]}"
+        )
+    if not new:
+        return None
+    history_id = new[0]['id']
+
+    if name:
+        gi.histories.update_history(history_id, name=name)
+        print(f"Imported history {history_id} renamed to '{name}'")
+
+    return history_id
+
+
+def _import(context: Context, args: list, name: str = None):
+    gi = connect(context)
+    return _do_import(gi, args[0], wait=True, name=name)
+
+
+def _resolve_history_ref(identifier: str, histories: dict):
+    """Resolve a history identifier to an archive URL.
+
+    A URL is returned unchanged; any other value is treated as an alias and
+    looked up in the ``histories`` mapping loaded from histories.yml. Returns
+    None (after printing an error) when the alias is unknown.
+    """
+    if identifier.startswith('http'):
+        return identifier
+    if not histories or identifier not in histories:
+        print(f"ERROR: No such history {identifier}")
+        return None
+    return histories[identifier]
 
 
 def himport(context: Context, args: list):
@@ -267,42 +317,58 @@ def himport(context: Context, args: list):
         required=False,
         default=None,
     )
-    parser.add_argument('identifier', help='The history alias or URL to import')
+    parser.add_argument(
+        '-r',
+        '--name',
+        help='Rename the imported history to this name',
+        required=False,
+        default=None,
+    )
+    parser.add_argument(
+        'identifiers',
+        nargs='+',
+        help='One or more history aliases or URLs to import',
+    )
     argv = parser.parse_args(args)
 
     wait = not argv.no_wait
-    if argv.identifier.startswith('http'):
-        url = argv.identifier
-    else:
-        if argv.file is not None:
-            config = argv.file
-        else:
-            config = find_config("histories.yml")
+    # Renaming targets a single imported history, so it cannot be combined with
+    # multiple identifiers, and it needs the import to complete first.
+    if argv.name and len(argv.identifiers) > 1:
+        print("ERROR: --name can only be used when importing a single history")
+        return False
+    if argv.name and not wait:
+        print(
+            "ERROR: --name requires waiting for the import to complete (remove --no-wait)"
+        )
+        return False
+
+    # Load the histories.yml config once, only if an alias needs resolving.
+    histories = None
+    if any(not ident.startswith('http') for ident in argv.identifiers):
+        config = argv.file if argv.file is not None else find_config("histories.yml")
         if config is None:
             print("ERROR: No histories.yml file found.")
-            return
+            return False
         with open(config, 'r') as f:
             histories = yaml.safe_load(f)
-        if argv.identifier not in histories:
-            print(f"ERROR: No such history {argv.identifier}")
-            return
-        url = histories[argv.identifier]
 
     gi = connect(context)
-    print(f"Importing history from {url}")
-    result = gi.histories.import_history(url=url)
-    if wait:
-        id = result['id']
-        print(f"Waiting for job {id}")
+    all_ok = True
+    for identifier in argv.identifiers:
+        url = _resolve_history_ref(identifier, histories)
+        if url is None:
+            all_ok = False
+            continue
         try:
-            gi.jobs.wait_for_job(id, 86400, 10, False)
-            # TODO We could rename the history here if we wanted to.
-            print('Done')
-        except:
-            return False
-    else:
-        print(json.dumps(result, indent=4))
-    return True
+            result = _do_import(gi, url, wait=wait, name=argv.name)
+        except Exception as e:
+            print(f"ERROR: failed to import history from {url}: {e}")
+            all_ok = False
+            continue
+        if wait and result is None:
+            all_ok = False
+    return all_ok
 
 
 def create(context: Context, args: list):
@@ -315,15 +381,17 @@ def create(context: Context, args: list):
 
 
 def delete(context: Context, args: list):
-    if len(args) != 1:
-        print('ERROR: please provide the history ID')
+    if len(args) == 0:
+        print('ERROR: please provide one or more history IDs or names')
         return
     gi = connect(context)
-    history = find_history(gi, args[0])
-    if history is None:
-        print("ERROR: No such history.")
-    gi.histories.delete_history(history, True)
-    print(f"Deleted history {args[0]}")
+    for identifier in args:
+        history = find_history(gi, identifier)
+        if history is None:
+            print(f"ERROR: No such history {identifier}")
+            continue
+        gi.histories.delete_history(history, True)
+        print(f"Deleted history {identifier}")
 
 
 def copy(context: Context, args: list):

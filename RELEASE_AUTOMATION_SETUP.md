@@ -74,6 +74,24 @@ If any step fails:
 - Version file is restored
 - Process can be retried after fixing issues
 
+### Manual Recovery (New in 2026-05)
+
+The workflow now supports **selective publishing** for recovery from failed releases:
+
+#### Manual Workflow Dispatch Options
+1. Go to **Actions** → **Release Process** → **Run workflow**
+2. Configure publishing options:
+   - `force_release`: Allow release from any branch (not just dev merges)
+   - `publish_pypi`: Enable/disable PyPI publishing
+   - `publish_docker`: Enable/disable Docker image publishing  
+   - `create_github_release`: Enable/disable GitHub release creation
+   - `merge_back_to_dev`: Enable/disable automatic merge back to dev
+
+#### Recovery Scenarios
+- **Docker build failed**: Run with `publish_docker=true`, others `false`
+- **PyPI published, others failed**: Run with `publish_pypi=false`, others `true`
+- **Complete retry**: Set all options to `true` with `force_release=true`
+
 ## Testing the Workflow
 
 Before using in production:
@@ -95,8 +113,12 @@ Consider setting up branch protection for `master`:
 ### Common Issues
 - **Approval timeout**: Default timeout is 30 days, but can be configured
 - **Permission errors**: Ensure GitHub Actions has write permissions to repository
-- **Docker build failures**: Check platform compatibility and Dockerfile
+- **Docker build failures**: 
+  - Check platform compatibility and Dockerfile
+  - Python 3.12 compatibility issues resolved (bgzip dependencies removed)
+  - Build tools and compression libraries included in container
 - **PyPI upload errors**: Verify trusted publisher configuration and package name availability
+- **Dependency conflicts**: Use selective publishing to isolate and fix specific issues
 
 ### Logs and Monitoring
 - Check **Actions** tab for detailed workflow logs

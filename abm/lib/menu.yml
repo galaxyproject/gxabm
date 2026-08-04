@@ -133,9 +133,9 @@
       help: list histories on the server.
       params: "[-a|--all]"
     - name: ['import', 'imp', 'im']
-      params: "[CLOUD HISTORY_ID JEHA_ID | URL | [dna|rna]] [-n|--no-wait]"
+      params: "IDENTIFIER [IDENTIFIER...] [-n|--no-wait] [-r|--name NAME] [-f|--file FILE]"
       handler: history.himport
-      help: import a history from another Galaxy server
+      help: import one or more histories (by alias or URL) from another Galaxy server
     - name: [create, new]
       params: NAME
       handler: history.create
@@ -180,8 +180,8 @@
       help: remove empty histories
       handler: history.clean
     - name: [delete, del, rm]
-      params: ID
-      help: delete a single history
+      params: ID [ID...]
+      help: delete one or more histories by ID or name
       handler: history.delete
     - name: [ test ]
       handler: history.test
@@ -319,7 +319,7 @@
     - name: [create, new]
       help: create a new cloud configuration.
       handler: config.create
-      params: "PROFILE [KUBECONFIG] [--url URL] [--key KEY] [--kube KUBECONFIG]"
+      params: "PROFILE [KUBECONFIG] [--url URL] [--key KEY] [--kube KUBECONFIG] [--master MASTER_KEY]"
     - name: [remove, rm, del]
       help: remove a cloud configuration entry from the profile.yml
       handler: config.remove
@@ -327,6 +327,10 @@
     - name: [key]
       help: set the Galaxy API key for the provided cloud instance
       handler: config.key
+      params: CLOUD API_KEY
+    - name: [master]
+      help: set the Galaxy master (bootstrap API) key for the provided cloud instance
+      handler: config.master
       params: CLOUD API_KEY
     - name: [url]
       help: set the URL for the Galaxy server.

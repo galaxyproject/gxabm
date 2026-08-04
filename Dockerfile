@@ -1,4 +1,9 @@
-FROM ubuntu:24.04
+# This image bundles the optional Terra/AnVIL support (the [terra] extra),
+# which pulls in fs.anvilfs -> getm -> bgzip. bgzip 0.3.5 has a C extension
+# that includes `longintrepr.h`, a CPython header relocated out of the public
+# include path in Python 3.11, so it only compiles on Python 3.10 and earlier.
+# Plain `pip install gxabm` (no extra) has no such constraint.
+FROM python:3.10-slim-bookworm
 
 WORKDIR /app
 
@@ -19,23 +24,17 @@ RUN apt-get update && apt-get install -y \
     liblzma-dev \
     curl \
     jq \
-    apt-transport-https \
     ca-certificates \
-    gnupg \
     && rm -rf /var/lib/apt/lists/*
-
-# Create symlinks for python and pip to work without the '3' suffix
-RUN ln -sf /usr/bin/python3 /usr/bin/python \
-    && ln -sf /usr/bin/pip3 /usr/bin/pip
 
 # Install kubectl directly from binary to avoid GPG signature issues
 RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" \
     && chmod +x kubectl \
     && mv kubectl /usr/local/bin/
 
-# Create a virtual environment and install the Python package
-RUN python3 -m venv /opt/venv
-ENV PATH="/opt/venv/bin:$PATH"
-RUN pip install --no-cache-dir .
+# Install the Python package with Terra support (python:3.10-slim already
+# provides python/pip in an isolated environment, so no venv or symlinks are
+# needed).
+RUN pip install --no-cache-dir .[terra]
 
 CMD ["abm"]

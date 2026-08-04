@@ -12,10 +12,20 @@ pip install --upgrade pip
 pip install gxabm
 ```
 
+#### Terra/AnVIL support (optional)
+
+Importing datasets from Terra/AnVIL workspaces (the `terra:` section of a bootstrap config) requires the optional `terra` extra, which pulls in `fs.anvilfs`:
+
+```bash
+pip install gxabm[terra]
+```
+
+> :warning: The `terra` extra depends on `bgzip`, whose C extension only builds on **Python 3.10 or earlier**. Install `gxabm` without the extra to run on newer Python versions. Without it, Terra workspace commands report that support is unavailable; all other functionality is unaffected.
+
 
 ### Docker
 
-A `Dockerfile` is provided for building a container image based on Ubuntu 24.04. It builds the library from the local source and includes kubectl for Kubernetes management.
+A `Dockerfile` is provided for building a container image based on `python:3.10-slim`. It builds the library (with the `terra` extra) from the local source and includes kubectl for Kubernetes management.
 
 ```bash
 docker build -t gxabm:latest .
@@ -42,6 +52,8 @@ docker run --rm gxabm:latest --help
    source .venv/bin/activate
    pip install --upgrade pip
    pip install -e .
+   # or, to include Terra/AnVIL support (requires Python <= 3.10):
+   pip install -e '.[terra]'
    ```
 
 > :bulb: The included `setup.sh` file can be *sourced* to activate the virtual environment and create an alias so you do not need to type `python3 -m abm` all the time.  The remainder of this document assumes that the `setup.sh` file has been *sourced* or `abm` has been installed from PyPI.
