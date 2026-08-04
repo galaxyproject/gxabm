@@ -11,12 +11,17 @@ WORKDIR /app
 COPY pyproject.toml README.md ./
 COPY abm/ abm/
 
-# build-essential + zlib1g-dev are needed to compile the bgzip C extension
-# (uses -fopenmp and #include <zlib.h>). curl/jq/ca-certificates are used at
-# runtime.
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# Install Python 3, pip, build tools, and other required packages
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    python3-venv \
+    python3-dev \
     build-essential \
-    zlib1g-dev \
+    gcc \
+    libz-dev \
+    libbz2-dev \
+    liblzma-dev \
     curl \
     jq \
     ca-certificates \
