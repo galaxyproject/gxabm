@@ -1,6 +1,7 @@
 import argparse
 import os
 import re
+import sys
 from datetime import timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -358,166 +359,262 @@ def _filter_files_by_pattern(
     return [f for f in files if regex.match(f.get("name", ""))]
 
 
-def _process_terra_workspaces(gi, terra_workspaces):
-    """Process Terra workspace configurations and import datasets."""
+class BootstrapResult:
+    """Counts the imports attempted by ``bootstrap`` (see ``failOnImport``)."""
+
+    def __init__(self):
+        self.imported = 0
+        self.failed = 0
+
+    def ok(self):
+        self.imported += 1
+
+    def fail(self):
+        self.failed += 1
+
+
+# The Galaxy file source configured for the workspace an AnVIL instance was
+# launched from, and where fs.anvilfs mounts the workspace bucket inside it.
+DEFAULT_TERRA_FILE_SOURCE = "terra-launch-workspace"
+TERRA_BUCKET_ROOT = "Other Data/Files"
+
+HISTORY_ARCHIVE_EXTENSIONS = ('.rocrate.zip', '.tar.gz', '.tgz', '.tar')
+
+
+def _classify_bootstrap_file(name: str) -> Optional[str]:
+    """Return 'workflow', 'history', or None for a file in a bootstrap folder."""
+    lower = name.lower()
+    if lower.endswith('.ga'):
+        return 'workflow'
+    if lower.endswith(HISTORY_ARCHIVE_EXTENSIONS):
+        return 'history'
+    return None
+
+
+def _bootstrap_folder_candidates(folder: str) -> List[str]:
+    """Paths, within the file source, to try for a ``bootstrap`` folder.
+
+    A bare folder name is what a user sees in the Terra UI, so it is looked up
+    in the workspace bucket first and then as a literal path.
+    """
+    path = folder.strip('/')
+    if '/' in path:
+        return [path]
+    return [f"{TERRA_BUCKET_ROOT}/{path}", path]
+
+
+def _list_remote_files(gi, uri: str) -> Optional[List[Dict[str, Any]]]:
+    """Recursively list a Galaxy file source directory.
+
+    Returns None if the directory (or the file source) does not exist or can
+    not be listed.
+    """
+    try:
+        response = gi.make_get_request(
+            f"{gi.url}/remote_files",
+            params={'target': uri, 'format': 'uri', 'recursive': 'true'},
+        )
+        if response.status_code != 200:
+            return None
+        return response.json()
+    except Exception:
+        return None
+
+
+def _import_workflow_from_uri(gi, uri: str):
+    """Have Galaxy import and publish the workflow at ``uri``, then install its tools.
+
+    A tool that fails to install is reported but does not fail the import.
+    """
+    print(f"Importing workflow from {uri}")
+    imported = gi.workflows._post(payload={'archive_source': uri})
+    workflow_id = imported['id']
+    gi.workflows.update_workflow(workflow_id, published=True)
+    workflow.install_tools_for_workflow(gi, workflow_id)
+    return workflow_id
+
+
+def _process_terra_bootstrap(gi, workspace_config, result):
+    """Import every history archive and workflow found in a workspace folder.
+
+    Galaxy reads the files itself through its Terra file source, so the folder
+    is listed with the remote files API and imported by ``gxfiles://`` URI.
+    """
+    folder = workspace_config['bootstrap']
+    file_source = workspace_config.get('file_source', DEFAULT_TERRA_FILE_SOURCE)
+
+    entries = None
+    for path in _bootstrap_folder_candidates(folder):
+        uri = f"gxfiles://{file_source}/{path}"
+        entries = _list_remote_files(gi, uri)
+        if entries is not None:
+            break
+    if entries is None:
+        # Most workspaces will not have a bootstrap folder.
+        print(
+            f"  No bootstrap folder '{folder}' found in file source '{file_source}', skipping"
+        )
+        return
+
+    files = [e for e in entries if e.get('class') == 'File']
+    print(f"  Found {len(files)} files in {uri}")
+    for entry in files:
+        kind = _classify_bootstrap_file(entry['name'])
+        if kind is None:
+            print(f"  Skipping {entry['name']}: not a workflow or history archive")
+            continue
+        try:
+            if kind == 'workflow':
+                imported = _import_workflow_from_uri(gi, entry['uri'])
+            else:
+                imported = history._do_import(gi, entry['uri'], wait=True)
+        except Exception as e:
+            print(f"  ERROR: failed to import {entry['name']}: {e}")
+            imported = None
+        if imported:
+            result.ok()
+        else:
+            print(f"  ERROR: {kind} {entry['name']} was not imported")
+            result.fail()
+
+
+def _process_terra_workspaces(gi, terra_workspaces, result=None):
+    """Process Terra workspace configurations: dataset patterns and bootstrap folders."""
+    if result is None:
+        result = BootstrapResult()
+    if isinstance(terra_workspaces, dict):
+        terra_workspaces = [terra_workspaces]
+
+    for workspace_config in terra_workspaces:
+        if 'datasets' in workspace_config:
+            _process_terra_datasets(gi, workspace_config, result)
+        if workspace_config.get('bootstrap'):
+            _process_terra_bootstrap(gi, workspace_config, result)
+
+
+def _process_terra_datasets(gi, workspace_config, result):
+    """Import the datasets matching a Terra workspace's file patterns."""
+    namespace = workspace_config.get('namespace')
+    workspace_name = workspace_config.get('workspace')
+
+    if not namespace or not workspace_name:
+        print(
+            f"ERROR: Terra workspace config missing 'namespace' or 'workspace': {workspace_config}"
+        )
+        result.fail()
+        return
+
     if not TERRA_AVAILABLE:
         print(
             "ERROR: Terra workspace support not available. Install fs.anvilfs package."
         )
+        result.fail()
         return
 
-    for workspace_config in terra_workspaces:
-        namespace = workspace_config.get('namespace')
-        workspace_name = workspace_config.get('workspace')
+    print(f"Processing Terra workspace: {namespace}/{workspace_name}")
 
-        if not namespace or not workspace_name:
+    try:
+        # Connect to Terra workspace via fs.anvilfs
+        anvil_fs = AnVILFS(namespace, workspace_name)
+    except Exception as e:
+        print(f"ERROR connecting to Terra workspace {namespace}/{workspace_name}: {e}")
+        # Provide helpful guidance on authentication
+        if 'credentials' in str(e).lower() or 'authentication' in str(e).lower():
+            print(f"  Set up Terra authentication with:")
             print(
-                f"ERROR: Terra workspace config missing 'namespace' or 'workspace': {workspace_config}"
+                f"    export GOOGLE_APPLICATION_CREDENTIALS='path/to/credentials.json'"
             )
-            continue
+            print(
+                f"    export TERRA_NOTEBOOK_GOOGLE_ACCESS_TOKEN=\"$(gcloud auth print-access-token)\""
+            )
+        result.fail()
+        return
 
-        print(f"Processing Terra workspace: {namespace}/{workspace_name}")
-
+    for history_name, dataset_patterns in workspace_config['datasets'].items():
+        print(f"  Processing history: {history_name}")
         try:
-            # Connect to Terra workspace via fs.anvilfs
-            anvil_fs = AnVILFS(namespace, workspace_name)
-
-            # Process dataset import configurations
-            datasets_config = workspace_config.get('datasets', {})
-            for history_name, dataset_patterns in datasets_config.items():
-                print(f"  Processing history: {history_name}")
-
-                # Get or create the named history
-                histories = gi.histories.get_histories(name=history_name)
-                if histories:
-                    dataset_history = histories[0]['id']
-                    print(f"    Using existing history: {history_name}")
-                else:
-                    new_history = gi.histories.create_history(name=history_name)
-                    dataset_history = new_history['id']
-                    print(f"    Created new history: {history_name}")
-
-                # Process each dataset pattern
-                for pattern_config in dataset_patterns:
-                    if isinstance(pattern_config, str):
-                        # Simple pattern string
-                        pattern = pattern_config
-                        custom_datatype = None
-                    elif isinstance(pattern_config, dict):
-                        # Dictionary with pattern and optional datatype
-                        pattern = pattern_config.get('pattern')
-                        custom_datatype = pattern_config.get('datatype')
-                        if not pattern:
-                            print(
-                                f"    ERROR: pattern config missing 'pattern' field: {pattern_config}"
-                            )
-                            continue
-                    else:
-                        print(f"    ERROR: invalid pattern config: {pattern_config}")
-                        continue
-
-                    print(f"    Looking for files matching: {pattern}")
-
-                    try:
-                        # Parse pattern to extract directory path and filename pattern
-                        pattern_path = Path(pattern)
-                        if pattern_path.parent != Path("."):
-                            # Pattern has directory path (e.g., "Tables/sample/*.fastq")
-                            scan_dir = str(pattern_path.parent)
-                            filename_pattern = pattern_path.name
-                        else:
-                            # Pattern is just filename (e.g., "*.fastq")
-                            scan_dir = "/"
-                            filename_pattern = pattern
-
-                        print(f"      Scanning directory: {scan_dir}")
-                        print(f"      Filename pattern: {filename_pattern}")
-
-                        # List files in the specific directory
-                        all_files = []
-                        try:
-                            for file_info in anvil_fs.scandir(scan_dir):
-                                if file_info.is_file:
-                                    full_path = f"{scan_dir.rstrip('/')}/{file_info.name}".replace(
-                                        "//", "/"
-                                    )
-                                    all_files.append(
-                                        {
-                                            "path": full_path,
-                                            "name": file_info.name,
-                                            "size": (
-                                                file_info.size
-                                                if hasattr(file_info, 'size')
-                                                else 0
-                                            ),
-                                        }
-                                    )
-                        except Exception as e:
-                            print(f"      ERROR scanning directory {scan_dir}: {e}")
-                            continue
-
-                        # Filter files by filename pattern
-                        matching_files = _filter_files_by_pattern(
-                            all_files, filename_pattern
-                        )
-                        print(f"    Found {len(matching_files)} matching files")
-
-                        # Import each matching file
-                        for file_info in matching_files:
-                            file_path = file_info["path"]
-                            file_name = file_info["name"]
-
-                            # Detect datatype
-                            datatype = (
-                                custom_datatype
-                                or _detect_datatype_from_extension(file_name)
-                            )
-
-                            try:
-                                # Generate signed URL for the file
-                                # Note: This may need adjustment based on fs.anvilfs API
-                                with anvil_fs.open(file_path, 'rb') as f:
-                                    # For now, we'll use the file path directly
-                                    # In a real implementation, we'd need to generate signed URLs
-                                    file_url = f"anvil://{namespace}/{workspace_name}/{file_path}"
-
-                                # Import dataset using Galaxy's URL import mechanism
-                                # This will need to be adapted to work with AnVIL URLs
-                                print(
-                                    f"      Importing: {file_name} (type: {datatype})"
-                                )
-                                dataset._import_from_url(
-                                    gi,
-                                    dataset_history,
-                                    file_url,
-                                    file_name=file_name,
-                                    file_type=datatype,
-                                )
-
-                            except Exception as e:
-                                print(f"      ERROR importing {file_name}: {e}")
-
-                    except Exception as e:
-                        print(f"    ERROR processing pattern {pattern}: {e}")
-
+            dataset_history = _get_or_create_history(gi, history_name)
         except Exception as e:
-            print(
-                f"ERROR connecting to Terra workspace {namespace}/{workspace_name}: {e}"
-            )
-            # Provide helpful guidance on authentication
-            if 'credentials' in str(e).lower() or 'authentication' in str(e).lower():
-                print(f"  Set up Terra authentication with:")
-                print(
-                    f"    export GOOGLE_APPLICATION_CREDENTIALS='path/to/credentials.json'"
-                )
-                print(
-                    f"    export TERRA_NOTEBOOK_GOOGLE_ACCESS_TOKEN=\"$(gcloud auth print-access-token)\""
-                )
+            print(f"  ERROR: unable to get or create history {history_name}: {e}")
+            result.fail()
             continue
+
+        for pattern_config in dataset_patterns:
+            if isinstance(pattern_config, str):
+                # Simple pattern string
+                pattern = pattern_config
+                custom_datatype = None
+            elif isinstance(pattern_config, dict):
+                # Dictionary with pattern and optional datatype
+                pattern = pattern_config.get('pattern')
+                custom_datatype = pattern_config.get('datatype')
+                if not pattern:
+                    print(
+                        f"    ERROR: pattern config missing 'pattern' field: {pattern_config}"
+                    )
+                    result.fail()
+                    continue
+            else:
+                print(f"    ERROR: invalid pattern config: {pattern_config}")
+                result.fail()
+                continue
+
+            print(f"    Looking for files matching: {pattern}")
+
+            # Split the pattern into a directory to scan and a filename pattern,
+            # e.g. "Tables/sample/*.fastq". A bare "*.fastq" scans the root.
+            pattern_path = Path(pattern)
+            if pattern_path.parent != Path("."):
+                scan_dir = str(pattern_path.parent)
+                filename_pattern = pattern_path.name
+            else:
+                scan_dir = "/"
+                filename_pattern = pattern
+
+            print(f"      Scanning directory: {scan_dir}")
+            print(f"      Filename pattern: {filename_pattern}")
+
+            try:
+                all_files = [
+                    {
+                        "path": f"{scan_dir.rstrip('/')}/{f.name}".replace("//", "/"),
+                        "name": f.name,
+                    }
+                    for f in anvil_fs.scandir(scan_dir)
+                    if f.is_file
+                ]
+            except Exception as e:
+                print(f"      ERROR scanning directory {scan_dir}: {e}")
+                result.fail()
+                continue
+
+            matching_files = _filter_files_by_pattern(all_files, filename_pattern)
+            print(f"    Found {len(matching_files)} matching files")
+
+            for file_info in matching_files:
+                file_name = file_info["name"]
+                datatype = custom_datatype or _detect_datatype_from_extension(file_name)
+                file_url = f"anvil://{namespace}/{workspace_name}/{file_info['path']}"
+                print(f"      Importing: {file_name} (type: {datatype})")
+                try:
+                    dataset._import_from_url(
+                        gi,
+                        dataset_history,
+                        file_url,
+                        file_name=file_name,
+                        file_type=datatype,
+                    )
+                    result.ok()
+                except Exception as e:
+                    print(f"      ERROR importing {file_name}: {e}")
+                    result.fail()
 
 
 def _import_dataset_with_metadata(gi, history_id, dataset_config):
-    """Import a dataset with optional name and datatype metadata."""
+    """Import a dataset with optional name and datatype metadata.
+
+    Returns True if the import was submitted, False if the config was invalid.
+    """
     if isinstance(dataset_config, str):
         # Simple URL format
         url = dataset_config
@@ -530,7 +627,7 @@ def _import_dataset_with_metadata(gi, history_id, dataset_config):
             print(
                 f"ERROR: dataset config missing required 'url' field: {dataset_config}"
             )
-            return
+            return False
 
         # Extract optional parameters
         file_name = dataset_config.get('name')
@@ -547,6 +644,8 @@ def _import_dataset_with_metadata(gi, history_id, dataset_config):
         dataset._import_from_url(gi, history_id, url, **kwargs)
     else:
         print(f"ERROR: dataset config must be URL string or dict: {dataset_config}")
+        return False
+    return True
 
 
 DEFAULT_DATASET_HISTORY = "Configured Datasets"
@@ -592,22 +691,31 @@ def _get_or_create_history(gi, name):
     return gi.histories.create_history(name=name)['id']
 
 
-def _process_datasets(gi, datasets):
+def _process_datasets(gi, datasets, result=None):
     """Import datasets from any supported bootstrap format (version-agnostic).
 
     Replaces the former version-specific ``_process_datasets_v0``/``_v1``
     handlers with a single implementation that accepts every previously
     supported shape (issue #349).
     """
+    if result is None:
+        result = BootstrapResult()
     mapping = _normalize_datasets_config(datasets)
+    if datasets and not mapping:
+        result.fail()
     for history_name, items in mapping.items():
         print(f"Importing {len(items)} datasets into history '{history_name}'...")
         history_id = _get_or_create_history(gi, history_name)
         for item in items:
             try:
-                _import_dataset_with_metadata(gi, history_id, item)
+                imported = _import_dataset_with_metadata(gi, history_id, item)
             except Exception as e:
                 print(f"ERROR: failed to import dataset {item}: {e}")
+                imported = False
+            if imported:
+                result.ok()
+            else:
+                result.fail()
 
 
 def _normalize_history_entry(entry):
@@ -623,6 +731,20 @@ def _normalize_history_entry(entry):
     if isinstance(entry, dict):
         return entry.get('url'), entry.get('name')
     return entry, _extract_filename_from_url(entry)
+
+
+def _bootstrap_workflow(context, args, result):
+    """Import one workflow through ``workflow.import_from_url`` and record the outcome."""
+    try:
+        imported = workflow.import_from_url(context, args)
+    except Exception as e:
+        print(f"ERROR: failed to import workflow from {args[0]}: {e}")
+        imported = False
+    # import_from_url returns False when the workflow could not be imported.
+    if imported is False:
+        result.fail()
+    else:
+        result.ok()
 
 
 def bootstrap(context: Context, args: list):
@@ -653,6 +775,11 @@ def bootstrap(context: Context, args: list):
         print("ERROR: configuration file is empty")
         return
 
+    # Failed imports are only logged unless failOnImport is true, in which
+    # case any failed import makes the command exit with a non-zero status.
+    fail_on_import = bool(config.get('failOnImport', False))
+    result = BootstrapResult()
+
     # Process histories
     if 'histories' in config:
         histories = config['histories']
@@ -663,47 +790,50 @@ def bootstrap(context: Context, args: list):
             url, name = _normalize_history_entry(entry)
             if not url:
                 print(f"ERROR: history entry missing 'url': {entry}")
+                result.fail()
                 continue
             try:
-                # Call existing history import function
-                history._import(context, [url], name=name)
+                # Call existing history import function; None means it failed.
+                imported = history._import(context, [url], name=name)
             except Exception as e:
                 print(f"ERROR: failed to import history from {url}: {e}")
+                imported = None
+            if imported:
+                result.ok()
+            else:
+                result.fail()
 
     # The bootstrap config format is version-agnostic; the 'version' attribute
     # is ignored if present (issue #349). _process_datasets handles every
     # supported dataset shape with full backwards compatibility.
     if 'datasets' in config:
         gi = connect(context)
-        _process_datasets(gi, config['datasets'])
+        _process_datasets(gi, config['datasets'], result)
 
     # Process workflows (with tool installation)
     if 'workflows' in config:
         workflows = config['workflows']
         print(f"Importing {len(workflows)} workflows (with tools)...")
         for url in workflows:
-            try:
-                # Call existing workflow import function with tools
-                workflow.import_from_url(context, [url])
-            except Exception as e:
-                print(f"ERROR: failed to import workflow from {url}: {e}")
+            _bootstrap_workflow(context, [url], result)
 
     # Process workflows (without tool installation)
     if 'workflows-no-tools' in config:
         workflows_no_tools = config['workflows-no-tools']
         print(f"Importing {len(workflows_no_tools)} workflows (without tools)...")
         for url in workflows_no_tools:
-            try:
-                # Call existing workflow import function without tools
-                workflow.import_from_url(context, [url, '--no-tools'])
-            except Exception as e:
-                print(f"ERROR: failed to import workflow from {url}: {e}")
+            _bootstrap_workflow(context, [url, '--no-tools'], result)
 
     # Process Terra workspaces
     if 'terra' in config:
         terra_workspaces = config['terra']
+        if isinstance(terra_workspaces, dict):
+            terra_workspaces = [terra_workspaces]
         print(f"Processing {len(terra_workspaces)} Terra workspaces...")
         gi = connect(context)
-        _process_terra_workspaces(gi, terra_workspaces)
+        _process_terra_workspaces(gi, terra_workspaces, result)
 
+    print(f"Imported {result.imported}, failed {result.failed}")
     print("Instance configuration complete!")
+    if fail_on_import and result.failed > 0:
+        sys.exit(1)
