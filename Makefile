@@ -30,18 +30,16 @@ deploy:
 
 docker:
 	$(eval VERSION := $(shell cat abm/VERSION))
-	docker build --platform linux/amd64 -t ksuderman/gxabm:$(VERSION) -t ksuderman/gxabm:latest .
-	docker build --platform linux/amd64 -t quay.io/galaxyproject/abm:$(VERSION) -t quay.io/galaxyproject/abm:latest .
+	docker build --platform linux/amd64 -t ksuderman/gxabm:$(VERSION) -t ksuderman/gxabm:latest -t quay.io/galaxyproject/abm:$(VERSION) -t quay.io/galaxyproject/abm:latest .
 
 push-docker:
 	$(eval VERSION := $(shell cat abm/VERSION))
 	docker push ksuderman/gxabm:$(VERSION)
-	docker push ksuderman/gxabm:latest
 
 push-quay:
 	$(eval VERSION := $(shell cat abm/VERSION))
 	docker push quay.io/galaxyproject/abm:$(VERSION)
-	docker push quay.io/galaxyproject/abm:latest
 
-#tag:
-#	bin/tag.sh
+push-latest:
+	docker push ksuderman/gxabm:latest
+	docker push quay.io/galaxyproject/abm:latest
