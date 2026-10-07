@@ -762,3 +762,317 @@ def test_config_create_without_master_omits_field(mock_load, mock_save):
 
     saved = mock_save.call_args[0][0]
     assert 'master' not in saved['prof']
+
+
+# Tests for issue #364: dataset collections in the bootstrap 'datasets' section.
+
+
+def _upload_side_effect(prefix='ds'):
+    """Build a fake put_url response per call, with ids ds1, ds2, ..."""
+    counter = {'n': 0}
+
+    def _put(gi, history_id, url, **kwargs):
+        counter['n'] += 1
+        return {'outputs': [{'id': f"{prefix}{counter['n']}", 'name': url}]}
+
+    return _put
+
+
+@patch('abm.lib.config.dataset')
+def test_import_dataset_with_metadata_returns_dataset_id(mock_dataset):
+    """The id of the new dataset is returned so callers can build collections."""
+    mock_dataset._import_from_url.return_value = {'outputs': [{'id': 'abc123'}]}
+    gi = MagicMock()
+
+    result = _import_dataset_with_metadata(gi, 'hid', 'https://example.com/a.fastq')
+
+    assert result == 'abc123'
+
+
+@patch('abm.lib.config.dataset')
+def test_import_dataset_with_metadata_invalid_returns_none(mock_dataset):
+    """An invalid config yields None rather than an id."""
+    gi = MagicMock()
+
+    assert _import_dataset_with_metadata(gi, 'hid', {'name': 'no url'}) is None
+    assert _import_dataset_with_metadata(gi, 'hid', 42) is None
+
+
+@patch('abm.lib.config.dataset')
+def test_process_datasets_list_collection(mock_dataset):
+    """A list collection uploads each leaf and creates one collection from the ids."""
+    from abm.lib.config import _process_datasets
+
+    mock_dataset._import_from_url.side_effect = _upload_side_effect()
+    gi = _fresh_gi()
+    _process_datasets(
+        gi,
+        {
+            "H": [
+                {
+                    'collection': 'controls',
+                    'type': 'list',
+                    'elements': {
+                        'ctrl1': 'https://example.com/ctrl1.fastq.gz',
+                        'ctrl2': {
+                            'url': 'https://example.com/ctrl2.fastq.gz',
+                            'datatype': 'fastqsanger.gz',
+                        },
+                    },
+                }
+            ]
+        },
+    )
+
+    calls = mock_dataset._import_from_url.call_args_list
+    assert len(calls) == 2
+    # Names default to the element identifier when the leaf has no name.
+    assert calls[0].kwargs['file_name'] == 'ctrl1'
+    assert calls[1].kwargs['file_name'] == 'ctrl2'
+    assert calls[1].kwargs['file_type'] == 'fastqsanger.gz'
+
+    gi.histories.create_dataset_collection.assert_called_once()
+    kwargs = gi.histories.create_dataset_collection.call_args.kwargs
+    assert kwargs['history_id'] == 'new_history_id'
+    description = kwargs['collection_description'].to_dict()
+    assert description['name'] == 'controls'
+    assert description['collection_type'] == 'list'
+    assert [e['name'] for e in description['element_identifiers']] == [
+        'ctrl1',
+        'ctrl2',
+    ]
+    assert [e['id'] for e in description['element_identifiers']] == ['ds1', 'ds2']
+
+
+@patch('abm.lib.config.dataset')
+def test_process_datasets_list_paired_collection(mock_dataset):
+    """A list:paired collection builds paired elements with forward/reverse ids."""
+    from abm.lib.config import _process_datasets
+
+    mock_dataset._import_from_url.side_effect = _upload_side_effect()
+    gi = _fresh_gi()
+    _process_datasets(
+        gi,
+        [
+            {
+                'collection': 'wt_H3K4me3',
+                'type': 'list:paired',
+                'elements': {
+                    'pair1': {
+                        'forward': 'https://example.com/r1.fastq.gz',
+                        'reverse': 'https://example.com/r2.fastq.gz',
+                    },
+                    'pair2': {
+                        'forward': {
+                            'url': 'https://example.com/rep2_R1.fastq.gz',
+                            'name': 'rep2_fwd',
+                        },
+                        'reverse': {'url': 'https://example.com/rep2_R2.fastq.gz'},
+                    },
+                },
+            }
+        ],
+    )
+
+    calls = mock_dataset._import_from_url.call_args_list
+    assert [c.kwargs['file_name'] for c in calls] == [
+        'pair1_forward',
+        'pair1_reverse',
+        'rep2_fwd',
+        'pair2_reverse',
+    ]
+
+    description = gi.histories.create_dataset_collection.call_args.kwargs[
+        'collection_description'
+    ].to_dict()
+    assert description['collection_type'] == 'list:paired'
+    pairs = description['element_identifiers']
+    assert [p['name'] for p in pairs] == ['pair1', 'pair2']
+    assert pairs[0]['collection_type'] == 'paired'
+    assert [e['name'] for e in pairs[0]['element_identifiers']] == [
+        'forward',
+        'reverse',
+    ]
+    assert [e['id'] for e in pairs[0]['element_identifiers']] == ['ds1', 'ds2']
+    assert [e['id'] for e in pairs[1]['element_identifiers']] == ['ds3', 'ds4']
+
+
+@patch('abm.lib.config.dataset')
+def test_process_datasets_collection_hide_elements(mock_dataset):
+    """hide_elements: true hides each member dataset after the collection exists."""
+    from abm.lib.config import _process_datasets
+
+    mock_dataset._import_from_url.side_effect = _upload_side_effect()
+    gi = _fresh_gi()
+    _process_datasets(
+        gi,
+        [
+            {
+                'collection': 'c',
+                'type': 'list',
+                'hide_elements': True,
+                'elements': {'a': 'https://example.com/a', 'b': 'https://example.com/b'},
+            }
+        ],
+    )
+
+    hidden = [c.args[1] for c in gi.histories.update_dataset.call_args_list]
+    assert sorted(hidden) == ['ds1', 'ds2']
+    for c in gi.histories.update_dataset.call_args_list:
+        assert c.kwargs == {'visible': False}
+
+
+@patch('abm.lib.config.dataset')
+def test_process_datasets_collection_elements_visible_by_default(mock_dataset):
+    """Without hide_elements the member datasets are left visible."""
+    from abm.lib.config import _process_datasets
+
+    mock_dataset._import_from_url.side_effect = _upload_side_effect()
+    gi = _fresh_gi()
+    _process_datasets(
+        gi,
+        [{'collection': 'c', 'type': 'list', 'elements': {'a': 'https://x/a'}}],
+    )
+
+    gi.histories.update_dataset.assert_not_called()
+
+
+@patch('abm.lib.config.dataset')
+def test_process_datasets_collection_unknown_type_skipped(mock_dataset, capsys):
+    """An unknown collection type is reported; nothing is uploaded or created."""
+    from abm.lib.config import _process_datasets
+
+    gi = _fresh_gi()
+    _process_datasets(
+        gi,
+        [
+            {'collection': 'bad', 'type': 'list:list', 'elements': {'a': 'https://x/a'}},
+            'https://example.com/ok.fastq',
+        ],
+    )
+
+    out = capsys.readouterr().out
+    assert "ERROR" in out and "list:list" in out
+    gi.histories.create_dataset_collection.assert_not_called()
+    # The plain dataset after the bad collection is still imported.
+    assert mock_dataset._import_from_url.call_count == 1
+
+
+@patch('abm.lib.config.dataset')
+def test_process_datasets_paired_element_missing_reverse_skipped(
+    mock_dataset, capsys
+):
+    """A list:paired element without forward and reverse skips the collection."""
+    from abm.lib.config import _process_datasets
+
+    gi = _fresh_gi()
+    _process_datasets(
+        gi,
+        [
+            {
+                'collection': 'c',
+                'type': 'list:paired',
+                'elements': {
+                    'pair1': {'forward': 'https://x/r1'},
+                },
+            }
+        ],
+    )
+
+    out = capsys.readouterr().out
+    assert "ERROR" in out and "reverse" in out
+    mock_dataset._import_from_url.assert_not_called()
+    gi.histories.create_dataset_collection.assert_not_called()
+
+
+@patch('abm.lib.config.dataset')
+def test_process_datasets_collection_missing_elements_skipped(mock_dataset, capsys):
+    """A collection with no elements mapping is reported and skipped."""
+    from abm.lib.config import _process_datasets
+
+    gi = _fresh_gi()
+    _process_datasets(gi, [{'collection': 'c', 'type': 'list'}])
+
+    out = capsys.readouterr().out
+    assert "ERROR" in out and "elements" in out
+    gi.histories.create_dataset_collection.assert_not_called()
+
+
+@patch('abm.lib.config.dataset')
+def test_process_datasets_collection_failed_leaf_upload_skipped(
+    mock_dataset, capsys
+):
+    """A leaf upload that raises skips the collection without aborting bootstrap."""
+    from abm.lib.config import _process_datasets
+
+    responses = iter(
+        [
+            {'outputs': [{'id': 'ds1'}]},
+            RuntimeError('boom'),
+            {'outputs': [{'id': 'ds3'}]},
+        ]
+    )
+
+    def _put(*args, **kwargs):
+        r = next(responses)
+        if isinstance(r, Exception):
+            raise r
+        return r
+
+    mock_dataset._import_from_url.side_effect = _put
+    gi = _fresh_gi()
+    _process_datasets(
+        gi,
+        [
+            {
+                'collection': 'c',
+                'type': 'list',
+                'elements': {'a': 'https://x/a', 'b': 'https://x/b'},
+            },
+            'https://example.com/after.fastq',
+        ],
+    )
+
+    out = capsys.readouterr().out
+    assert "ERROR" in out and "boom" in out
+    gi.histories.create_dataset_collection.assert_not_called()
+    # The dataset listed after the failed collection is still imported.
+    assert mock_dataset._import_from_url.call_count == 3
+
+
+@patch('abm.lib.config.dataset')
+def test_process_datasets_collection_create_failure_reported(mock_dataset, capsys):
+    """An error from Galaxy while creating the collection is reported, not raised."""
+    from abm.lib.config import _process_datasets
+
+    mock_dataset._import_from_url.side_effect = _upload_side_effect()
+    gi = _fresh_gi()
+    gi.histories.create_dataset_collection.side_effect = RuntimeError('galaxy said no')
+    _process_datasets(
+        gi,
+        [{'collection': 'c', 'type': 'list', 'elements': {'a': 'https://x/a'}}],
+    )
+
+    out = capsys.readouterr().out
+    assert "ERROR" in out and "galaxy said no" in out
+
+
+@patch('abm.lib.config.dataset')
+def test_process_datasets_mixed_datasets_and_collections(mock_dataset):
+    """Plain datasets and collections can be mixed in one history list."""
+    from abm.lib.config import _process_datasets
+
+    mock_dataset._import_from_url.side_effect = _upload_side_effect()
+    gi = _fresh_gi()
+    _process_datasets(
+        gi,
+        {
+            "H": [
+                {'url': 'https://example.com/reference.fasta', 'name': 'reference'},
+                {'collection': 'c', 'type': 'list', 'elements': {'a': 'https://x/a'}},
+            ]
+        },
+    )
+
+    assert mock_dataset._import_from_url.call_count == 2
+    gi.histories.create_dataset_collection.assert_called_once()

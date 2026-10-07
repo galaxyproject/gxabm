@@ -353,6 +353,52 @@ terra:
       - pattern: "reference_genome.fa"
 ```
 
+### Dataset Collections in Bootstrap Configurations
+
+An item in a history's dataset list with a `collection` key defines a dataset collection. The member datasets are uploaded and the collection is created from them in a single step, so there is no need to build collections by hand with `abm <cloud> dataset collection` after bootstrapping.
+
+```yaml
+datasets:
+  "ChipSeq Input":
+    # a plain dataset, same as above
+    - url: https://example.com/reference.fasta
+      name: reference
+
+    # a list:paired collection
+    - collection: wt_H3K4me3
+      type: list:paired
+      elements:
+        pair1:
+          forward: https://zenodo.org/record/1324070/files/wt_H3K4me3_read1.fastq.gz
+          reverse: https://zenodo.org/record/1324070/files/wt_H3K4me3_read2.fastq.gz
+        pair2:
+          forward:
+            url: https://example.com/rep2_R1.fastq.gz
+            datatype: fastqsanger.gz
+          reverse:
+            url: https://example.com/rep2_R2.fastq.gz
+            datatype: fastqsanger.gz
+
+    # a flat list collection
+    - collection: controls
+      type: list
+      hide_elements: true
+      elements:
+        ctrl1: https://example.com/ctrl1.fastq.gz
+        ctrl2:
+          url: https://example.com/ctrl2.fastq.gz
+          datatype: fastqsanger.gz
+```
+
+- **collection**: the name of the collection in Galaxy.
+- **type**: `list` (the default) or `list:paired`.
+- **elements**: a mapping of element identifier to its dataset(s). For `list` each value is a dataset. For `list:paired` each value is a mapping with `forward` and `reverse` datasets.
+- **hide_elements**: optional. When `true` the member datasets are hidden in the history once the collection has been created, as Galaxy's own collection builder does.
+
+Each dataset accepts the same forms a plain dataset item accepts: a bare URL string or a `{url, name, datatype}` dict with `name` and `datatype` optional. A dataset with no `name` is named after its element identifier, so `pair1` above produces datasets named `pair1_forward` and `pair1_reverse`.
+
+A collection with an invalid definition (unknown `type`, a `list:paired` element missing `forward` or `reverse`) or a failed upload is reported and skipped. The rest of the bootstrap continues. A dataset cannot be shared between two collections, or be both a plain dataset and a collection member, without being uploaded twice.
+
 ### Terra Workspace Integration
 
 The bootstrap command can import data directly from Terra workspaces when running Galaxy on Terra platform:
@@ -365,7 +411,7 @@ The bootstrap command can import data directly from Terra workspaces when runnin
 
 ## Dataset Collections
 
-We can use the `abm dataset collection` command to create collections (list and list:paired) of datasets.  Given the following entries in `~/.abm/datasets.yml`
+Collections can be created as part of a `config bootstrap` run (see [Dataset Collections in Bootstrap Configurations](#dataset-collections-in-bootstrap-configurations)) or built from datasets that are already on the instance with the `abm dataset collection` command. The command creates collections (list and list:paired) of datasets.  Given the following entries in `~/.abm/datasets.yml`
 
 ```yaml
 chipseq-1:  https://zenodo.org/record/1324070/files/wt_H3K4me3_read1.fastq.gz
