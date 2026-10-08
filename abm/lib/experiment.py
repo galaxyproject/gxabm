@@ -318,6 +318,8 @@ def make_model_row(data: dict):
 
 def _get_metrics(metrics: list):
     row = [''] * len(accept_metrics)
+    if metrics is None or len(metrics) == 0:
+        return row
     for job_metrics in metrics:
         if job_metrics['name'] in accept_metrics:
             index = accept_metrics.index(job_metrics['name'])
