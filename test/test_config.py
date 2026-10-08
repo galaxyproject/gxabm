@@ -1076,3 +1076,23 @@ def test_process_datasets_mixed_datasets_and_collections(mock_dataset):
 
     assert mock_dataset._import_from_url.call_count == 2
     gi.histories.create_dataset_collection.assert_called_once()
+
+
+@patch('abm.lib.config.dataset')
+def test_process_datasets_counts_collection_results(mock_dataset):
+    """A created collection counts as one import; a skipped one as one failure."""
+    from abm.lib.config import BootstrapResult, _process_datasets
+
+    mock_dataset._import_from_url.side_effect = _upload_side_effect()
+    gi = _fresh_gi()
+    result = BootstrapResult()
+    _process_datasets(
+        gi,
+        [
+            {'collection': 'good', 'type': 'list', 'elements': {'a': 'https://x/a'}},
+            {'collection': 'bad', 'type': 'list:list', 'elements': {'a': 'https://x/a'}},
+        ],
+        result,
+    )
+
+    assert (result.imported, result.failed) == (1, 1)

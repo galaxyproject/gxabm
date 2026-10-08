@@ -219,7 +219,7 @@ Before ABM can interact with a Galaxy cluster an entry for that cluster needs to
 For setting up a Galaxy instance with datasets, histories, and workflows, use the `config bootstrap` command with a YAML configuration file:
 
 ```bash
-abm cloud config bootstrap bootstrap-config.yml
+abm config bootstrap cloud bootstrap-config.yml
 ```
 
 The bootstrap configuration supports multiple formats and features including Terra workspace integration. See the [Bootstrap Configuration](#bootstrap-configuration) section for details.
@@ -302,30 +302,13 @@ The `jobs.rules.container_mapper_rules` files that define the CPU and memory res
 
 ## Bootstrap Configuration
 
-The `config bootstrap` command allows bulk configuration of Galaxy instances by importing datasets, histories, workflows, and Terra workspace data from a YAML configuration file.
-
-### Basic Bootstrap Configuration (Version 0)
+The `config bootstrap` command allows bulk configuration of Galaxy instances by importing datasets, histories, workflows, and Terra workspace data from a YAML configuration file. All sections are optional.
 
 ```yaml
-datasets:
-  "History Name":
-    - https://example.com/data/file1.fastq.gz
-    - https://example.com/data/file2.fastq.gz
-
 histories:
-  - name: "Import History"
-    url: https://usegalaxy.org/history/export_archive?id=...
-
-workflows:
-  - /path/to/workflow.ga
-```
-
-### Enhanced Bootstrap Configuration (Version 1)
-
-Version 1 adds support for custom dataset names, datatypes, and metadata:
-
-```yaml
-version: 1
+  - https://usegalaxy.org/history/export_archive?id=...   # Simple URL
+  - url: https://usegalaxy.org/history/export_archive?id=...
+    name: Import History                                  # Rename the imported history
 
 datasets:
   "History Name":
@@ -334,24 +317,25 @@ datasets:
       name: custom_sample_name                 # Custom name in Galaxy
     - url: https://example.com/data/file3.fastq.gz
       name: quality_data
-      datatype: fastqsanger                   # Custom datatype
-
-histories:
-  - name: "Import History"
-    url: https://usegalaxy.org/history/export_archive?id=...
+      datatype: fastqsanger                    # Custom datatype
 
 workflows:
-  - /path/to/workflow.ga
+  - https://example.com/workflows/workflow.ga
 
-terra:
-  namespace: your-billing-project
-  workspace: your-workspace-name
-  files:
-    "Terra Data":                            # Target history name
-      - pattern: "*.fastq.gz"
-        directory: "fastq_files/"
-      - pattern: "reference_genome.fa"
+workflows-no-tools:
+  - https://example.com/workflows/other-workflow.ga
 ```
+
+- **histories**<br/>
+  A list of history archive URLs, as returned by `history export`. An entry can be a URL or a mapping with a `url` and a `name`; when a `name` is given the history is renamed after it has been imported.
+- **datasets**<br/>
+  A mapping of Galaxy history names to the datasets to import into that history. The history is created if it does not exist. Each dataset is either a URL, or a mapping with a `url` and an optional `name` and `datatype`. If no `name` is given the filename portion of the URL is used. The `datasets` section can also be a simple list, in which case the datasets are imported into a history named `Configured Datasets`.
+- **workflows**<br/>
+  A list of URLs of workflow (`.ga`) files to import. Any tools required by the workflows are installed.
+- **workflows-no-tools**<br/>
+  Same as `workflows`, but no tools are installed.
+
+> :bulb: Older configuration files may contain a `version` attribute. It is no longer used and is ignored if present.
 
 ### Dataset Collections in Bootstrap Configurations
 
@@ -399,15 +383,75 @@ Each dataset accepts the same forms a plain dataset item accepts: a bare URL str
 
 A collection with an invalid definition (unknown `type`, a `list:paired` element missing `forward` or `reverse`) or a failed upload is reported and skipped. The rest of the bootstrap continues. A dataset cannot be shared between two collections, or be both a plain dataset and a collection member, without being uploaded twice.
 
+### Import Failures
+
+The bootstrap command prints a summary of the number of items that were imported and the number that failed. By default a failed import is only logged and the command exits normally. Set `failOnImport` to make the command exit with a non-zero status if any import, in any section, fails:
+
+```yaml
+failOnImport: true
+```
+
+> :warning: Bootstrap does not wait for dataset uploads to complete, so a dataset that Galaxy accepts but that later ends up in an error state is not counted as a failure.
+
 ### Terra Workspace Integration
 
-The bootstrap command can import data directly from Terra workspaces when running Galaxy on Terra platform:
+The bootstrap command can import files from the buckets of one or more Terra workspaces as datasets. This requires the optional `terra` extra (see [Installation](#installation)) and Terra credentials, for example:
 
-- **namespace**: Terra billing project/namespace
-- **workspace**: Terra workspace name  
-- **files**: Mapping of Galaxy history names to file patterns and directories
-- **pattern**: File pattern to match (supports wildcards)
-- **directory**: Optional subdirectory within the workspace bucket (supports wildcards)
+```bash
+export TERRA_NOTEBOOK_GOOGLE_ACCESS_TOKEN="$(gcloud auth print-access-token)"
+```
+
+The `terra` section is a list with one entry per workspace:
+
+```yaml
+terra:
+  - namespace: your-billing-project
+    workspace: your-workspace-name
+    bootstrap: galaxy-bootstrap                # Folder of histories and workflows to import
+    datasets:
+      "Reference Data":                        # Target history name
+        - pattern: "Tables/reference/genome.fasta"
+          datatype: fasta
+      "Sample Data":
+        - "Tables/sample/*.fastq.gz"           # Datatype detected from the extension
+        - pattern: "Tables/sample/VA_sample_*_reads.fastq"
+          datatype: fastqsanger
+```
+
+- **namespace**<br/>
+  The Terra billing project (namespace) that owns the workspace.
+- **workspace**<br/>
+  The name of the Terra workspace.
+- **bootstrap** (optional)<br/>
+  A folder in the workspace to scan for histories and workflows. See [Bootstrap Folders](#bootstrap-folders) below.
+- **datasets** (optional)<br/>
+  A mapping of Galaxy history names to the files to import into that history. The history is created if it does not exist. Each entry is either a pattern, or a mapping with a `pattern` and an optional `datatype`.
+- **pattern**<br/>
+  The path to the files in the workspace bucket. The `*` and `?` wildcards can be used in the filename, but not in the directory portion of the path, and directories are not searched recursively. A pattern with no directory matches files in the root of the bucket.
+- **datatype** (optional)<br/>
+  The Galaxy datatype to assign to the matching files. If omitted the datatype is detected from the file extension.
+
+#### Bootstrap Folders
+
+A bootstrap folder lets the users of a Galaxy instance launched on Terra/AnVIL load their own data without editing a configuration file. Users upload workflows and exported histories to a folder in their workspace, through the Terra UI or the Google Cloud console, and every file found in that folder (and its subfolders) is imported:
+
+| File | Imported as |
+|---|---|
+| `*.ga` | A workflow. The workflow is published and the tools it uses are installed. A tool that fails to install is reported but does not stop the remaining imports. |
+| `*.rocrate.zip`, `*.tar.gz`, `*.tgz`, `*.tar` | A history |
+| Anything else | Skipped |
+
+The files are read by Galaxy itself, using the file source that Galaxy configures for the workspace it was launched from, so `abm` does not need Terra credentials and the `terra` extra does not need to be installed. For the same reason the `namespace` and `workspace` can be omitted from an entry that only has a `bootstrap` folder:
+
+```yaml
+terra:
+  - bootstrap: galaxy-bootstrap
+```
+
+- A folder name with no `/`, such as `galaxy-bootstrap`, is looked for at the top of the workspace bucket (`Other Data/Files/galaxy-bootstrap`). Use a full path to refer to a folder anywhere else.
+- If the folder does not exist it is skipped. This is not an error.
+- The Galaxy file source used is `terra-launch-workspace`. Use the `file_source` key to name a different one.
+- Only the workspace the Galaxy instance was launched from can be used, unless another file source has been configured in Galaxy.
 
 ## Dataset Collections
 
