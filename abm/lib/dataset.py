@@ -11,6 +11,7 @@ from common import (
     Context,
     _get_dataset_data,
     _make_dataset_element,
+    _make_paired_element,
     connect,
     find_config,
     find_dataset,
@@ -273,19 +274,9 @@ def collection(context: Context, args: list):
                     if hid != ds['history']:
                         print('ERROR: Datasets must be in the same history')
                         return
-                pair = dataset_collections.CollectionElement(
-                    name=name,
-                    type='paired',
-                    elements=[
-                        dataset_collections.HistoryDatasetElement(
-                            name='forward', id=fwd_dataset['id']
-                        ),
-                        dataset_collections.HistoryDatasetElement(
-                            name='reverse', id=rev_dataset['id']
-                        ),
-                    ],
+                elements.append(
+                    _make_paired_element(name, fwd_dataset['id'], rev_dataset['id'])
                 )
-                elements.append(pair)
             else:
                 dataset = _get_dataset_data(gi, value)
                 if dataset is None:
@@ -382,9 +373,15 @@ def import_from_config(context: Context, args: list):
 
 
 def _import_from_url(gi, history, url, **kwargs):
+    """Upload ``url`` into ``history`` and return the ``put_url`` response.
+
+    The response is also printed. Callers that need the new dataset id can
+    read it from ``response['outputs'][0]['id']`` (issue #364).
+    """
     response = gi.tools.put_url(url, history, **kwargs)
     gi.histories.update_history(history, annotation=f"Imported {url}")
     print(json.dumps(response, indent=4))
+    return response
 
 
 def download(context: Context, args: list):

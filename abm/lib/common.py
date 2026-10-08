@@ -531,6 +531,18 @@ def _make_dataset_element(name, value):
     return dataset_collections.HistoryDatasetElement(name=name, id=value)
 
 
+def _make_paired_element(name, forward_id, reverse_id):
+    """Build a ``paired`` collection element from forward/reverse dataset ids."""
+    return dataset_collections.CollectionElement(
+        name=name,
+        type='paired',
+        elements=[
+            _make_dataset_element('forward', forward_id),
+            _make_dataset_element('reverse', reverse_id),
+        ],
+    )
+
+
 def get_float_key(column: int):
     def get_key(row: list):
         if row[column] == '':

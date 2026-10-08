@@ -1,0 +1,37 @@
+# Example bootstrap configuration that creates dataset collections while
+# importing datasets. Run with:
+#
+#   abm config bootstrap <server> bootstrap-config/collections-example.yml
+#
+# An item with a 'collection' key is a collection; its member datasets are
+# uploaded inline and the collection is created from them. Each dataset may
+# be a bare URL or a {url, name, datatype} mapping, exactly as for a plain
+# dataset item. Datasets without a name are named after their element
+# identifier (pair1_forward, pair1_reverse, ctrl1, ...).
+datasets:
+  "ChipSeq Input":
+    - url: https://zenodo.org/record/1324070/files/wt_H3K4me3_read1.fastq.gz
+      name: reference_read1
+
+    - collection: wt_H3K4me3
+      type: list:paired
+      elements:
+        pair1:
+          forward: https://zenodo.org/record/1324070/files/wt_H3K4me3_read1.fastq.gz
+          reverse: https://zenodo.org/record/1324070/files/wt_H3K4me3_read2.fastq.gz
+        pair2:
+          forward:
+            url: https://zenodo.org/record/1324070/files/wt_input_read1.fastq.gz
+            datatype: fastqsanger.gz
+          reverse:
+            url: https://zenodo.org/record/1324070/files/wt_input_read2.fastq.gz
+            datatype: fastqsanger.gz
+
+    - collection: controls
+      type: list
+      hide_elements: true
+      elements:
+        ctrl1: https://zenodo.org/record/1324070/files/wt_input_read1.fastq.gz
+        ctrl2:
+          url: https://zenodo.org/record/1324070/files/wt_input_read2.fastq.gz
+          datatype: fastqsanger.gz

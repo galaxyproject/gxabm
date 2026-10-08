@@ -7,8 +7,11 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import yaml
+from bioblend.galaxy import dataset_collections
 from common import (
     Context,
+    _make_dataset_element,
+    _make_paired_element,
     connect,
     find_config,
     get_yaml_parser,
@@ -653,16 +656,22 @@ def _process_terra_datasets(gi, workspace_config, result):
                     result.fail()
 
 
-def _import_dataset_with_metadata(gi, history_id, dataset_config):
+def _import_dataset_with_metadata(gi, history_id, dataset_config, default_name=None):
     """Import a dataset with optional name and datatype metadata.
 
-    Returns True if the import was submitted, False if the config was invalid.
+    ``dataset_config`` is a URL string or a ``{url, name?, datatype?}`` dict.
+    When the config carries no ``name`` the dataset is named ``default_name``
+    if given, otherwise the filename portion of the URL.
+
+    Returns the id of the new dataset (``outputs[0]['id']`` from ``put_url``)
+    so callers can build collections from it (issue #364), or ``None`` if the
+    config was invalid. The result is truthy on success so callers can also
+    use it to count imports for ``failOnImport``.
     """
     if isinstance(dataset_config, str):
         # Simple URL format
         url = dataset_config
-        file_name = _extract_filename_from_url(url)
-        dataset._import_from_url(gi, history_id, url, file_name=file_name)
+        kwargs = {'file_name': default_name or _extract_filename_from_url(url)}
     elif isinstance(dataset_config, dict):
         # Dictionary format with optional name and datatype
         url = dataset_config.get('url')
@@ -670,10 +679,10 @@ def _import_dataset_with_metadata(gi, history_id, dataset_config):
             print(
                 f"ERROR: dataset config missing required 'url' field: {dataset_config}"
             )
-            return False
+            return None
 
         # Extract optional parameters
-        file_name = dataset_config.get('name')
+        file_name = dataset_config.get('name') or default_name
         if not file_name:
             file_name = _extract_filename_from_url(url)
 
@@ -683,11 +692,158 @@ def _import_dataset_with_metadata(gi, history_id, dataset_config):
         kwargs = {'file_name': file_name}
         if file_type:
             kwargs['file_type'] = file_type
-
-        dataset._import_from_url(gi, history_id, url, **kwargs)
     else:
         print(f"ERROR: dataset config must be URL string or dict: {dataset_config}")
+        return None
+
+    response = dataset._import_from_url(gi, history_id, url, **kwargs)
+    return _dataset_id_from_upload(response)
+
+
+def _dataset_id_from_upload(response):
+    """Extract the new dataset id from a ``put_url``/upload tool response."""
+    try:
+        return response['outputs'][0]['id']
+    except (KeyError, IndexError, TypeError):
+        return None
+
+
+COLLECTION_TYPES = ('list', 'list:paired')
+PAIRED_ROLES = ('forward', 'reverse')
+
+
+def _is_valid_leaf(leaf):
+    """True if ``leaf`` is a URL string or a dict with a ``url`` key."""
+    if isinstance(leaf, str):
+        return bool(leaf)
+    return isinstance(leaf, dict) and bool(leaf.get('url'))
+
+
+def _validate_collection_config(item):
+    """Validate a bootstrap collection item.
+
+    Returns ``None`` when the definition is valid, otherwise an error message.
+    The whole definition is checked before any upload starts so an invalid
+    collection never leaves half of its datasets behind.
+    """
+    name = item.get('collection')
+    if not name or not isinstance(name, str):
+        return f"collection item missing a 'collection' name: {item}"
+    ctype = item.get('type', 'list')
+    if ctype not in COLLECTION_TYPES:
+        return (
+            f"collection '{name}' has unknown type '{ctype}' "
+            f"(expected one of {', '.join(COLLECTION_TYPES)})"
+        )
+    elements = item.get('elements')
+    if not isinstance(elements, dict) or not elements:
+        return f"collection '{name}' requires a non-empty 'elements' mapping"
+    for element_id, value in elements.items():
+        if ctype == 'list:paired':
+            if not isinstance(value, dict):
+                return (
+                    f"collection '{name}' element '{element_id}' must be a mapping "
+                    f"with 'forward' and 'reverse' datasets"
+                )
+            for role in PAIRED_ROLES:
+                if role not in value:
+                    return (
+                        f"collection '{name}' element '{element_id}' "
+                        f"is missing '{role}'"
+                    )
+                if not _is_valid_leaf(value[role]):
+                    return (
+                        f"collection '{name}' element '{element_id}' "
+                        f"'{role}' must be a URL or a dict with a 'url'"
+                    )
+        elif not _is_valid_leaf(value):
+            return (
+                f"collection '{name}' element '{element_id}' "
+                f"must be a URL or a dict with a 'url'"
+            )
+    return None
+
+
+def _import_collection(gi, history_id, item):
+    """Upload the datasets of a bootstrap collection item and create the collection.
+
+    The item has the shape::
+
+        collection: <name>
+        type: list | list:paired     (default list)
+        hide_elements: true|false    (default false)
+        elements:
+          <element id>: <dataset>                       # list
+          <element id>: {forward: <dataset>, reverse: <dataset>}   # list:paired
+
+    where ``<dataset>`` is a URL string or a ``{url, name?, datatype?}`` dict.
+    Datasets without a ``name`` are named after their element identifier
+    (``pair1_forward`` for paired elements). Returns True when the collection
+    was created, False when it was skipped because of an invalid definition or
+    a failed upload. Failures are reported and never raised, so one bad
+    collection does not abort the rest of the bootstrap.
+    """
+    error = _validate_collection_config(item)
+    if error:
+        print(f"ERROR: {error}")
         return False
+
+    name = item['collection']
+    ctype = item.get('type', 'list')
+    print(f"Creating {ctype} collection '{name}'...")
+
+    def _upload(leaf, default_name):
+        try:
+            dataset_id = _import_dataset_with_metadata(
+                gi, history_id, leaf, default_name=default_name
+            )
+        except Exception as e:
+            print(f"ERROR: failed to import dataset {leaf}: {e}")
+            return None
+        if dataset_id is None:
+            print(f"ERROR: no dataset id returned for {leaf}")
+        return dataset_id
+
+    elements = []
+    dataset_ids = []
+    for element_id, value in item['elements'].items():
+        if ctype == 'list:paired':
+            ids = {}
+            for role in PAIRED_ROLES:
+                ids[role] = _upload(value[role], f"{element_id}_{role}")
+                if ids[role] is None:
+                    print(f"ERROR: skipping collection '{name}'")
+                    return False
+            dataset_ids.extend(ids.values())
+            elements.append(
+                _make_paired_element(element_id, ids['forward'], ids['reverse'])
+            )
+        else:
+            dataset_id = _upload(value, element_id)
+            if dataset_id is None:
+                print(f"ERROR: skipping collection '{name}'")
+                return False
+            dataset_ids.append(dataset_id)
+            elements.append(_make_dataset_element(element_id, dataset_id))
+
+    try:
+        result = gi.histories.create_dataset_collection(
+            history_id=history_id,
+            collection_description=dataset_collections.CollectionDescription(
+                name=name, type=ctype, elements=elements
+            ),
+        )
+    except Exception as e:
+        print(f"ERROR: failed to create collection '{name}': {e}")
+        return False
+    print(f"Created collection '{name}' ({result.get('id', '?')})")
+
+    if item.get('hide_elements'):
+        for dataset_id in dataset_ids:
+            try:
+                gi.histories.update_dataset(history_id, dataset_id, visible=False)
+            except Exception as e:
+                print(f"WARNING: failed to hide dataset {dataset_id}: {e}")
     return True
 
 
@@ -750,6 +906,14 @@ def _process_datasets(gi, datasets, result=None):
         print(f"Importing {len(items)} datasets into history '{history_name}'...")
         history_id = _get_or_create_history(gi, history_name)
         for item in items:
+            # An item with a 'collection' key defines a dataset collection
+            # whose member datasets are uploaded inline (issue #364).
+            if isinstance(item, dict) and 'collection' in item:
+                if _import_collection(gi, history_id, item):
+                    result.ok()
+                else:
+                    result.fail()
+                continue
             try:
                 imported = _import_dataset_with_metadata(gi, history_id, item)
             except Exception as e:
