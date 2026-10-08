@@ -403,22 +403,58 @@ def _bootstrap_folder_candidates(folder: str) -> List[str]:
     return [f"{TERRA_BUCKET_ROOT}/{path}", path]
 
 
+class RemoteListingError(Exception):
+    """A Galaxy file source directory could not be listed.
+
+    Raised for anything other than success or a confirmed missing directory,
+    e.g. an HTTP 500, an authentication failure, or a network timeout, so the
+    caller can report a failure instead of treating it as "no such folder".
+    """
+
+
+# Fragments of Galaxy's error message when a remote path or its file source
+# does not exist. A missing directory in a PyFilesystem-backed file source
+# (the AnVIL source is one) is reported as a generic MessageException, which
+# is an HTTP 400 rather than a 404, so the status code alone is not enough.
+_NOT_FOUND_FRAGMENTS = ('not found', 'could not find handler', 'does not exist')
+
+
+def _error_message(response) -> str:
+    """Best-effort error text from a Galaxy API error response."""
+    try:
+        body = response.json()
+        if isinstance(body, dict):
+            return str(body.get('err_msg') or body)
+        return str(body)
+    except Exception:
+        return getattr(response, 'text', '') or ''
+
+
 def _list_remote_files(gi, uri: str) -> Optional[List[Dict[str, Any]]]:
     """Recursively list a Galaxy file source directory.
 
-    Returns None if the directory (or the file source) does not exist or can
-    not be listed.
+    Returns the entries, or None if the directory (or the file source) does
+    not exist. Any other problem raises ``RemoteListingError``.
     """
     try:
         response = gi.make_get_request(
             f"{gi.url}/remote_files",
             params={'target': uri, 'format': 'uri', 'recursive': 'true'},
         )
-        if response.status_code != 200:
-            return None
+    except Exception as e:
+        raise RemoteListingError(f"failed to list {uri}: {e}") from e
+    if response.status_code == 200:
         return response.json()
-    except Exception:
+    message = _error_message(response)
+    if response.status_code == 404:
         return None
+    if response.status_code == 400 and any(
+        fragment in message.lower() for fragment in _NOT_FOUND_FRAGMENTS
+    ):
+        return None
+    raise RemoteListingError(
+        f"failed to list {uri}: HTTP {response.status_code} {message}".rstrip()
+    )
 
 
 def _import_workflow_from_uri(gi, uri: str):
@@ -446,7 +482,14 @@ def _process_terra_bootstrap(gi, workspace_config, result):
     entries = None
     for path in _bootstrap_folder_candidates(folder):
         uri = f"gxfiles://{file_source}/{path}"
-        entries = _list_remote_files(gi, uri)
+        try:
+            entries = _list_remote_files(gi, uri)
+        except RemoteListingError as e:
+            # Not a missing folder: the listing itself failed, so count it as
+            # a failure rather than silently skipping the folder.
+            print(f"  ERROR: {e}")
+            result.fail()
+            return
         if entries is not None:
             break
     if entries is None:

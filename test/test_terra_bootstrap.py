@@ -11,6 +11,7 @@ from abm.lib.common import Context
 from abm.lib.config import (
     DEFAULT_TERRA_FILE_SOURCE,
     BootstrapResult,
+    RemoteListingError,
     _bootstrap_folder_candidates,
     _classify_bootstrap_file,
     _list_remote_files,
@@ -23,11 +24,29 @@ ROOT = f"gxfiles://{DEFAULT_TERRA_FILE_SOURCE}"
 FOLDER = f"{ROOT}/Other Data/Files/galaxy-bootstrap"
 
 
-def _response(status=200, payload=None):
+def _response(status=200, payload=None, err_msg=None):
     r = MagicMock()
     r.status_code = status
-    r.json.return_value = payload if payload is not None else []
+    if err_msg is not None:
+        # Galaxy error bodies are {"err_msg": ..., "err_code": ...}.
+        r.json.return_value = {'err_msg': err_msg, 'err_code': 0}
+        r.text = err_msg
+    else:
+        r.json.return_value = payload if payload is not None else []
+        r.text = ''
     return r
+
+
+# What Galaxy really sends for a missing folder in a PyFilesystem-backed file
+# source (the AnVIL source is one): the fs ResourceNotFound is wrapped in a
+# plain MessageException, which is a 400, not a 404.
+MISSING_FOLDER_MSG = (
+    "Problem listing file source path Other Data/Files/galaxy-bootstrap. "
+    "Reason: resource 'Other Data/Files/galaxy-bootstrap' not found"
+)
+MISSING_SOURCE_MSG = (
+    "Could not find handler for URI [gxfiles://no-such-source/galaxy-bootstrap]"
+)
 
 
 def _entry(name, cls='File', folder=FOLDER):
@@ -105,14 +124,56 @@ def test_list_remote_files_returns_entries():
     assert params['recursive'] == 'true'
 
 
-def test_list_remote_files_missing_returns_none():
+def test_list_remote_files_404_returns_none():
     assert _list_remote_files(_gi(status=404), FOLDER) is None
 
 
-def test_list_remote_files_exception_returns_none():
+def test_list_remote_files_400_missing_folder_returns_none():
     gi = _gi()
-    gi.make_get_request.side_effect = Exception('boom')
+    gi.make_get_request.return_value = _response(400, err_msg=MISSING_FOLDER_MSG)
     assert _list_remote_files(gi, FOLDER) is None
+
+
+def test_list_remote_files_400_missing_file_source_returns_none():
+    gi = _gi()
+    gi.make_get_request.return_value = _response(400, err_msg=MISSING_SOURCE_MSG)
+    assert _list_remote_files(gi, FOLDER) is None
+
+
+@pytest.mark.parametrize(
+    'status,err_msg',
+    [
+        (500, 'Problem listing file source path. Reason: boom'),
+        (403, 'Permission denied'),
+        (400, 'Malformed URI: gxfiles://'),
+    ],
+)
+def test_list_remote_files_other_errors_raise(status, err_msg):
+    gi = _gi()
+    gi.make_get_request.return_value = _response(status, err_msg=err_msg)
+    with pytest.raises(RemoteListingError) as excinfo:
+        _list_remote_files(gi, FOLDER)
+    assert str(status) in str(excinfo.value)
+    assert err_msg in str(excinfo.value)
+
+
+def test_list_remote_files_non_json_error_body_raises():
+    gi = _gi()
+    r = _response(500)
+    r.json.side_effect = ValueError('not json')
+    r.text = '<html>Internal Server Error</html>'
+    gi.make_get_request.return_value = r
+    with pytest.raises(RemoteListingError) as excinfo:
+        _list_remote_files(gi, FOLDER)
+    assert 'Internal Server Error' in str(excinfo.value)
+
+
+def test_list_remote_files_exception_raises():
+    gi = _gi()
+    gi.make_get_request.side_effect = Exception('timed out')
+    with pytest.raises(RemoteListingError) as excinfo:
+        _list_remote_files(gi, FOLDER)
+    assert 'timed out' in str(excinfo.value)
 
 
 # --- folder import --------------------------------------------------------
@@ -182,6 +243,76 @@ def test_terra_bootstrap_missing_folder_is_not_a_failure(mock_history, capsys):
     out = capsys.readouterr().out
     assert 'ERROR' not in out
     assert 'galaxy-bootstrap' in out
+
+
+@patch('abm.lib.config.history')
+def test_terra_bootstrap_missing_folder_400_is_not_a_failure(mock_history, capsys):
+    gi = _gi()
+    gi.make_get_request.return_value = _response(400, err_msg=MISSING_FOLDER_MSG)
+    result = BootstrapResult()
+    _process_terra_bootstrap(gi, {'bootstrap': 'galaxy-bootstrap'}, result)
+
+    assert (result.imported, result.failed) == (0, 0)
+    mock_history._do_import.assert_not_called()
+    out = capsys.readouterr().out
+    assert 'ERROR' not in out
+    assert 'skipping' in out
+
+
+@pytest.mark.parametrize(
+    'status,err_msg',
+    [
+        (500, 'Problem listing file source path. Reason: boom'),
+        (403, 'Permission denied'),
+    ],
+)
+@patch('abm.lib.config.history')
+def test_terra_bootstrap_listing_error_is_a_failure(
+    mock_history, status, err_msg, capsys
+):
+    gi = _gi()
+    gi.make_get_request.return_value = _response(status, err_msg=err_msg)
+    result = BootstrapResult()
+    _process_terra_bootstrap(gi, {'bootstrap': 'galaxy-bootstrap'}, result)
+
+    assert (result.imported, result.failed) == (0, 1)
+    mock_history._do_import.assert_not_called()
+    out = capsys.readouterr().out
+    assert 'ERROR' in out
+    assert err_msg in out
+    assert 'skipping' not in out
+    # Only the first candidate path is tried; the error is not a missing folder.
+    assert gi.make_get_request.call_count == 1
+
+
+@patch('abm.lib.config.history')
+def test_terra_bootstrap_timeout_is_a_failure(mock_history, capsys):
+    gi = _gi()
+    gi.make_get_request.side_effect = Exception('Read timed out')
+    result = BootstrapResult()
+    _process_terra_bootstrap(gi, {'bootstrap': 'galaxy-bootstrap'}, result)
+
+    assert (result.imported, result.failed) == (0, 1)
+    out = capsys.readouterr().out
+    assert 'ERROR' in out
+    assert 'Read timed out' in out
+
+
+@patch('abm.lib.config.history')
+def test_terra_bootstrap_falls_back_after_400_missing_folder(mock_history):
+    gi = _gi()
+    literal = f"{ROOT}/galaxy-bootstrap"
+    gi.make_get_request.side_effect = [
+        _response(400, err_msg=MISSING_FOLDER_MSG),
+        _response(200, [_entry('h.tar.gz', folder=literal)]),
+    ]
+    mock_history._do_import.return_value = 'hid'
+    result = BootstrapResult()
+    _process_terra_bootstrap(gi, {'bootstrap': 'galaxy-bootstrap'}, result)
+
+    targets = [c[1]['params']['target'] for c in gi.make_get_request.call_args_list]
+    assert targets == [FOLDER, literal]
+    assert (result.imported, result.failed) == (1, 0)
 
 
 @patch('abm.lib.config.history')
