@@ -1,5 +1,11 @@
 # GXABM Release Process
 
+## NOTE
+
+This document is obsolete and no longer documents the correct release process.  A release is performed automatically when the `dev` branch is merged into `master`.
+
+---
+
 The `master` branch is used for releases and points to the latest tagged commit. The current version number is maintained in `abm/VERSION`. The `dev` branch is used for development.
 
 You can use the `bin/bump.sh` script to update the version number as needed. Run `bin/bump.sh --help` for more information.
