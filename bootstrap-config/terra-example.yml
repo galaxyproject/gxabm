@@ -4,6 +4,9 @@
 
 version: 1
 
+# Exit with a non-zero status if any import fails (default: false, log only)
+failOnImport: false
+
 # Standard dataset imports (existing functionality)
 datasets:
   "Public Datasets":
@@ -14,6 +17,9 @@ datasets:
 terra:
   - namespace: "notebooks-canary-project"
     workspace: "SArS-CoV-2-Genome copy"
+    # Import every workflow (*.ga) and history archive (*.rocrate.zip, *.tar.gz)
+    # found in this folder of the workspace bucket. Skipped if it does not exist.
+    bootstrap: galaxy-bootstrap
     datasets:
       "Reference Data":
         - pattern: "Tables/reference/SARS-CoV-2_reference_genome.fasta"

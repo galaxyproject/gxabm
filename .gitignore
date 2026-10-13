@@ -1,8 +1,13 @@
+CLAUDE.md
 __pycache__/
 .venv
 .idea
 .ktx
 .kube/
+.kubeconfig
+.claude/
+.abm/
+abm/__init__.pyc
 build/
 dist/
 results/
@@ -11,3 +16,4 @@ data/
 metrics/
 tools.yml
 gxabm.egg-info/
+test/

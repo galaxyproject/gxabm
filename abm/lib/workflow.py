@@ -72,6 +72,46 @@ def upload(context: Context, args: list):
         pprint(result)
 
 
+WORKFLOW_CACHE = os.path.expanduser("~/.abm/cache/workflows")
+
+
+def install_tools(gi, workflow_path: str) -> bool:
+    """Install the ToolShed repositories used by the workflow file at ``workflow_path``.
+
+    Never raises: a repository that fails to install is reported and the caller
+    carries on. Returns False if anything went wrong.
+    """
+    print("Installing tools")
+    try:
+        # planemo assumes Runnable objects can be found on the local file system
+        runnable = for_path(workflow_path)
+        installed, _ = install_shed_repos(
+            runnable, gi, True, install_tool_dependencies=True
+        )
+        pprint(installed)
+        return True
+    except Exception as e:
+        print(f"ERROR: tool installation failed: {e}")
+        return False
+
+
+def install_tools_for_workflow(gi, workflow_id: str) -> bool:
+    """Install the tools used by a workflow already on the Galaxy instance."""
+    try:
+        wf = gi.workflows.export_workflow_dict(workflow_id)
+        if not os.path.exists(WORKFLOW_CACHE):
+            os.makedirs(WORKFLOW_CACHE)
+        path = os.path.join(WORKFLOW_CACHE, f"{workflow_id}.ga")
+        with open(path, 'w') as f:
+            json.dump(wf, f)
+    except Exception as e:
+        print(
+            f"ERROR: unable to export workflow {workflow_id} for tool installation: {e}"
+        )
+        return False
+    return install_tools(gi, path)
+
+
 def import_from_url(context: Context, args: list):
     print("Importing workflow from URL")
     url = None
@@ -84,16 +124,13 @@ def import_from_url(context: Context, args: list):
             url = arg
     if url is None:
         print("ERROR: no URL given")
-        return
+        return False
 
-    # There is a bug in ephemeris (for lack of a better term) that assumes all
-    # Runnable objects can be found on the local file system
     input_text = None
     filename = url.split('/')[-1]
-    cache = os.path.expanduser("~/.abm/cache/workflows")
-    if not os.path.exists(cache):
-        os.makedirs(cache)
-    cached_file = os.path.join(cache, filename)
+    if not os.path.exists(WORKFLOW_CACHE):
+        os.makedirs(WORKFLOW_CACHE)
+    cached_file = os.path.join(WORKFLOW_CACHE, filename)
     if os.path.exists(cached_file):
         with open(cached_file) as f:
             input_text = f.read()
@@ -104,7 +141,7 @@ def import_from_url(context: Context, args: list):
                 f"ERROR: There was a problem downloading the workflow: {response.status_code}"
             )
             print(response.reason)
-            return
+            return False
         input_text = response.text
         with open(cached_file, 'w') as f:
             f.write(input_text)
@@ -113,16 +150,14 @@ def import_from_url(context: Context, args: list):
     except Exception as e:
         print("ERROR: Unable to parse workflow")
         print(e)
-        return
+        return False
 
     gi = connect(context)
     result = gi.workflows.import_workflow_dict(workflow, publish=True)
     print(json.dumps(result, indent=4))
-    runnable = for_path(cached_file)
     if install:
-        print("Installing tools")
-        result = install_shed_repos(runnable, gi, False, install_tool_dependencies=True)
-        pprint(result)
+        install_tools(gi, cached_file)
+    return True
 
 
 def import_from_config(context: Context, args: list):
