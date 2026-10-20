@@ -34,7 +34,7 @@ on:
 jobs:
   # Check if this push is from a dev branch merge
   check-merge-source:
-    runs-on: ubuntu-latest
+    runs-on: gcp-runner
     outputs:
       is-dev-merge: ${{ steps.check.outputs.is-dev-merge }}
     steps:
@@ -80,7 +80,7 @@ jobs:
   release:
     needs: check-merge-source
     if: needs.check-merge-source.outputs.is-dev-merge == 'true'
-    runs-on: ubuntu-latest
+    runs-on: gcp-runner
     permissions:
       contents: write
       pull-requests: write
